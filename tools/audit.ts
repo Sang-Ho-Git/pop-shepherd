@@ -43,6 +43,8 @@ export interface Anomalies {
   longFlight: number;
   slowTicks: number;
   maxTickMs: number;
+  /** 틱 시간의 99% 지점. 최대값은 JIT·GC로 가끔 튀므로 성능 판단은 이 값으로 한다. */
+  p99TickMs: number;
   bombsLeft: number;
 }
 
@@ -98,7 +100,8 @@ export function runOne(sc: Scenario, seed: number): RunResult {
     stage: st,
     weapons: sc.weapons.map((w) => makeWeapon(weapon(w.id), w.lv)),
   });
-  const a: Anomalies = { nonFinite: 0, outOfArena: 0, overCap: 0, deepOverlap: 0, longFlight: 0, slowTicks: 0, maxTickMs: 0, bombsLeft: 0 };
+  const a: Anomalies = { nonFinite: 0, outOfArena: 0, overCap: 0, deepOverlap: 0, longFlight: 0, slowTicks: 0, maxTickMs: 0, p99TickMs: 0, bombsLeft: 0 };
+  const tickMs: number[] = [];
   const flight = new Map<number, number>();
   const ticks = st.duration * RULES.tickHz;
   for (let t = 0; t < ticks && !g.player.dead; t++) {
@@ -107,10 +110,13 @@ export function runOne(sc: Scenario, seed: number): RunResult {
     step(g, input);
     const ms = performance.now() - t0;
     a.maxTickMs = Math.max(a.maxTickMs, ms);
+    tickMs.push(ms);
     if (ms > 4) a.slowTicks++;
     checkTick(g, a, flight);
   }
   a.bombsLeft = g.bombs.length;
+  tickMs.sort((x, y) => x - y);
+  a.p99TickMs = tickMs[Math.floor(tickMs.length * 0.99)] ?? 0;
   const s = g.stats;
   const fin = s.poppedEnemies + s.killedEnemies;
   return {
@@ -150,7 +156,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       .map((k) => `${k}=${sum(k)}`)
       .join(" ");
     console.log(
-      `${sc.name.padEnd(26)} 사망 ${runs.filter((r) => r.died).length}/${seeds}  생존 ${m((r) => r.survived).toFixed(0)}s  남은체력 ${(m((r) => r.hpLeft) * 100).toFixed(0)}%  매치 ${(m((r) => r.matchKillRatio) * 100).toFixed(0)}%  연쇄 ${m((r) => r.avgChain).toFixed(2)}  막힘 ${m((r) => r.stallsPerMinute).toFixed(2)}  최대적 ${m((r) => r.alivePeak).toFixed(0)}  최대틱 ${Math.max(...runs.map((r) => r.anomalies.maxTickMs)).toFixed(1)}ms  ${flags}`,
+      `${sc.name.padEnd(26)} 사망 ${runs.filter((r) => r.died).length}/${seeds}  생존 ${m((r) => r.survived).toFixed(0)}s  남은체력 ${(m((r) => r.hpLeft) * 100).toFixed(0)}%  매치 ${(m((r) => r.matchKillRatio) * 100).toFixed(0)}%  연쇄 ${m((r) => r.avgChain).toFixed(2)}  막힘 ${m((r) => r.stallsPerMinute).toFixed(2)}  최대적 ${m((r) => r.alivePeak).toFixed(0)}  틱99% ${Math.max(...runs.map((r) => r.anomalies.p99TickMs)).toFixed(2)}ms (최대 ${Math.max(...runs.map((r) => r.anomalies.maxTickMs)).toFixed(1)})  ${flags}`,
     );
   }
   if (process.argv.includes("--json")) console.log(JSON.stringify(out, null, 2));
