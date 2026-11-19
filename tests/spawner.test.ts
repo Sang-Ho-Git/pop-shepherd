@@ -96,6 +96,27 @@ describe("1.7 출현 보정", () => {
     }
   });
 
+  it("플레이어가 벽이나 구석에 있어도 적은 화면 밖에서 나타난다", () => {
+    const st: StageDef = { ...stage("m1_proving"), grayRatio: 0, maxAlive: 10_000 };
+    const spots = [
+      [100, 100],
+      [2460, 1340],
+      [1280, 80],
+      [80, 720],
+      [1280, 720],
+    ] as const;
+    for (const [px, py] of spots) {
+      const g = stageGame(st, px + py);
+      g.player.x = px;
+      g.player.y = py;
+      for (let k = 0; k < 40; k++) spawnGroup(g, st);
+      for (const e of g.enemies) {
+        const inView = Math.abs(e.x - px) <= RULES.view.w / 2 + e.radius && Math.abs(e.y - py) <= RULES.view.h / 2 + e.radius;
+        expect(inView, `플레이어 (${px}, ${py}) / 적 (${e.x.toFixed(0)}, ${e.y.toFixed(0)})`).toBe(false);
+      }
+    }
+  });
+
   it("회색 확률 1이면 짝마다 회색 1마리로 바뀐다", () => {
     const st: StageDef = { ...stage("m1_proving"), grayRatio: 1 };
     const g = stageGame(st);

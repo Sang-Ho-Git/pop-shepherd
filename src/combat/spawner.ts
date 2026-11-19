@@ -68,14 +68,36 @@ export function spawnColors(stage: StageDef, time: number): MatchColor[] {
   return spawnPhase(stage, time).colors ?? stage.colors;
 }
 
-/** 플레이어 기준 화면 밖 고리 위의 소환 지점 (아레나 안으로 당김) */
+/** (x, y)가 플레이어 화면 밖인지 (화면 가장자리에서 margin만큼 더 바깥) */
+export function offScreen(g: Game, x: number, y: number, margin: number): boolean {
+  return Math.abs(x - g.player.x) > RULES.view.w / 2 + margin || Math.abs(y - g.player.y) > RULES.view.h / 2 + margin;
+}
+
+/**
+ * 소환 지점: 플레이어 기준 760~860px 고리 위에서, 아레나 안이면서 화면 밖인 곳.
+ * 고리 위 점을 아레나 안으로 당기기만 하면 플레이어가 벽 근처일 때 화면 안(심하면 바로 옆)에 나타난다
+ * (야간 점검: 소환의 20%가 화면 안). 고리에서 못 찾으면 아레나 안 화면 밖의 아무 곳.
+ */
 export function spawnPoint(g: Game): { x: number; y: number } {
-  const { ringMin, ringMax, edgeMargin } = RULES.spawn;
-  const a = g.rng.range(0, Math.PI * 2);
-  const d = g.rng.range(ringMin, ringMax);
-  const x = Math.min(g.arena.w - edgeMargin, Math.max(edgeMargin, g.player.x + Math.cos(a) * d));
-  const y = Math.min(g.arena.h - edgeMargin, Math.max(edgeMargin, g.player.y + Math.sin(a) * d));
-  return { x, y };
+  const { ringMin, ringMax, edgeMargin, waveRadius } = RULES.spawn;
+  const lo = edgeMargin;
+  const hiX = g.arena.w - edgeMargin;
+  const hiY = g.arena.h - edgeMargin;
+  const margin = waveRadius + 30;
+  for (let i = 0; i < 16; i++) {
+    const a = g.rng.range(0, Math.PI * 2);
+    const d = g.rng.range(ringMin, ringMax);
+    const x = g.player.x + Math.cos(a) * d;
+    const y = g.player.y + Math.sin(a) * d;
+    if (x >= lo && x <= hiX && y >= lo && y <= hiY && offScreen(g, x, y, margin)) return { x, y };
+  }
+  for (let i = 0; i < 32; i++) {
+    const x = g.rng.range(lo, hiX);
+    const y = g.rng.range(lo, hiY);
+    if (offScreen(g, x, y, margin)) return { x, y };
+  }
+  // 아레나가 화면보다 작은 경우뿐이다: 플레이어에게서 가장 먼 모서리.
+  return { x: g.player.x < g.arena.w / 2 ? hiX : lo, y: g.player.y < g.arena.h / 2 ? hiY : lo };
 }
 
 /**
