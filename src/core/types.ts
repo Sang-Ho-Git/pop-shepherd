@@ -161,6 +161,10 @@ export interface Totem {
   color: Color;
   t: number;
   pullSpeed: number;
+  /** 지속 시간 동안 한 번이라도 끌어당긴 적 id (실측 타격 수) */
+  pulled: Set<number>;
+  /** 이 토템을 세운 무기. 새로 끌린 적마다 hits를 올린다. */
+  weapon: WeaponInstance | null;
 }
 
 export interface Bomb {

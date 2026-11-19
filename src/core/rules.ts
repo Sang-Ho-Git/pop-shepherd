@@ -59,7 +59,8 @@ export const RULES = {
     /** 팝 충격파 반경 = base + perExtra × (크기 - shockwaveMin), 캐릭터 chain_radius 배율 적용 */
     shockRadiusBase: 90,
     shockRadiusPerExtra: 15,
-    shockKnock: 450,
+    /** 450에서 800으로 올림: 무기 충격파를 세게 하면 색 조각이 흩어져 연쇄가 줄어서, 연쇄를 일으키는 쪽을 함께 올렸다 (시뮬 확인). */
+    shockKnock: 800,
     /** 플레이어가 폭탄을 줍는 거리 (중심 간) */
     bombPickupRange: 40,
   },

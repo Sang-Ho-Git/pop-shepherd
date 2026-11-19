@@ -115,8 +115,11 @@ function fireZone(g: Game, w: WeaponInstance, buf: number[]): number {
   const inRange = enemiesWithin(g, p.x, p.y, radius, buf);
   const dom = dominantColor(inRange);
   if (!dom || dom.count < Math.max(2, param(w.level, "minTargets", 2))) return -1;
-  g.totems.push({ x: p.x, y: p.y, radius, color: dom.color, t: param(w.level, "duration"), pullSpeed: param(w.level, "pullSpeed", 110) });
+  const pulled = new Set<number>();
+  for (const e of inRange) if (e.color === dom.color) pulled.add(e.id);
+  g.totems.push({ x: p.x, y: p.y, radius, color: dom.color, t: param(w.level, "duration"), pullSpeed: param(w.level, "pullSpeed", 110), pulled, weapon: w });
   for (const e of inRange) if (e.color === dom.color) damage(g, e, w.level.damage);
+  // 타격 수 = 지속 시간 동안 끌어온 서로 다른 적 수. 세운 순간의 수만 먼저 세고, 나머지는 tickTotems가 더한다.
   return dom.count;
 }
 
@@ -162,6 +165,10 @@ export function tickTotems(g: Game): void {
       const reach = t.radius + e.radius;
       if (dx * dx + dy * dy > reach * reach) continue;
       const d = Math.hypot(dx, dy);
+      if (!t.pulled.has(e.id)) {
+        t.pulled.add(e.id);
+        if (t.weapon) t.weapon.hits++;
+      }
       if (d < 18) {
         e.vx = 0;
         e.vy = 0;

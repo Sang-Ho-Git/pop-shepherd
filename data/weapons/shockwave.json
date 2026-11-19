@@ -1,17 +1,191 @@
 {
-  "id": "shockwave", "name": "충격파", "behavior": "pulse", "tags": ["knock", "area"], "implemented": true,
+  "id": "shockwave",
+  "name": "충격파",
+  "behavior": "pulse",
+  "tags": [
+    "knock",
+    "area"
+  ],
+  "implemented": true,
   "levels": [
-    { "lv": 1, "branch": null, "knock": 350, "support": 0, "targets": 7, "aim": 0.6, "cooldown": 3, "damage": 3, "params": { "radius": 120 }, "note": "기본: 주변 적을 사방으로 밀어냄" },
-    { "lv": 2, "branch": null, "knock": 350, "support": 0, "targets": 9.5, "aim": 0.6, "cooldown": 3, "damage": 3, "params": { "radius": 150 }, "note": "반경 ↑" },
-    { "lv": 3, "branch": null, "knock": 400, "support": 0, "targets": 9.5, "aim": 0.6, "cooldown": 2.6, "damage": 4, "params": { "radius": 150 }, "note": "날리는 힘 ↑, 쿨다운 ↓" },
-    { "lv": 4, "branch": "A", "knock": 720, "support": 0, "targets": 4.5, "aim": 0.8, "cooldown": 2.6, "damage": 6, "params": { "radius": 170, "coneDeg": 45 }, "note": "집중파: 이동 방향 90° 부채꼴로만 발사, 힘 ×1.8" },
-    { "lv": 4, "branch": "B", "knock": 400, "support": 0, "targets": 12, "aim": 0.6, "cooldown": 2.6, "damage": 4, "params": { "radius": 150, "secondKnock": 250, "secondDelay": 0.4 }, "note": "이중파: 0.4초 뒤 두 번째 파동" },
-    { "lv": 5, "branch": "A", "knock": 720, "support": 0, "targets": 4.5, "aim": 0.8, "cooldown": 2.3, "damage": 7, "params": { "radius": 170, "coneDeg": 45 }, "note": "쿨다운 ↓" },
-    { "lv": 5, "branch": "B", "knock": 400, "support": 0, "targets": 12, "aim": 0.6, "cooldown": 2.3, "damage": 4, "params": { "radius": 150, "secondKnock": 250, "secondDelay": 0.4 }, "note": "쿨다운 ↓" },
-    { "lv": 6, "branch": "A", "knock": 720, "support": 0, "targets": 5.5, "aim": 0.8, "cooldown": 2.1, "damage": 8, "params": { "radius": 200, "coneDeg": 45 }, "note": "반경 ↑, 쿨다운 ↓" },
-    { "lv": 6, "branch": "B", "knock": 400, "support": 0, "targets": 13.5, "aim": 0.6, "cooldown": 2.1, "damage": 5, "params": { "radius": 180, "secondKnock": 250, "secondDelay": 0.4 }, "note": "반경 ↑, 쿨다운 ↓" },
-    { "lv": 7, "branch": "A", "knock": 800, "support": 0, "targets": 5.5, "aim": 0.8, "cooldown": 2.1, "damage": 9, "params": { "radius": 200, "coneDeg": 45 }, "note": "완성: 맞은 적의 발사 상태 지속 +50%" },
-    { "lv": 7, "branch": "B", "knock": 400, "support": 0, "targets": 15.5, "aim": 0.6, "cooldown": 2.1, "damage": 5, "params": { "radius": 180, "secondKnock": 250, "secondDelay": 0.4, "waves": 3 }, "note": "완성: 세 번째 파동 추가" },
-    { "lv": "evo", "branch": null, "knock": 450, "support": 100, "targets": 16, "aim": 0.6, "cooldown": 2, "damage": 6, "params": {}, "note": "도미노 (Lv7 + 연쇄 증폭기): 팝 충격파가 다른 팝을 유발하는 거리 2배" }
+    {
+      "lv": 1,
+      "branch": null,
+      "knock": 850,
+      "support": 0,
+      "targets": 2.4,
+      "aim": 0.6,
+      "cooldown": 2.6,
+      "damage": 3,
+      "params": {
+        "radius": 130
+      },
+      "note": "기본: 주변 적을 사방으로 밀어냄"
+    },
+    {
+      "lv": 2,
+      "branch": null,
+      "knock": 880,
+      "support": 0,
+      "targets": 3.3,
+      "aim": 0.6,
+      "cooldown": 2.6,
+      "damage": 3,
+      "params": {
+        "radius": 150
+      },
+      "note": "반경 ↑"
+    },
+    {
+      "lv": 3,
+      "branch": null,
+      "knock": 930,
+      "support": 0,
+      "targets": 3.3,
+      "aim": 0.6,
+      "cooldown": 2.3,
+      "damage": 4,
+      "params": {
+        "radius": 150
+      },
+      "note": "날리는 힘 ↑, 쿨다운 ↓"
+    },
+    {
+      "lv": 4,
+      "branch": "A",
+      "knock": 1200,
+      "support": 0,
+      "targets": 1.6,
+      "aim": 0.8,
+      "cooldown": 1.5,
+      "damage": 6,
+      "params": {
+        "radius": 170,
+        "coneDeg": 45
+      },
+      "note": "집중파: 이동 방향 90° 부채꼴로만 발사, 힘 ×1.8 (타격 수는 Lv3 실측 비율로 추정)"
+    },
+    {
+      "lv": 4,
+      "branch": "B",
+      "knock": 1140,
+      "support": 0,
+      "targets": 4.2,
+      "aim": 0.6,
+      "cooldown": 2.6,
+      "damage": 4,
+      "params": {
+        "radius": 150,
+        "secondKnock": 250,
+        "secondDelay": 0.4
+      },
+      "note": "이중파: 0.4초 뒤 두 번째 파동 (타격 수는 Lv3 실측 비율로 추정)"
+    },
+    {
+      "lv": 5,
+      "branch": "A",
+      "knock": 1200,
+      "support": 0,
+      "targets": 1.6,
+      "aim": 0.8,
+      "cooldown": 1.4,
+      "damage": 7,
+      "params": {
+        "radius": 170,
+        "coneDeg": 45
+      },
+      "note": "쿨다운 ↓ (타격 수는 Lv3 실측 비율로 추정)"
+    },
+    {
+      "lv": 5,
+      "branch": "B",
+      "knock": 1140,
+      "support": 0,
+      "targets": 4.2,
+      "aim": 0.6,
+      "cooldown": 2.3,
+      "damage": 4,
+      "params": {
+        "radius": 150,
+        "secondKnock": 250,
+        "secondDelay": 0.4
+      },
+      "note": "쿨다운 ↓ (타격 수는 Lv3 실측 비율로 추정)"
+    },
+    {
+      "lv": 6,
+      "branch": "A",
+      "knock": 1200,
+      "support": 0,
+      "targets": 1.9,
+      "aim": 0.8,
+      "cooldown": 1.2,
+      "damage": 8,
+      "params": {
+        "radius": 200,
+        "coneDeg": 45
+      },
+      "note": "반경 ↑, 쿨다운 ↓ (타격 수는 Lv3 실측 비율로 추정)"
+    },
+    {
+      "lv": 6,
+      "branch": "B",
+      "knock": 1150,
+      "support": 0,
+      "targets": 4.7,
+      "aim": 0.6,
+      "cooldown": 2.1,
+      "damage": 5,
+      "params": {
+        "radius": 180,
+        "secondKnock": 250,
+        "secondDelay": 0.4
+      },
+      "note": "반경 ↑, 쿨다운 ↓ (타격 수는 Lv3 실측 비율로 추정)"
+    },
+    {
+      "lv": 7,
+      "branch": "A",
+      "knock": 1200,
+      "support": 0,
+      "targets": 1.9,
+      "aim": 0.8,
+      "cooldown": 1.1,
+      "damage": 9,
+      "params": {
+        "radius": 200,
+        "coneDeg": 45
+      },
+      "note": "완성: 맞은 적의 발사 상태 지속 +50% (타격 수는 Lv3 실측 비율로 추정)"
+    },
+    {
+      "lv": 7,
+      "branch": "B",
+      "knock": 1150,
+      "support": 0,
+      "targets": 5.4,
+      "aim": 0.6,
+      "cooldown": 2.1,
+      "damage": 5,
+      "params": {
+        "radius": 180,
+        "secondKnock": 250,
+        "secondDelay": 0.4,
+        "waves": 3
+      },
+      "note": "완성: 세 번째 파동 추가 (타격 수는 Lv3 실측 비율로 추정)"
+    },
+    {
+      "lv": "evo",
+      "branch": null,
+      "knock": 1200,
+      "support": 100,
+      "targets": 5.6,
+      "aim": 0.6,
+      "cooldown": 1.7,
+      "damage": 6,
+      "params": {},
+      "note": "도미노 (Lv7 + 연쇄 증폭기): 팝 충격파가 다른 팝을 유발하는 거리 2배 (타격 수는 Lv3 실측 비율로 추정)"
+    }
   ]
 }

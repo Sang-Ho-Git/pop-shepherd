@@ -17,7 +17,7 @@ describe("무기 동작 모듈 (M1 3종)", () => {
     expect(far.state).toBe("walk");
     expect(w.fires).toBe(1);
     expect(w.hits).toBe(2);
-    expect(w.cd).toBeCloseTo(3);
+    expect(w.cd).toBeCloseTo(2.6);
     expect(right.hp).toBe(20 - 3);
   });
 
@@ -75,6 +75,23 @@ describe("무기 동작 모듈 (M1 3종)", () => {
     expect(Math.hypot(blue.x - x, blue.y - y)).toBeCloseTo(blueBefore, 0);
     run(g, 4 * 60);
     expect(g.totems).toHaveLength(0);
+  });
+
+  it("자석 토템: 타격 수는 지속 시간 동안 끌어온 서로 다른 적 수다 (세운 뒤 들어온 적도 센다)", () => {
+    const w = makeWeapon(weapon("magnet_totem"), 1);
+    const g = emptyGame({ weapons: [w] });
+    const { x, y } = g.player;
+    put(g, "red", x + 100, y);
+    put(g, "red", x - 100, y);
+    run(g, 1);
+    expect(w.hits).toBe(2);
+    g.player.x = 200;
+    g.player.y = 200;
+    put(g, "red", x, y + 120);
+    run(g, 2);
+    expect(w.hits).toBe(3);
+    run(g, 30);
+    expect(w.hits).toBe(3);
   });
 
   it("캐릭터 날리는 힘 배율이 발사 속도에 곱해진다 (큐 125%)", () => {

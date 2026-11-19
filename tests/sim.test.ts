@@ -54,6 +54,19 @@ describe("6.3 헤드리스 시뮬레이터", () => {
     for (const w of r.weapons) expect(w.fires, w.id).toBeGreaterThan(0);
   });
 
+  it("시트의 타격 수 가정값이 봇 실측의 ±25% 안에 있다 (충격파·자석 토템 Lv3)", () => {
+    const reps = Array.from({ length: 6 }, (_, i) =>
+      runSim({ seed: i + 1, stageId: "m1_proving", characterId: "shepherd", weapons: M1_WEAPONS }),
+    );
+    for (const id of ["shockwave", "magnet_totem"]) {
+      const ws = reps.flatMap((r) => r.weapons.filter((w) => w.id === id));
+      const fires = ws.reduce((s, w) => s + w.fires, 0);
+      const measured = ws.reduce((s, w) => s + w.avgHits * w.fires, 0) / fires;
+      const assumed = ws[0]!.assumedTargets;
+      expect(Math.abs(measured / assumed - 1), `${id}: 실측 ${measured.toFixed(2)} / 가정 ${assumed}`).toBeLessThan(0.25);
+    }
+  }, 60_000);
+
   it("M1 판정: 세 기준을 모두 넘어야 통과", () => {
     const base: SimReport = {
       seed: 1, stage: "x", character: "x", seconds: 60, survived: 60, died: false, spawned: 0, alivePeak: 0,

@@ -1,17 +1,209 @@
 {
-  "id": "magnet_totem", "name": "자석 토템", "behavior": "zone", "tags": ["pull", "place"], "implemented": true,
+  "id": "magnet_totem",
+  "name": "자석 토템",
+  "behavior": "zone",
+  "tags": [
+    "pull",
+    "place"
+  ],
+  "implemented": true,
   "levels": [
-    { "lv": 1, "branch": null, "knock": 0, "support": 600, "targets": 8, "aim": 0.8, "cooldown": 8, "damage": 2, "params": { "radius": 150, "duration": 4, "pullSpeed": 110 }, "note": "기본: 설치 지점으로 한 가지 색을 끌어모음" },
-    { "lv": 2, "branch": null, "knock": 0, "support": 600, "targets": 10.5, "aim": 0.8, "cooldown": 8, "damage": 2, "params": { "radius": 170, "duration": 4, "pullSpeed": 110 }, "note": "반경 ↑" },
-    { "lv": 3, "branch": null, "knock": 0, "support": 600, "targets": 11.5, "aim": 0.8, "cooldown": 7, "damage": 3, "params": { "radius": 170, "duration": 5, "pullSpeed": 110 }, "note": "지속 ↑, 쿨다운 ↓" },
-    { "lv": 4, "branch": "A", "knock": 0, "support": 600, "targets": 16, "aim": 0.8, "cooldown": 7.5, "damage": 3, "params": { "radius": 170, "duration": 5, "pullSpeed": 110, "totems": 2 }, "note": "쌍둥이 토템: 토템 2개, 각각 다른 색" },
-    { "lv": 4, "branch": "B", "knock": 0, "support": 800, "targets": 11.5, "aim": 0.8, "cooldown": 7.5, "damage": 3, "params": { "radius": 170, "duration": 5, "pullSpeed": 110, "contactMatch": 1 }, "note": "압축: 끌려와 맞닿은 같은 색은 발사 없이도 매치" },
-    { "lv": 5, "branch": "A", "knock": 0, "support": 600, "targets": 16, "aim": 0.8, "cooldown": 6.5, "damage": 3, "params": { "radius": 170, "duration": 5, "pullSpeed": 110, "totems": 2 }, "note": "쿨다운 ↓" },
-    { "lv": 5, "branch": "B", "knock": 0, "support": 800, "targets": 13, "aim": 0.8, "cooldown": 6.5, "damage": 4, "params": { "radius": 190, "duration": 5, "pullSpeed": 110, "contactMatch": 1 }, "note": "반경 ↑, 쿨다운 ↓" },
-    { "lv": 6, "branch": "A", "knock": 0, "support": 600, "targets": 18, "aim": 0.8, "cooldown": 6, "damage": 4, "params": { "radius": 190, "duration": 5, "pullSpeed": 110, "totems": 2 }, "note": "반경 ↑, 쿨다운 ↓" },
-    { "lv": 6, "branch": "B", "knock": 0, "support": 800, "targets": 13, "aim": 0.8, "cooldown": 5.8, "damage": 4, "params": { "radius": 190, "duration": 5, "pullSpeed": 110, "contactMatch": 1 }, "note": "쿨다운 ↓" },
-    { "lv": 7, "branch": "A", "knock": 0, "support": 600, "targets": 21, "aim": 0.8, "cooldown": 6, "damage": 4, "params": { "radius": 190, "duration": 5, "pullSpeed": 110, "totems": 3 }, "note": "완성: 토템 3개" },
-    { "lv": 7, "branch": "B", "knock": 0, "support": 950, "targets": 13, "aim": 0.8, "cooldown": 5.8, "damage": 5, "params": { "radius": 190, "duration": 5, "pullSpeed": 110, "contactMatch": 1, "popShock": 1 }, "note": "완성: 압축 팝이 충격파를 일으킴" },
-    { "lv": "evo", "branch": null, "knock": 0, "support": 800, "targets": 18, "aim": 1, "cooldown": 5.5, "damage": 5, "params": {}, "note": "프리즘 코어 (Lv7 + 프리즘 렌즈): 끌어모은 적을 가장 많은 색으로 통일" }
+    {
+      "lv": 1,
+      "branch": null,
+      "knock": 0,
+      "support": 600,
+      "targets": 4.4,
+      "aim": 0.8,
+      "cooldown": 4.2,
+      "damage": 2,
+      "params": {
+        "radius": 150,
+        "duration": 4,
+        "pullSpeed": 110
+      },
+      "note": "기본: 설치 지점으로 한 가지 색을 끌어모음"
+    },
+    {
+      "lv": 2,
+      "branch": null,
+      "knock": 0,
+      "support": 600,
+      "targets": 4.7,
+      "aim": 0.8,
+      "cooldown": 3.5,
+      "damage": 2,
+      "params": {
+        "radius": 170,
+        "duration": 4,
+        "pullSpeed": 110
+      },
+      "note": "반경 ↑"
+    },
+    {
+      "lv": 3,
+      "branch": null,
+      "knock": 0,
+      "support": 600,
+      "targets": 4.8,
+      "aim": 0.8,
+      "cooldown": 2.9,
+      "damage": 3,
+      "params": {
+        "radius": 170,
+        "duration": 5,
+        "pullSpeed": 110
+      },
+      "note": "지속 ↑, 쿨다운 ↓"
+    },
+    {
+      "lv": 4,
+      "branch": "A",
+      "knock": 0,
+      "support": 600,
+      "targets": 6.7,
+      "aim": 0.8,
+      "cooldown": 3.1,
+      "damage": 3,
+      "params": {
+        "radius": 170,
+        "duration": 5,
+        "pullSpeed": 110,
+        "totems": 2
+      },
+      "note": "쌍둥이 토템: 토템 2개, 각각 다른 색 (타격 수는 Lv3 실측 비율로 추정)"
+    },
+    {
+      "lv": 4,
+      "branch": "B",
+      "knock": 0,
+      "support": 800,
+      "targets": 4.8,
+      "aim": 0.8,
+      "cooldown": 3.1,
+      "damage": 3,
+      "params": {
+        "radius": 170,
+        "duration": 5,
+        "pullSpeed": 110,
+        "contactMatch": 1
+      },
+      "note": "압축: 끌려와 맞닿은 같은 색은 발사 없이도 매치 (타격 수는 Lv3 실측 비율로 추정)"
+    },
+    {
+      "lv": 5,
+      "branch": "A",
+      "knock": 0,
+      "support": 600,
+      "targets": 6.7,
+      "aim": 0.8,
+      "cooldown": 2.7,
+      "damage": 3,
+      "params": {
+        "radius": 170,
+        "duration": 5,
+        "pullSpeed": 110,
+        "totems": 2
+      },
+      "note": "쿨다운 ↓ (타격 수는 Lv3 실측 비율로 추정)"
+    },
+    {
+      "lv": 5,
+      "branch": "B",
+      "knock": 0,
+      "support": 800,
+      "targets": 5.4,
+      "aim": 0.8,
+      "cooldown": 2.7,
+      "damage": 4,
+      "params": {
+        "radius": 190,
+        "duration": 5,
+        "pullSpeed": 110,
+        "contactMatch": 1
+      },
+      "note": "반경 ↑, 쿨다운 ↓ (타격 수는 Lv3 실측 비율로 추정)"
+    },
+    {
+      "lv": 6,
+      "branch": "A",
+      "knock": 0,
+      "support": 600,
+      "targets": 7.5,
+      "aim": 0.8,
+      "cooldown": 2.5,
+      "damage": 4,
+      "params": {
+        "radius": 190,
+        "duration": 5,
+        "pullSpeed": 110,
+        "totems": 2
+      },
+      "note": "반경 ↑, 쿨다운 ↓ (타격 수는 Lv3 실측 비율로 추정)"
+    },
+    {
+      "lv": 6,
+      "branch": "B",
+      "knock": 0,
+      "support": 800,
+      "targets": 5.4,
+      "aim": 0.8,
+      "cooldown": 2.4,
+      "damage": 4,
+      "params": {
+        "radius": 190,
+        "duration": 5,
+        "pullSpeed": 110,
+        "contactMatch": 1
+      },
+      "note": "쿨다운 ↓ (타격 수는 Lv3 실측 비율로 추정)"
+    },
+    {
+      "lv": 7,
+      "branch": "A",
+      "knock": 0,
+      "support": 600,
+      "targets": 8.8,
+      "aim": 0.8,
+      "cooldown": 2.5,
+      "damage": 4,
+      "params": {
+        "radius": 190,
+        "duration": 5,
+        "pullSpeed": 110,
+        "totems": 3
+      },
+      "note": "완성: 토템 3개 (타격 수는 Lv3 실측 비율로 추정)"
+    },
+    {
+      "lv": 7,
+      "branch": "B",
+      "knock": 0,
+      "support": 950,
+      "targets": 5.4,
+      "aim": 0.8,
+      "cooldown": 2.4,
+      "damage": 5,
+      "params": {
+        "radius": 190,
+        "duration": 5,
+        "pullSpeed": 110,
+        "contactMatch": 1,
+        "popShock": 1
+      },
+      "note": "완성: 압축 팝이 충격파를 일으킴 (타격 수는 Lv3 실측 비율로 추정)"
+    },
+    {
+      "lv": "evo",
+      "branch": null,
+      "knock": 0,
+      "support": 800,
+      "targets": 7.5,
+      "aim": 1,
+      "cooldown": 2.3,
+      "damage": 5,
+      "params": {},
+      "note": "프리즘 코어 (Lv7 + 프리즘 렌즈): 끌어모은 적을 가장 많은 색으로 통일 (타격 수는 Lv3 실측 비율로 추정)"
+    }
   ]
 }
