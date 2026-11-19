@@ -54,6 +54,9 @@ function enemiesWithin(g: Game, x: number, y: number, radius: number, buf: numbe
 }
 
 /** pulse (충격파): 주변 적을 사방으로 밀어낸다. 범위 안에 적이 있을 때만 쏜다. */
+/** 방금 쏜 무기가 맞힌 적 id (발사 이벤트에 실어 분석에 쓴다) */
+let firedIds: number[] = [];
+
 function firePulse(g: Game, w: WeaponInstance, buf: number[]): number {
   const p = g.player;
   const radius = param(w.level, "radius") * p.stats.area;
@@ -64,6 +67,7 @@ function firePulse(g: Game, w: WeaponInstance, buf: number[]): number {
     launch(e, e.x - p.x, e.y - p.y, knock);
     damage(g, e, w.level.damage);
   }
+  firedIds = targets.map((e) => e.id);
   return targets.length;
 }
 
@@ -92,6 +96,7 @@ function fireDirectional(g: Game, w: WeaponInstance, buf: number[]): number {
     launch(c.e, p.faceX, p.faceY, knock);
     damage(g, c.e, w.level.damage);
   }
+  firedIds = candidates.map((c) => c.e.id);
   return candidates.length;
 }
 
@@ -120,6 +125,7 @@ function fireZone(g: Game, w: WeaponInstance, buf: number[]): number {
   g.totems.push({ x: p.x, y: p.y, radius, color: dom.color, t: param(w.level, "duration"), pullSpeed: param(w.level, "pullSpeed", 110), pulled, weapon: w });
   for (const e of inRange) if (e.color === dom.color) damage(g, e, w.level.damage);
   // 타격 수 = 지속 시간 동안 끌어온 서로 다른 적 수. 세운 순간의 수만 먼저 세고, 나머지는 tickTotems가 더한다.
+  firedIds = inRange.filter((e) => e.color === dom.color).map((e) => e.id);
   return dom.count;
 }
 
@@ -147,7 +153,7 @@ export function fireWeapons(g: Game): void {
     w.cd = cooldownOf(g, w.level);
     w.fires++;
     w.hits += hits;
-    g.events.push({ type: "fire", weapon: w.def.id, hits });
+    g.events.push({ type: "fire", weapon: w.def.id, hits, ids: firedIds });
   }
 }
 

@@ -42,6 +42,7 @@ describe("무기 동작 모듈 (M1 3종)", () => {
     expect(front.vy).toBeCloseTo(0);
     expect(front.vx).toBeCloseTo(600, 0);
     expect(front2.state).toBe("walk");
+    expect(g.events.find((e) => e.type === "fire")).toMatchObject({ weapon: "kick", hits: 1, ids: [front.id] });
     expect(behind.state).toBe("walk");
     expect(w.hits).toBe(1);
   });

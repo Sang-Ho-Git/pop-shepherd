@@ -180,7 +180,8 @@ export type GameEvent =
   | { type: "stick"; a: number; b: number }
   | { type: "bomb-drop"; color: MatchColor; x: number; y: number }
   | { type: "bomb-pickup"; color: MatchColor; count: number }
-  | { type: "fire"; weapon: string; hits: number }
+  /** ids: 이번 발사로 맞힌(날리거나 끌어당긴) 적 */
+  | { type: "fire"; weapon: string; hits: number; ids: number[] }
   | { type: "whistle"; hits: number }
   | { type: "player-hit"; damage: number; hp: number }
   | { type: "player-dead" }
