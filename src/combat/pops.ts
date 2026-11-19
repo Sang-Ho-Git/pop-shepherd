@@ -85,8 +85,9 @@ export function shockwave(
   return hits;
 }
 
-/** 색 폭탄: 그 색 적을 전부 터뜨린다. 한 번의 팝으로 세고, 충격파와 새 폭탄은 없다. */
-export function detonateBomb(g: Game, color: MatchColor): number {
+/** 색 폭탄: 주운 자리에서 bombRadius 안의 그 색 적을 전부 터뜨린다. 한 번의 팝으로 세고, 충격파와 새 폭탄은 없다. */
+export function detonateBomb(g: Game, color: MatchColor, x = g.player.x, y = g.player.y): number {
+  const range = RULES.match.bombRadius;
   let xp = 0;
   let count = 0;
   const ids: number[] = [];
@@ -94,6 +95,7 @@ export function detonateBomb(g: Game, color: MatchColor): number {
   let cy = 0;
   for (const e of g.enemies) {
     if (e.dead || e.color !== color) continue;
+    if (Math.hypot(e.x - x, e.y - y) > range) continue;
     e.dead = true;
     xp += e.xp;
     cx += e.x;
