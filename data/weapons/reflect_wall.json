@@ -1,0 +1,17 @@
+{
+  "id": "reflect_wall", "name": "반사벽", "behavior": "wall", "tags": ["place", "cushion"], "implemented": false,
+  "levels": [
+    { "lv": 1, "branch": null, "knock": 300, "support": 600, "targets": 7, "aim": 0.8, "cooldown": 10, "damage": 0, "params": { "duration": 6, "length": 120 }, "note": "기본: 튕기는 벽 설치 (타격 수 = 회당 튕김 횟수)" },
+    { "lv": 2, "branch": null, "knock": 300, "support": 600, "targets": 8.5, "aim": 0.8, "cooldown": 10, "damage": 0, "params": { "duration": 6, "length": 150 }, "note": "길이 ↑" },
+    { "lv": 3, "branch": null, "knock": 300, "support": 600, "targets": 9.5, "aim": 0.8, "cooldown": 9, "damage": 0, "params": { "duration": 7, "length": 150 }, "note": "지속 ↑, 쿨다운 ↓" },
+    { "lv": 4, "branch": "A", "knock": 300, "support": 600, "targets": 13, "aim": 0.8, "cooldown": 9.5, "damage": 0, "params": { "duration": 7, "length": 150, "walls": 2 }, "note": "V자 벽: 벽 2개를 V자로 설치" },
+    { "lv": 4, "branch": "B", "knock": 600, "support": 600, "targets": 9.5, "aim": 0.8, "cooldown": 9, "damage": 0, "params": { "duration": 7, "length": 150 }, "note": "가속 벽: 튕길 때 속도 ×2" },
+    { "lv": 5, "branch": "A", "knock": 300, "support": 600, "targets": 14, "aim": 0.8, "cooldown": 8.5, "damage": 0, "params": { "duration": 7, "length": 170, "walls": 2 }, "note": "길이 ↑, 쿨다운 ↓" },
+    { "lv": 5, "branch": "B", "knock": 600, "support": 600, "targets": 10.5, "aim": 0.8, "cooldown": 8.5, "damage": 0, "params": { "duration": 7, "length": 170 }, "note": "길이 ↑, 쿨다운 ↓" },
+    { "lv": 6, "branch": "A", "knock": 300, "support": 600, "targets": 14, "aim": 0.8, "cooldown": 7.5, "damage": 0, "params": { "duration": 7, "length": 170, "walls": 2 }, "note": "쿨다운 ↓" },
+    { "lv": 6, "branch": "B", "knock": 600, "support": 600, "targets": 10.5, "aim": 0.8, "cooldown": 7.5, "damage": 0, "params": { "duration": 7, "length": 170 }, "note": "쿨다운 ↓" },
+    { "lv": 7, "branch": "A", "knock": 300, "support": 600, "targets": 14, "aim": 1, "cooldown": 7.5, "damage": 0, "params": { "duration": 7, "length": 170, "walls": 2 }, "note": "완성: 튕긴 적이 가장 가까운 같은 색 쪽으로 각도 보정" },
+    { "lv": 7, "branch": "B", "knock": 600, "support": 900, "targets": 10.5, "aim": 0.8, "cooldown": 7.5, "damage": 5, "params": { "duration": 7, "length": 170 }, "note": "완성: 벽 충돌 시 소형 충격파" },
+    { "lv": "evo", "branch": null, "knock": 300, "support": 600, "targets": 20, "aim": 1, "cooldown": 7.5, "damage": 0, "params": {}, "note": "만화경 (Lv7 + 거울 조각): 벽 3개를 삼각형으로 설치" }
+  ]
+}

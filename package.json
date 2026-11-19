@@ -1,0 +1,22 @@
+{
+  "name": "pop-shepherd",
+  "version": "0.1.0",
+  "private": true,
+  "description": "팝 셰퍼드: 적을 날려 같은 색끼리 부딪쳐 터뜨리는 서바이벌 게임의 코어 시뮬레이션",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run test",
+    "sim": "node tools/sim.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "~5.9.3",
+    "vitest": "~3.2.4"
+  }
+}

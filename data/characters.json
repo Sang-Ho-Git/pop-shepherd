@@ -1,0 +1,26 @@
+{
+  "shepherd": {
+    "id": "shepherd",
+    "name": "보정 없음 (테스트용)",
+    "startWeapon": "kick",
+    "stats": { "max_hp": 100, "move_speed": 1, "knock_power": 1, "cooldown": 0, "area": 1, "chain_radius": 1, "direct_dmg": 1, "pickup": 1, "armor": 0, "regen": 0 }
+  },
+  "cue": {
+    "id": "cue",
+    "name": "큐 (당구사)",
+    "startWeapon": "kick",
+    "stats": { "max_hp": 80, "move_speed": 1.1, "knock_power": 1.25, "cooldown": 0, "area": 0.9, "chain_radius": 1, "direct_dmg": 1, "pickup": 1, "armor": 0, "regen": 0 }
+  },
+  "olly": {
+    "id": "olly",
+    "name": "올리 (목동)",
+    "startWeapon": "lasso",
+    "stats": { "max_hp": 130, "move_speed": 0.9, "knock_power": 0.9, "cooldown": 0, "area": 1.15, "chain_radius": 1, "direct_dmg": 1, "pickup": 1.4, "armor": 2, "regen": 0 }
+  },
+  "pale": {
+    "id": "pale",
+    "name": "팔레 (화가)",
+    "startWeapon": "paint_gun",
+    "stats": { "max_hp": 90, "move_speed": 1, "knock_power": 1, "cooldown": 0.1, "area": 1, "chain_radius": 1.2, "direct_dmg": 1, "pickup": 1, "armor": 0, "regen": 0 }
+  }
+}

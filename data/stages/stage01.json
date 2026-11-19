@@ -1,0 +1,14 @@
+{
+  "id": "stage01",
+  "name": "초원 목장",
+  "duration": 180,
+  "colors": ["red", "blue"],
+  "grayRatio": 0,
+  "maxAlive": 120,
+  "enemyHpMul": 1,
+  "spawn": [
+    { "from": 0, "to": 60, "interval": 4.0 },
+    { "from": 60, "to": 120, "interval": 3.0 },
+    { "from": 120, "to": 180, "interval": 2.2 }
+  ]
+}
