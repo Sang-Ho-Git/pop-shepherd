@@ -3,6 +3,7 @@ import type { Enemy, Game, Input } from "../core/types.ts";
 /**
  * 자동 플레이 봇. 사람보다 서툴지만 매번 같은 방식으로 움직여서 수치 비교의 기준선이 된다.
  * 1) 킥이 준비됐고, 적 E 뒤로 같은 색 2마리 이상이 일직선에 있으면 E를 향해 걸어가 킥으로 그 줄에 날린다.
+ *    줄 중간에 다른 색이 먼저 있으면 막힌 줄로 보고 노리지 않는다.
  * 2) 아니면 가까운 적을 피하면서 적 무리 둘레를 돈다 (카이팅).
  * 3) 둘러싸이거나 체력이 35% 아래면 휘슬.
  * 봇은 난수를 쓰지 않는다. 공간 해시는 지난 틱 기준이라 적 목록을 직접 훑는다.
@@ -84,17 +85,26 @@ export function bestKickTarget(g: Game): Enemy | null {
   for (const { e, d } of near) {
     const ux = (e.x - p.x) / d;
     const uy = (e.y - p.y) / d;
+    // 줄 위의 적을 가까운 순으로 본다. 다른 색이 먼저 나오면 그 줄은 막혀 있다.
     let score = 0;
+    let firstSame = Infinity;
+    let firstBlocker = Infinity;
     for (const o of g.enemies) {
       if (o === e) continue;
-      if (!(o.color === e.color || o.color === "rainbow" || e.color === "rainbow")) continue;
       const ox = o.x - e.x;
       const oy = o.y - e.y;
       const along = ox * ux + oy * uy;
       if (along < 20 || along > 200) continue;
       if (Math.abs(ox * uy - oy * ux) > 24) continue;
-      score++;
+      const same = o.color === e.color || o.color === "rainbow" || e.color === "rainbow";
+      if (same) {
+        score++;
+        firstSame = Math.min(firstSame, along);
+      } else {
+        firstBlocker = Math.min(firstBlocker, along);
+      }
     }
+    if (firstBlocker < firstSame) score = 0;
     if (score > bestScore) {
       best = e;
       bestScore = score;

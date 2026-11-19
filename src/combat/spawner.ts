@@ -1,5 +1,5 @@
 import { RULES } from "../core/rules.ts";
-import type { Color, Enemy, Game, MatchColor, StageDef } from "../core/types.ts";
+import type { Color, Enemy, Game, MatchColor, SpawnPhase, StageDef } from "../core/types.ts";
 
 /** 적 하나를 만든다. 스테이지 체력 배율을 적용한다. */
 export function spawnEnemy(g: Game, kind: string, color: Color, x: number, y: number): Enemy {
@@ -50,12 +50,22 @@ export function colorWeights(colors: readonly MatchColor[], counts: Map<Color, n
   });
 }
 
-/** 현재 시간의 소환 간격. 표 밖이면 마지막 구간 값. */
-export function spawnInterval(stage: StageDef, time: number): number {
-  for (const p of stage.spawn) if (time >= p.from && time < p.to) return p.interval;
+/** 현재 시간의 출현표 구간. 표 밖이면 마지막 구간. */
+export function spawnPhase(stage: StageDef, time: number): SpawnPhase {
+  for (const p of stage.spawn) if (time >= p.from && time < p.to) return p;
   const last = stage.spawn[stage.spawn.length - 1];
   if (!last) throw new Error(`${stage.id}: 출현표가 비어 있음`);
-  return last.interval;
+  return last;
+}
+
+/** 현재 시간의 소환 간격 */
+export function spawnInterval(stage: StageDef, time: number): number {
+  return spawnPhase(stage, time).interval;
+}
+
+/** 현재 시간에 나오는 색 */
+export function spawnColors(stage: StageDef, time: number): MatchColor[] {
+  return spawnPhase(stage, time).colors ?? stage.colors;
 }
 
 /** 플레이어 기준 화면 밖 고리 위의 소환 지점 (아레나 안으로 당김) */
@@ -80,6 +90,7 @@ export function spawnGroup(g: Game, stage: StageDef): void {
   const at = spawnPoint(g);
   const pairs = g.rng.int(RULES.spawn.pairsMin, RULES.spawn.pairsMax);
   const base = g.rng.range(0, Math.PI * 2);
+  const colors = spawnColors(stage, g.time);
   let prev: MatchColor | null = null;
   for (let k = 0; k < pairs && alive < stage.maxAlive; k++) {
     const ang = base + (k / pairs) * Math.PI * 2;
@@ -91,7 +102,7 @@ export function spawnGroup(g: Game, stage: StageDef): void {
       continue;
     }
     const counts = countColors(g);
-    const choices = stage.colors.length > 1 ? stage.colors.filter((c) => c !== prev) : stage.colors;
+    const choices = colors.length > 1 ? colors.filter((c) => c !== prev) : colors;
     const color = g.rng.weighted(choices, colorWeights(choices, counts));
     prev = color;
     // 짝은 서로 닿게 (중심 거리 28) 접선 방향으로 나란히

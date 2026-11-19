@@ -2,15 +2,43 @@
   "id": "m1_proving",
   "name": "M1 재미 검증장",
   "duration": 300,
-  "colors": ["red", "blue", "yellow"],
+  "colors": [
+    "red",
+    "blue",
+    "yellow"
+  ],
   "grayRatio": 0.08,
   "maxAlive": 160,
   "enemyHpMul": 1,
   "spawn": [
-    { "from": 0, "to": 60, "interval": 3.5 },
-    { "from": 60, "to": 120, "interval": 2.8 },
-    { "from": 120, "to": 180, "interval": 2.3 },
-    { "from": 180, "to": 240, "interval": 1.9 },
-    { "from": 240, "to": 300, "interval": 1.6 }
+    {
+      "from": 0,
+      "to": 60,
+      "interval": 3.5,
+      "colors": [
+        "red",
+        "blue"
+      ]
+    },
+    {
+      "from": 60,
+      "to": 120,
+      "interval": 2.8
+    },
+    {
+      "from": 120,
+      "to": 180,
+      "interval": 2.3
+    },
+    {
+      "from": 180,
+      "to": 240,
+      "interval": 1.9
+    },
+    {
+      "from": 240,
+      "to": 300,
+      "interval": 1.6
+    }
   ]
 }

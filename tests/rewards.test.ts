@@ -5,35 +5,28 @@ import { launch } from "../src/world/physics.ts";
 import { emptyGame, pops, put, run } from "./helpers.ts";
 
 describe("1.5 매치 보상", () => {
-  it("3매치: 경험치 3, 충격파와 폭탄 없음", () => {
+  it("3매치: 경험치 3, 무리 중심에서 팝 충격파, 맞은 적은 연쇄 1단계로 날아간다, 폭탄 없음", () => {
     const g = emptyGame();
     const a = put(g, "red", 440, 400);
     put(g, "red", 500, 400);
     put(g, "red", 528, 400);
-    const bystander = put(g, "blue", 514, 450);
+    const bystander = put(g, "blue", 500, 460);
+    const far = put(g, "blue", 700, 400);
     launch(a, 1, 0, 600);
-    const events = run(g, 10);
+    const events = run(g, 6);
     expect(pops(events)[0]?.xp).toBe(3);
     expect(g.bombs).toHaveLength(0);
-    expect(bystander.state).toBe("walk");
-  });
-
-  it("4매치: 무리 중심에서 팝 충격파, 맞은 적은 연쇄 1단계로 날아간다", () => {
-    const g = emptyGame();
-    const a = put(g, "red", 440, 400);
-    for (let i = 0; i < 3; i++) put(g, "red", 500 + i * 28, 400);
-    const bystander = put(g, "blue", 520, 460);
-    launch(a, 1, 0, 600);
-    run(g, 6);
     expect(bystander.state).toBe("launched");
     expect(bystander.chainDepth).toBe(1);
     expect(bystander.vy).toBeGreaterThan(0);
+    expect(far.state).toBe("walk");
   });
 
-  it("팝 충격파 반경은 4마리 90px에서 1마리마다 15px씩 커진다", () => {
-    expect(popShockRadius(4)).toBe(90);
-    expect(popShockRadius(6)).toBe(120);
+  it("팝 충격파 반경은 3마리 90px에서 1마리마다 15px씩 커진다", () => {
+    expect(RULES.match.shockwaveMin).toBe(3);
     expect(popShockRadius(3)).toBe(90);
+    expect(popShockRadius(4)).toBe(105);
+    expect(popShockRadius(6)).toBe(135);
   });
 
   it("5매치: 색 폭탄이 떨어지고, 주우면 그 색이 전부 터진다", () => {
@@ -60,7 +53,7 @@ describe("1.5 매치 보상", () => {
     // 1단계 팝: 파랑 4마리
     const a = put(g, "blue", 380, 400);
     for (let i = 0; i < 3; i++) put(g, "blue", 440 + i * 28, 400);
-    // 파랑 넷의 중심은 x ≈ 455. 충격파가 바로 아래 빨강을 수직으로 날려 아래의 빨강 둘에 꽂는다.
+    // 파랑 넷의 중심은 x ≈ 455. 충격파(반경 105)가 바로 아래 빨강을 수직으로 날려 아래의 빨강 둘에 꽂는다.
     put(g, "red", 455, 450);
     put(g, "red", 455, 560);
     put(g, "red", 455, 588);
@@ -104,14 +97,21 @@ describe("1.6 막힘 방지", () => {
     expect(g.stats.xp).toBeCloseTo(0.2);
   });
 
-  it("터뜨릴 적이 3마리 이상인데 10초 동안 팝이 없으면 막힘 1회", () => {
+  it("화면 안에 터뜨릴 적이 3마리 이상인데 10초 동안 팝이 없으면 막힘 1회", () => {
     const g = emptyGame();
-    for (let i = 0; i < 3; i++) put(g, "red", 400 + i * 100, 400);
+    for (let i = 0; i < 3; i++) put(g, "red", g.player.x - 300 + i * 100, g.player.y - 200);
     run(g, 10 * RULES.tickHz - 2);
     expect(g.stats.stalls).toBe(0);
     const events = run(g, 3);
     expect(g.stats.stalls).toBe(1);
     expect(events.some((e) => e.type === "stall")).toBe(true);
+  });
+
+  it("화면 밖의 적은 막힘 시계를 돌리지 않는다 (걸어오는 중)", () => {
+    const g = emptyGame();
+    for (let i = 0; i < 5; i++) put(g, "red", 200 + i * 100, 200);
+    run(g, 20 * RULES.tickHz);
+    expect(g.stats.stalls).toBe(0);
   });
 
   it("적이 2마리 이하면 막힘 시계가 흐르지 않는다", () => {

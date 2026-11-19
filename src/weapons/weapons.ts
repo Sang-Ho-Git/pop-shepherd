@@ -58,7 +58,7 @@ function firePulse(g: Game, w: WeaponInstance, buf: number[]): number {
   const p = g.player;
   const radius = param(w.level, "radius") * p.stats.area;
   const targets = enemiesWithin(g, p.x, p.y, radius, buf);
-  if (targets.length === 0) return -1;
+  if (targets.length === 0 || targets.length < param(w.level, "minTargets", 1)) return -1;
   const knock = knockOf(g, w.level);
   for (const e of targets) {
     launch(e, e.x - p.x, e.y - p.y, knock);
@@ -114,7 +114,7 @@ function fireZone(g: Game, w: WeaponInstance, buf: number[]): number {
   const radius = param(w.level, "radius") * p.stats.area;
   const inRange = enemiesWithin(g, p.x, p.y, radius, buf);
   const dom = dominantColor(inRange);
-  if (!dom || dom.count < 2) return -1;
+  if (!dom || dom.count < Math.max(2, param(w.level, "minTargets", 2))) return -1;
   g.totems.push({ x: p.x, y: p.y, radius, color: dom.color, t: param(w.level, "duration"), pullSpeed: param(w.level, "pullSpeed", 110) });
   for (const e of inRange) if (e.color === dom.color) damage(g, e, w.level.damage);
   return dom.count;

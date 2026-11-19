@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { RULES } from "../src/core/rules.ts";
 import { createGame } from "../src/core/game.ts";
 import type { Color, Enemy, StageDef } from "../src/core/types.ts";
-import { colorWeights, spawnGroup, spawnInterval, tickSpawner } from "../src/combat/spawner.ts";
+import { colorWeights, spawnColors, spawnGroup, spawnInterval, tickSpawner } from "../src/combat/spawner.ts";
 import { touching } from "../src/combat/match.ts";
 import { character, ENEMIES, stage } from "../src/data/index.ts";
 import { Rng } from "../src/core/rng.ts";
@@ -137,6 +137,17 @@ describe("1.7 출현 보정", () => {
     expect(g.enemies.length).toBe(first);
     for (let t = 0; t < 0.2 * 60; t++) tickSpawner(g, 1 / 60);
     expect(g.enemies.length).toBeGreaterThan(first);
+  });
+
+  it("출현표 구간에 색이 정해져 있으면 그 색만 나온다 (M1 검증장 첫 1분은 빨강·파랑)", () => {
+    const st: StageDef = { ...stage("m1_proving"), grayRatio: 0 };
+    expect(spawnColors(st, 30)).toEqual(["red", "blue"]);
+    expect(spawnColors(st, 90)).toEqual(["red", "blue", "yellow"]);
+    for (let seed = 1; seed <= 20; seed++) {
+      const g = stageGame(st, seed);
+      for (let k = 0; k < 5; k++) spawnGroup(g, st);
+      for (const e of g.enemies) expect(["red", "blue"]).toContain(e.color);
+    }
   });
 
   it("스테이지 시간이 끝나면 소환을 멈춘다", () => {

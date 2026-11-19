@@ -93,21 +93,38 @@ function movePlayer(g: Game, input: Input): void {
   if (p.stats.regen > 0) p.hp = Math.min(p.maxHp, p.hp + p.stats.regen * DT);
 }
 
-/** 평소 상태 적: 플레이어를 향해 걷는다. */
+/** 평소 상태 적: 플레이어를 향해 걷고, 근처 같은 색 쪽으로 조금 끌린다 (1.3 같은 색 응집). */
 function chase(g: Game): void {
   const p = g.player;
+  const { radius: cr, speed: cs } = RULES.cohesion;
+  const buf: number[] = [];
+  if (cs > 0) rebuildGrid(g);
   for (const e of g.enemies) {
     if (e.dead || e.state !== "walk") continue;
     const dx = p.x - e.x;
     const dy = p.y - e.y;
     const d = Math.hypot(dx, dy);
-    if (d < 1e-9) {
-      e.vx = 0;
-      e.vy = 0;
-      continue;
+    e.vx = d < 1e-9 ? 0 : (dx / d) * e.speed;
+    e.vy = d < 1e-9 ? 0 : (dy / d) * e.speed;
+    if (cs <= 0 || e.speed <= 0 || e.color === "gray") continue;
+    let sx = 0;
+    let sy = 0;
+    g.grid.query(e.x, e.y, cr, buf);
+    for (const j of buf) {
+      const o = g.enemies[j];
+      if (!o || o === e || o.dead || o.color !== e.color) continue;
+      const ox = o.x - e.x;
+      const oy = o.y - e.y;
+      const od = Math.hypot(ox, oy);
+      if (od > cr || od < 1e-9) continue;
+      sx += ox / od;
+      sy += oy / od;
     }
-    e.vx = (dx / d) * e.speed;
-    e.vy = (dy / d) * e.speed;
+    const sl = Math.hypot(sx, sy);
+    if (sl > 1e-9) {
+      e.vx += (sx / sl) * cs;
+      e.vy += (sy / sl) * cs;
+    }
   }
 }
 
@@ -161,10 +178,22 @@ function pickupBombs(g: Game): void {
   g.bombs = keep;
 }
 
-/** 1.6 막힘 감지: 터뜨릴 적이 3마리 이상 있는데 10초 동안 팝이 없으면 막힘 1회 */
-function trackStall(g: Game, alive: number): void {
+/** 플레이어 화면(1280×720) 안에 있는 적 수 */
+export function onScreenCount(g: Game): number {
+  const hw = RULES.view.w / 2;
+  const hh = RULES.view.h / 2;
+  let n = 0;
+  for (const e of g.enemies) if (!e.dead && Math.abs(e.x - g.player.x) <= hw && Math.abs(e.y - g.player.y) <= hh) n++;
+  return n;
+}
+
+/**
+ * 1.6 막힘 감지: 화면 안에 터뜨릴 적이 3마리 이상 있는데 10초 동안 팝이 없으면 막힘 1회.
+ * 화면 밖에서 걸어오는 적을 기다리는 시간은 막힘이 아니다 (소환 고리 800px ÷ 추적 70px/s ≈ 11초).
+ */
+function trackStall(g: Game): void {
   const s = g.stats;
-  if (alive < RULES.match.minSize) return;
+  if (onScreenCount(g) < RULES.match.minSize) return;
   s.stallTimer += DT;
   if (s.stallTimer >= RULES.antiStall.stallSeconds) {
     s.stalls++;
@@ -197,7 +226,7 @@ export function step(g: Game, input: Input): void {
 
   g.enemies = g.enemies.filter((e) => !e.dead);
   const alive = g.enemies.length;
-  trackStall(g, alive);
+  trackStall(g);
   g.stats.alivePeak = Math.max(g.stats.alivePeak, alive);
   g.tick++;
   g.time = g.tick * DT;

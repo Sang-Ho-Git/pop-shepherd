@@ -43,14 +43,20 @@ export const RULES = {
     stunTime: 0.5,
   },
 
+  /**
+   * 1.3 같은 색 응집: 평소 상태 적은 radius 안의 같은 색 쪽으로 speed만큼 끌린다 (추적 속도에 더해짐).
+   * 뒤섞인 덩어리가 시간이 지나며 색 조각으로 나뉘어, 날려서 맞출 목표가 생긴다. 0이면 끈다.
+   */
+  cohesion: { radius: 130, speed: 35 },
+
   /** 1.4 충돌 매치, 1.5 매치 보상 */
   match: {
     minSize: 3,
-    /** 이 크기 이상이면 팝 충격파 */
-    shockwaveMin: 4,
+    /** 이 크기 이상이면 팝 충격파. 4에서 3으로 내려 연쇄 기회를 늘렸다 (막힘 조정, 시뮬 확인). */
+    shockwaveMin: 3,
     /** 이 크기 이상이면 색 폭탄 드롭 */
     bombMin: 5,
-    /** 팝 충격파 반경 = base + perExtra × (크기 - 4), 캐릭터 chain_radius 배율 적용 */
+    /** 팝 충격파 반경 = base + perExtra × (크기 - shockwaveMin), 캐릭터 chain_radius 배율 적용 */
     shockRadiusBase: 90,
     shockRadiusPerExtra: 15,
     shockKnock: 450,

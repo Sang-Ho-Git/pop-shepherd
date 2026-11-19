@@ -90,6 +90,33 @@ describe("1.2 물리: 겹침 해소", () => {
   });
 });
 
+describe("1.3 같은 색 응집", () => {
+  it("평소 상태 적은 근처의 같은 색 쪽으로 끌리고, 다른 색에는 끌리지 않는다", () => {
+    const g = emptyGame();
+    // 플레이어(가운데)에서 같은 거리, 위아래로 나란히 놓고 오른쪽에서 걸어오게 한다.
+    const a = put(g, "red", g.player.x + 400, g.player.y - 50, { moving: true });
+    const b = put(g, "red", g.player.x + 400, g.player.y + 50, { moving: true });
+    const c = put(g, "blue", g.player.x + 400, g.player.y + 300, { moving: true });
+    const d = put(g, "yellow", g.player.x + 400, g.player.y + 200, { moving: true });
+    const gap0 = b.y - a.y;
+    const cd0 = c.y - d.y;
+    run(g, 30);
+    expect(b.y - a.y).toBeLessThan(gap0 - 10);
+    // 파랑과 노랑은 서로 끌리지 않으므로 응집만큼 가까워지지 않는다.
+    expect(cd0 - (c.y - d.y)).toBeLessThan(gap0 - (b.y - a.y));
+  });
+
+  it("회색은 응집하지 않는다", () => {
+    const g = emptyGame();
+    const a = put(g, "gray", g.player.x + 400, g.player.y - 50, { moving: true });
+    const b = put(g, "gray", g.player.x + 400, g.player.y + 50, { moving: true });
+    const gap0 = b.y - a.y;
+    run(g, 30);
+    // 플레이어를 향해 모이는 만큼만 가까워진다 (응집이 있었다면 훨씬 더 가까워진다).
+    expect(gap0 - (b.y - a.y)).toBeLessThan(12);
+  });
+});
+
 describe("1.2 물리: 다른 색 충돌 (당구)", () => {
   it("무거운 돌덩이가 젤리를 치면 젤리가 발사 상태로 날아간다", () => {
     const g = emptyGame();
