@@ -191,6 +191,8 @@ export interface Stats {
   pops: number;
   /** 연쇄의 시작이 된 팝 (chainDepth 0) 수 */
   rootPops: number;
+  /** 색 폭탄으로 일어난 팝 (매치가 아니며 rootPops에도 들어 있다) */
+  bombPops: number;
   poppedEnemies: number;
   killedEnemies: number;
   maxChain: number;

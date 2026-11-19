@@ -81,5 +81,6 @@ if (process.argv.includes("--json")) {
   console.log(`M1 기준 (${agg.runs}판 평균, 사망 ${agg.deaths}판)`);
   console.log(`  매치 처치 비율 ${pct(agg.matchKillRatio)}  (기준 ≥ ${pct(M1_CRITERIA.matchKillRatio)})  ${mark(agg.pass.matchKillRatio)}`);
   console.log(`  평균 연쇄      ${agg.avgChain.toFixed(2)}    (기준 ≥ ${M1_CRITERIA.avgChain})      ${mark(agg.pass.avgChain)}`);
+  console.log(`  (참고) 폭탄 팝을 뺀 연쇄 ${(reports.reduce((a, r) => a + r.matchChain, 0) / reports.length).toFixed(2)}  · 폭탄 팝 판당 ${(reports.reduce((a, r) => a + r.bombPops, 0) / reports.length).toFixed(1)}`);
   console.log(`  막힘 / 분      ${agg.stallsPerMinute.toFixed(2)}    (기준 < ${M1_CRITERIA.stallsPerMinute})        ${mark(agg.pass.stallsPerMinute)}`);
 }

@@ -53,6 +53,7 @@ export function createGame(cfg: GameConfig): Game {
     stats: {
       pops: 0,
       rootPops: 0,
+      bombPops: 0,
       poppedEnemies: 0,
       killedEnemies: 0,
       maxChain: 0,

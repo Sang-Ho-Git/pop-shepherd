@@ -70,7 +70,7 @@ describe("6.3 헤드리스 시뮬레이터", () => {
   it("M1 판정: 세 기준을 모두 넘어야 통과", () => {
     const base: SimReport = {
       seed: 1, stage: "x", character: "x", seconds: 60, survived: 60, died: false, spawned: 0, alivePeak: 0,
-      pops: 0, poppedEnemies: 0, killedEnemies: 0, matchKillRatio: 0.8, avgChain: 1.4, maxChain: 2, stalls: 0,
+      pops: 0, poppedEnemies: 0, killedEnemies: 0, matchKillRatio: 0.8, avgChain: 1.4, matchChain: 1.5, bombPops: 0, maxChain: 2, stalls: 0,
       stallsPerMinute: 0.5, xp: 0, weapons: [],
     };
     expect(aggregate([base]).pass.all).toBe(true);

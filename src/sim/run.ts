@@ -42,6 +42,9 @@ export interface SimReport {
   matchKillRatio: number;
   /** 평균 연쇄 = 전체 팝 ÷ 연쇄의 시작 팝 */
   avgChain: number;
+  /** 폭탄 팝을 뺀 평균 연쇄 (매치 팝끼리만). M1 판정은 avgChain을 쓴다. */
+  matchChain: number;
+  bombPops: number;
   maxChain: number;
   stalls: number;
   stallsPerMinute: number;
@@ -70,6 +73,8 @@ export function summarize(g: Game, opts: SimOptions, seconds: number): SimReport
     killedEnemies: s.killedEnemies,
     matchKillRatio: finished > 0 ? s.poppedEnemies / finished : 0,
     avgChain: s.rootPops > 0 ? s.pops / s.rootPops : 0,
+    matchChain: s.rootPops - s.bombPops > 0 ? (s.pops - s.bombPops) / (s.rootPops - s.bombPops) : 0,
+    bombPops: s.bombPops,
     maxChain: s.maxChain,
     stalls: s.stalls,
     stallsPerMinute: survived > 0 ? s.stalls / (survived / 60) : 0,

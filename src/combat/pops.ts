@@ -107,6 +107,7 @@ export function detonateBomb(g: Game, color: MatchColor, x = g.player.x, y = g.p
   if (count === 0) return 0;
   g.stats.xp += xp;
   recordPop(g, count, 0);
+  g.stats.bombPops++;
   g.events.push({ type: "pop", ids, size: count, color: color as Color, chainDepth: 0, xp, cushion: false, x: cx / count, y: cy / count });
   return count;
 }
