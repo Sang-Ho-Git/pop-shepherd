@@ -193,4 +193,20 @@ export function separate(g: Game, buf: number[]): void {
     e.x = p.x + nx * min;
     e.y = p.y + ny * min;
   }
+
+  // 밀어낸 결과가 울타리를 넘으면 다시 안쪽으로 (벽에 붙은 적이 이웃이나 플레이어에게 밀려 나가는 것을 막는다).
+  clampToArena(g);
+}
+
+/** 모든 적을 울타리 안쪽(반지름만큼)으로 붙잡는다. */
+export function clampToArena(g: Game): void {
+  const { w, h } = g.arena;
+  for (const e of g.enemies) {
+    if (e.dead) continue;
+    const r = e.radius;
+    if (e.x < r) e.x = r;
+    else if (e.x > w - r) e.x = w - r;
+    if (e.y < r) e.y = r;
+    else if (e.y > h - r) e.y = h - r;
+  }
 }

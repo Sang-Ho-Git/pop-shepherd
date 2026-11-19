@@ -221,6 +221,8 @@ export function step(g: Game, input: Input): void {
   if (input.whistle) useWhistle(g);
   resolveImpacts(g);
   separate(g, []);
+  // 큰 무리(100마리 이상)는 한 번으로 겹침이 다 풀리지 않는다 (야간 점검: 160마리에서 깊은 겹침). 한 번 더 돈다.
+  if (g.enemies.length >= 100) separate(g, []);
   contactDamage(g);
   pickupBombs(g);
 

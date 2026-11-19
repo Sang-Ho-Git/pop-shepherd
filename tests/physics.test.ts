@@ -82,6 +82,16 @@ describe("1.2 물리: 겹침 해소", () => {
     expect(d).toBeLessThanOrEqual(a.radius + b.radius + RULES.physics.contactSlack);
   });
 
+  it("벽에 붙은 적이 이웃에게 밀려도 울타리 밖으로 나가지 않는다", () => {
+    const g = emptyGame();
+    const wall = put(g, "red", 14, 400);
+    put(g, "blue", 20, 400);
+    put(g, "yellow", 26, 410);
+    run(g, 5);
+    for (const e of g.enemies) expect(e.x).toBeGreaterThanOrEqual(e.radius);
+    expect(wall.x).toBeGreaterThanOrEqual(wall.radius);
+  });
+
   it("적은 플레이어와 겹치지 않는다", () => {
     const g = emptyGame();
     const e = put(g, "red", g.player.x + 5, g.player.y);

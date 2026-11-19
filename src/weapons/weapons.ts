@@ -158,18 +158,26 @@ export function fireWeapons(g: Game): void {
 export function tickTotems(g: Game): void {
   for (const t of g.totems) {
     t.t -= DT;
+    const inRange = [];
     for (const e of g.enemies) {
       if (e.dead || e.state !== "walk" || e.color !== t.color) continue;
       const dx = t.x - e.x;
       const dy = t.y - e.y;
       const reach = t.radius + e.radius;
-      if (dx * dx + dy * dy > reach * reach) continue;
+      if (dx * dx + dy * dy <= reach * reach) inRange.push(e);
+    }
+    // 끌려온 적이 쌓이는 더미의 반경 (원 n개를 빽빽하게 쌓은 크기). 더미 안에 든 적은 더 끌지 않는다.
+    // 이게 없으면 끄는 속도가 겹침 해소를 이겨 적이 한 점으로 압축된다 (야간 점검에서 발견).
+    const pile = Math.max(18, 14 * Math.sqrt(inRange.length / 0.85));
+    for (const e of inRange) {
+      const dx = t.x - e.x;
+      const dy = t.y - e.y;
       const d = Math.hypot(dx, dy);
       if (!t.pulled.has(e.id)) {
         t.pulled.add(e.id);
         if (t.weapon) t.weapon.hits++;
       }
-      if (d < 18) {
+      if (d < pile) {
         e.vx = 0;
         e.vy = 0;
       } else {
