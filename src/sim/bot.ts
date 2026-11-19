@@ -6,7 +6,7 @@ import type { Enemy, Game, Input } from "../core/types.ts";
  *    줄 중간에 다른 색이 먼저 있으면 막힌 줄로 보고 노리지 않는다.
  * 2) 아니면 가까운 적을 피하면서 적 무리 둘레를 돈다 (카이팅).
  * 3) 둘러싸이거나 체력이 35% 아래면 휘슬.
- * 4) 450px 안에 색 폭탄이 있고 둘러싸여 있지 않으면 킥보다 먼저 주우러 간다.
+ * 4) 450px 안의 색 폭탄은, 가까이 위협이 없고 폭탄 주변이 한산할 때만 킥보다 먼저 주우러 간다.
  * 봇은 난수를 쓰지 않는다. 공간 해시는 지난 틱 기준이라 적 목록을 직접 훑는다.
  */
 export function botInput(g: Game): Input {
@@ -37,16 +37,20 @@ export function botInput(g: Game): Input {
 
   const whistle = p.whistleCd <= 0 && (surrounded >= 6 || p.hp < p.maxHp * 0.35);
 
-  // 근처에 색 폭탄이 있고 둘러싸여 있지 않으면 주우러 간다 (사람이라면 당연히 줍는다).
-  if (surrounded < 4) {
+  // 색 폭탄: 가까이 위협이 없고, 폭탄 주변 100px 안에 평소 상태 적이 2마리 미만일 때만 주우러 간다.
+  // 무작정 주우러 가면 팝이 난 자리(적이 몰린 곳)로 걸어 들어가 체력을 잃는다 (야간 점검: 사망 0/40 → 6/40).
+  const calm = Math.hypot(ax, ay) < 0.3;
+  if (calm) {
     let best: { x: number; y: number } | null = null;
     let bestD = 450;
     for (const b of g.bombs) {
       const d = Math.hypot(b.x - p.x, b.y - p.y);
-      if (d < bestD) {
-        best = b;
-        bestD = d;
-      }
+      if (d >= bestD) continue;
+      let crowd = 0;
+      for (const e of g.enemies) if (e.state === "walk" && Math.hypot(e.x - b.x, e.y - b.y) < 100) crowd++;
+      if (crowd >= 2) continue;
+      best = b;
+      bestD = d;
     }
     if (best) return { moveX: best.x - p.x, moveY: best.y - p.y, whistle };
   }
