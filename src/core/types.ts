@@ -416,6 +416,14 @@ export interface Stats {
   directHits: number;
 }
 
+/** 화면에서 사람이 고를 선택지: 레벨업 카드 또는 보물 상자 강화 */
+export interface PendingChoice {
+  kind: "levelup" | "chest";
+  cards: Card[];
+  /** 레벨업이면 오른 레벨 */
+  level?: number;
+}
+
 export interface Game {
   rng: Rng;
   tick: number;
@@ -443,6 +451,10 @@ export interface Game {
   grid: SpatialHash;
   /** 레벨업 카드 고르기 (없으면 기본 봇 규칙) */
   chooseCard: ((cards: Card[], g: Game) => number) | null;
+  /** true면 레벨업·상자 선택을 choices에 쌓고 멈춘다 (화면에서 사람이 고른다). false면 봇 규칙으로 바로 고른다 */
+  manualChoices: boolean;
+  /** 사람이 골라야 할 선택지 (앞에서부터). 비어 있지 않으면 진행을 멈춘다 */
+  choices: PendingChoice[];
   /** Lv4 갈래 선택 창 (null이면 봇 규칙) */
   chooseBranch: ((w: WeaponInstance, g: Game) => "A" | "B") | null;
   /** 레벨업 사용 여부. 무기 구성을 고정해 재는 측정(M1 시뮬, 보정)에서는 끈다. */

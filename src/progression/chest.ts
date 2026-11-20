@@ -34,6 +34,11 @@ export function openChest(g: Game, chest: Chest): { evolved: string[]; picked: s
       cards.push(owned[i] as Card);
       owned.splice(i, 1);
     }
+    if (g.manualChoices) {
+      g.choices.push({ kind: "chest", cards });
+      picked.push("(선택)");
+      continue;
+    }
     const card = cards[(g.chooseCard ?? botChooseCard)(cards, g)] ?? (cards[0] as Card);
     applyCard(g, card);
     picked.push(cardLabel(card));

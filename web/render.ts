@@ -1,0 +1,312 @@
+import { RULES } from "../src/core/rules.ts";
+import type { Color, Enemy, Game } from "../src/core/types.ts";
+import { BLADE_RADIUS } from "../src/weapons/weapons.ts";
+
+/**
+ * 캔버스 그리기. 시뮬 상태를 읽기만 한다.
+ * 화면은 1280×720 월드 단위를 캔버스에 맞춰 늘리고(가로세로 비율 유지), 플레이어를 따라간다.
+ * 색약을 위해 색마다 모양 표식을 함께 그린다 (빨강 ●, 파랑 ■, 노랑 ▲, 초록 ◆).
+ */
+
+export const PALETTE: Record<Color, string> = {
+  red: "#ff5a5f",
+  blue: "#3d8bff",
+  yellow: "#ffd23f",
+  green: "#3ccf7a",
+  rainbow: "#ffffff",
+  gray: "#8a8f98",
+};
+
+const GRASS_A = "#16302a";
+const GRASS_B = "#1a372f";
+const FENCE = "#c99a5b";
+const INK = "#0d1b17";
+
+export interface Fx {
+  kind: "ring" | "text";
+  x: number;
+  y: number;
+  t: number;
+  life: number;
+  color: string;
+  radius?: number;
+  text?: string;
+}
+
+export interface View {
+  scale: number;
+  ox: number;
+  oy: number;
+  camX: number;
+  camY: number;
+}
+
+export function computeView(g: Game, cw: number, ch: number): View {
+  const vw = RULES.view.w;
+  const vh = RULES.view.h;
+  const scale = Math.min(cw / vw, ch / vh);
+  const camX = Math.min(g.arena.w - vw / 2, Math.max(vw / 2, g.player.x));
+  const camY = Math.min(g.arena.h - vh / 2, Math.max(vh / 2, g.player.y));
+  return { scale, ox: cw / 2, oy: ch / 2, camX, camY };
+}
+
+function toScreen(v: View, x: number, y: number): [number, number] {
+  return [v.ox + (x - v.camX) * v.scale, v.oy + (y - v.camY) * v.scale];
+}
+
+function glyph(ctx: CanvasRenderingContext2D, color: Color, x: number, y: number, s: number): void {
+  ctx.fillStyle = "rgba(255,255,255,0.85)";
+  ctx.beginPath();
+  switch (color) {
+    case "red":
+      ctx.arc(x, y, s * 0.32, 0, Math.PI * 2);
+      break;
+    case "blue":
+      ctx.rect(x - s * 0.3, y - s * 0.3, s * 0.6, s * 0.6);
+      break;
+    case "yellow":
+      ctx.moveTo(x, y - s * 0.38);
+      ctx.lineTo(x + s * 0.36, y + s * 0.28);
+      ctx.lineTo(x - s * 0.36, y + s * 0.28);
+      break;
+    case "green":
+      ctx.moveTo(x, y - s * 0.4);
+      ctx.lineTo(x + s * 0.34, y);
+      ctx.lineTo(x, y + s * 0.4);
+      ctx.lineTo(x - s * 0.34, y);
+      break;
+    default:
+      return;
+  }
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawEnemy(ctx: CanvasRenderingContext2D, v: View, e: Enemy, time: number): void {
+  const [x, y] = toScreen(v, e.x, e.y);
+  const r = e.radius * v.scale;
+  if (e.state === "launched") {
+    // 발사 잔상
+    ctx.strokeStyle = e.color === "rainbow" ? "rgba(255,255,255,0.35)" : PALETTE[e.color] + "66";
+    ctx.lineWidth = r * 1.4;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - e.vx * 0.06 * v.scale, y - e.vy * 0.06 * v.scale);
+    ctx.stroke();
+  }
+  if (e.color === "rainbow") {
+    const grad = ctx.createConicGradient(time * 2, x, y);
+    for (const [i, c] of ["#ff5a5f", "#ffd23f", "#3ccf7a", "#3d8bff", "#ff5a5f"].entries()) grad.addColorStop(i / 4, c);
+    ctx.fillStyle = grad;
+  } else ctx.fillStyle = PALETTE[e.color];
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+  // 윤기
+  ctx.fillStyle = "rgba(255,255,255,0.28)";
+  ctx.beginPath();
+  ctx.ellipse(x - r * 0.3, y - r * 0.35, r * 0.38, r * 0.24, -0.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = Math.max(1, 2 * v.scale);
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.stroke();
+  glyph(ctx, e.color, x, y + r * 0.1, r);
+  if (e.state === "stunned") {
+    ctx.fillStyle = "#fff6b0";
+    for (let k = 0; k < 3; k++) {
+      const a = time * 5 + (k * Math.PI * 2) / 3;
+      ctx.beginPath();
+      ctx.arc(x + Math.cos(a) * r * 0.9, y - r * 1.1 + Math.sin(a) * r * 0.25, Math.max(1.5, 2.5 * v.scale), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  if (e.rank !== "normal") {
+    // 엘리트·보스: 금테와 체력 막대
+    ctx.strokeStyle = e.rank === "boss" ? "#ffcf5a" : "#f1e3b5";
+    ctx.lineWidth = Math.max(2, (e.rank === "boss" ? 5 : 3) * v.scale);
+    ctx.beginPath();
+    ctx.arc(x, y, r + 3 * v.scale, 0, Math.PI * 2);
+    ctx.stroke();
+    if (e.boss && e.boss.windup > 0) {
+      ctx.strokeStyle = `rgba(255,80,80,${0.5 + 0.5 * Math.sin(time * 30)})`;
+      ctx.lineWidth = 4 * v.scale;
+      ctx.beginPath();
+      ctx.arc(x, y, r + 10 * v.scale, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    if (e.rank === "elite") {
+      const w = r * 2;
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(x - w / 2, y - r - 12 * v.scale, w, 5 * v.scale);
+      ctx.fillStyle = "#f1e3b5";
+      ctx.fillRect(x - w / 2, y - r - 12 * v.scale, (w * Math.max(0, e.hp)) / e.maxHp, 5 * v.scale);
+    }
+  }
+}
+
+export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: Fx[], time: number): void {
+  const cw = ctx.canvas.width;
+  const ch = ctx.canvas.height;
+  ctx.fillStyle = "#08110e";
+  ctx.fillRect(0, 0, cw, ch);
+  // 풀밭: 바둑판 무늬 (움직임이 보이게)
+  const tile = 80;
+  const [ax, ay] = toScreen(v, 0, 0);
+  const [bx, by] = toScreen(v, g.arena.w, g.arena.h);
+  ctx.fillStyle = GRASS_A;
+  ctx.fillRect(ax, ay, bx - ax, by - ay);
+  ctx.fillStyle = GRASS_B;
+  const x0 = Math.max(0, Math.floor((v.camX - cw / v.scale / 2) / tile));
+  const x1 = Math.min(g.arena.w / tile, Math.ceil((v.camX + cw / v.scale / 2) / tile));
+  const y0 = Math.max(0, Math.floor((v.camY - ch / v.scale / 2) / tile));
+  const y1 = Math.min(g.arena.h / tile, Math.ceil((v.camY + ch / v.scale / 2) / tile));
+  for (let i = x0; i < x1; i++) {
+    for (let j = y0; j < y1; j++) {
+      if ((i + j) % 2) continue;
+      const [sx, sy] = toScreen(v, i * tile, j * tile);
+      ctx.fillRect(sx, sy, tile * v.scale + 0.5, tile * v.scale + 0.5);
+    }
+  }
+  // 울타리
+  ctx.strokeStyle = FENCE;
+  ctx.lineWidth = 8 * v.scale;
+  ctx.strokeRect(ax, ay, bx - ax, by - ay);
+
+  // 토템 범위
+  for (const t of g.totems) {
+    const [x, y] = toScreen(v, t.x, t.y);
+    ctx.fillStyle = PALETTE[t.color] + "22";
+    ctx.strokeStyle = PALETTE[t.color] + "aa";
+    ctx.lineWidth = 2 * v.scale;
+    ctx.setLineDash([8 * v.scale, 6 * v.scale]);
+    ctx.beginPath();
+    ctx.arc(x, y, t.radius * v.scale, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#e9d8a6";
+    ctx.fillRect(x - 5 * v.scale, y - 22 * v.scale, 10 * v.scale, 30 * v.scale);
+    ctx.fillStyle = PALETTE[t.color];
+    ctx.beginPath();
+    ctx.arc(x, y - 24 * v.scale, 8 * v.scale, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // 반사벽
+  for (const w of g.walls) {
+    const [x1, y1] = toScreen(v, w.x1, w.y1);
+    const [x2, y2] = toScreen(v, w.x2, w.y2);
+    ctx.strokeStyle = w.boost > 1 ? "#ff9f43" : "#9fe3ff";
+    ctx.globalAlpha = Math.min(1, w.t / 0.6);
+    ctx.lineWidth = 7 * v.scale;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  // 바닥 아이템
+  for (const m of g.milks) {
+    const [x, y] = toScreen(v, m.x, m.y);
+    ctx.fillStyle = "#f7f4ea";
+    ctx.fillRect(x - 6 * v.scale, y - 9 * v.scale, 12 * v.scale, 18 * v.scale);
+    ctx.fillStyle = "#5ab0ff";
+    ctx.fillRect(x - 6 * v.scale, y - 2 * v.scale, 12 * v.scale, 5 * v.scale);
+  }
+  for (const gp of g.golds) {
+    const [x, y] = toScreen(v, gp.x, gp.y);
+    ctx.globalAlpha = gp.t < 4 ? 0.5 + 0.5 * Math.sin(time * 12) : 1;
+    ctx.fillStyle = "#ffcf5a";
+    ctx.beginPath();
+    ctx.arc(x, y, (6 + Math.min(6, gp.amount)) * v.scale, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#a7731d";
+    ctx.lineWidth = 2 * v.scale;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  for (const b of g.bombs) {
+    const [x, y] = toScreen(v, b.x, b.y);
+    ctx.fillStyle = "#1b1b1f";
+    ctx.beginPath();
+    ctx.arc(x, y, 12 * v.scale, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = PALETTE[b.color];
+    ctx.lineWidth = 4 * v.scale;
+    ctx.stroke();
+  }
+  for (const c of g.chests) {
+    const [x, y] = toScreen(v, c.x, c.y);
+    const s = (c.kind === "boss" ? 22 : 16) * v.scale;
+    ctx.fillStyle = "#8a5a2b";
+    ctx.fillRect(x - s, y - s * 0.7, s * 2, s * 1.4);
+    ctx.fillStyle = "#ffcf5a";
+    ctx.fillRect(x - s, y - s * 0.15, s * 2, s * 0.3);
+    ctx.strokeStyle = `rgba(255,220,120,${0.4 + 0.4 * Math.sin(time * 6)})`;
+    ctx.lineWidth = 3 * v.scale;
+    ctx.strokeRect(x - s - 4 * v.scale, y - s * 0.7 - 4 * v.scale, s * 2 + 8 * v.scale, s * 1.4 + 8 * v.scale);
+  }
+
+  // 적 (보스는 맨 위에)
+  for (const e of g.enemies) if (e.rank === "normal") drawEnemy(ctx, v, e, time);
+  for (const e of g.enemies) if (e.rank !== "normal") drawEnemy(ctx, v, e, time);
+
+  // 회오리 칼날
+  const p = g.player;
+  for (const w of g.weapons) {
+    if (w.def.behavior !== "orbit") continue;
+    const radius = (w.level.params.radius ?? 80) * p.stats.area;
+    const blades = w.level.params.blades ?? 1;
+    for (let k = 0; k < blades; k++) {
+      const a = (w.angle ?? 0) + (k / blades) * Math.PI * 2;
+      const [x, y] = toScreen(v, p.x + Math.cos(a) * radius, p.y + Math.sin(a) * radius);
+      ctx.fillStyle = "rgba(200,240,255,0.85)";
+      ctx.beginPath();
+      ctx.arc(x, y, BLADE_RADIUS * p.stats.area * v.scale * 0.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 플레이어
+  const [px, py] = toScreen(v, p.x, p.y);
+  const pr = p.radius * v.scale;
+  if (!(p.iframes > 0 && Math.floor(time * 20) % 2 === 0)) {
+    ctx.fillStyle = "#f4efe1";
+    ctx.beginPath();
+    ctx.arc(px, py, pr, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 2.5 * v.scale;
+    ctx.stroke();
+    // 바라보는 방향
+    ctx.fillStyle = INK;
+    ctx.beginPath();
+    ctx.arc(px + p.faceX * pr * 0.55, py + p.faceY * pr * 0.55, pr * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 효과
+  for (const f of fx) {
+    const [x, y] = toScreen(v, f.x, f.y);
+    const k = f.t / f.life;
+    if (f.kind === "ring") {
+      ctx.strokeStyle = f.color;
+      ctx.globalAlpha = 1 - k;
+      ctx.lineWidth = 4 * v.scale * (1 - k) + 1;
+      ctx.beginPath();
+      ctx.arc(x, y, (f.radius ?? 60) * v.scale * (0.3 + 0.7 * k), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    } else if (f.text) {
+      ctx.globalAlpha = 1 - k;
+      ctx.fillStyle = f.color;
+      ctx.font = `${Math.round(22 * v.scale)}px Jua, "Gowun Dodum", sans-serif`;
+      ctx.textAlign = "center";
+      ctx.fillText(f.text, x, y - 30 * v.scale * k);
+      ctx.globalAlpha = 1;
+    }
+  }
+}

@@ -100,3 +100,28 @@ describe("2.1 레벨업 카드", () => {
     expect(g.leveling).toBe(false);
   });
 });
+
+describe("화면 모드: 사람이 고르는 선택지", () => {
+  it("레벨업은 선택지로 쌓이고, 고르기 전에는 진행이 멈춘다", async () => {
+    const { resolveChoice, needsBranch } = await import("../src/progression/levelup.ts");
+    const { step } = await import("../src/core/game.ts");
+    const g = createGame({ seed: 1, character: character("shepherd"), enemyDefs: ENEMIES, stage: null, weapons: [makeWeapon(weapon("kick"), 3)], leveling: true, manualChoices: true });
+    g.stats.xp = xpTotalFor(3);
+    checkLevelUp(g);
+    expect(g.choices).toHaveLength(1);
+    expect(g.player.level).toBe(2);
+    const tick = g.tick;
+    step(g, { moveX: 0, moveY: 0, whistle: false });
+    expect(g.tick).toBe(tick);
+    // Lv3 킥 강화를 고르면 갈래가 필요하다
+    const i = g.choices[0]!.cards.findIndex((c) => c.kind === "weaponUp");
+    if (i >= 0) {
+      expect(needsBranch(g, g.choices[0]!.cards[i]!)).toBe(true);
+      resolveChoice(g, i, "B");
+      expect([g.weapons[0]!.level.lv, g.weapons[0]!.level.branch]).toEqual([4, "B"]);
+    } else resolveChoice(g, 0);
+    expect(g.choices).toHaveLength(0);
+    checkLevelUp(g);
+    expect(g.player.level).toBe(3);
+  });
+});

@@ -21,6 +21,8 @@ export interface GameConfig {
   arena?: { w: number; h: number };
   /** 레벨업 사용 (기본 false: 고정 구성 측정). 런 시뮬에서 켠다. */
   leveling?: boolean;
+  /** 화면용: 레벨업·상자 선택을 사람에게 맡긴다 */
+  manualChoices?: boolean;
 }
 
 export function createGame(cfg: GameConfig): Game {
@@ -72,6 +74,8 @@ export function createGame(cfg: GameConfig): Game {
     grid: new SpatialHash(arena.w, arena.h, 64),
     chooseCard: null,
     chooseBranch: null,
+    manualChoices: cfg.manualChoices ?? false,
+    choices: [],
     leveling: cfg.leveling ?? false,
     events: [],
     stats: {
@@ -364,6 +368,8 @@ function advancePhase(g: Game): void {
 export function step(g: Game, input: Input): void {
   g.events = [];
   if (g.player.dead || g.phase === "cleared" || g.phase === "failed") return;
+  // 사람이 고를 선택지가 남아 있으면 멈춘다 (화면 모드)
+  if (g.choices.length > 0) return;
 
   movePlayer(g, input);
   tickSpawner(g, DT);

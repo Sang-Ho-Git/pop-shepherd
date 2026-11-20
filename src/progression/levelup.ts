@@ -179,10 +179,38 @@ export function cardLabel(c: Card): string {
   return c.kind === "weaponUp" && c.branch ? `${c.kind}:${c.id}:${c.branch}` : `${c.kind}:${c.id}`;
 }
 
+/**
+ * 사람이 고른 카드를 적용하고 선택지에서 뺀다 (화면 모드).
+ * Lv3 무기 강화는 branch를 함께 넘긴다 (갈래 선택 창).
+ */
+export function resolveChoice(g: Game, index: number, branch?: "A" | "B"): void {
+  const ch = g.choices.shift();
+  if (!ch) throw new Error("고를 선택지가 없음");
+  const card = ch.cards[index];
+  if (!card) throw new Error(`카드 ${index} 없음`);
+  const c = card.kind === "weaponUp" && branch ? { ...card, branch } : card;
+  applyCard(g, c);
+  if (ch.kind === "levelup") g.events.push({ type: "level-up", level: ch.level ?? g.player.level, picked: cardLabel(c) });
+}
+
+/** 이 카드를 고르면 갈래 선택 창이 떠야 하는지 (Lv3 → Lv4) */
+export function needsBranch(g: Game, c: Card): boolean {
+  if (c.kind !== "weaponUp" || c.branch) return false;
+  const w = g.weapons.find((x) => x.def.id === c.id);
+  return w?.level.lv === BRANCH_LEVEL - 1;
+}
+
 /** 누적 경험치가 다음 레벨 문턱을 넘을 때마다 카드를 뽑아 하나 고른다. */
 export function checkLevelUp(g: Game): void {
   const p = g.player;
   while (g.stats.xp >= xpTotalFor(p.level + 1)) {
+    // 화면 모드: 한 번에 한 장씩 사람에게 묻는다. 고르기 전에는 다음 레벨업을 쌓지 않는다.
+    if (g.manualChoices) {
+      if (g.choices.length > 0) return;
+      p.level++;
+      g.choices.push({ kind: "levelup", cards: drawCards(g), level: p.level });
+      return;
+    }
     p.level++;
     const cards = drawCards(g);
     const pick = (g.chooseCard ?? botChooseCard)(cards, g);
