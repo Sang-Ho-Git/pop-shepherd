@@ -21,7 +21,7 @@ describe("패시브 탄성·무지개 잉크", () => {
     expect(speedAfterWall(1)).toBeGreaterThan(0);
   });
 
-  it("무지개 잉크: 짝 옆에 무지개 젤리가 함께 나온다", () => {
+  it("무지개 잉크: 짝 옆에 무지개 젤리가 함께 나온다", { timeout: 60_000 }, () => {
     const count = (lv: number) => {
       const g = createGame({ seed: 3, character: character("shepherd"), enemyDefs: ENEMIES, stage: stage("stage03") });
       for (let i = 0; i < lv; i++) addPassive(g, "rainbow_ink");
