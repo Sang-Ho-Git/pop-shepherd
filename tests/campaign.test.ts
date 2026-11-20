@@ -25,9 +25,10 @@ describe("캠페인 (스테이지 1~10)", () => {
     }
   });
 
-  it("동작이 없는 시작 무기는 킥으로 대신한다", () => {
+  it("캐릭터마다 자기 시작 무기로 시작한다", () => {
     expect(startWeapon("shepherd")).toBe("kick");
-    expect(startWeapon("olly")).toBe("kick");
+    expect(startWeapon("olly")).toBe("lasso");
+    expect(startWeapon("pale")).toBe("paint_gun");
   });
 
   it("다음 스테이지는 레벨·경험치·패시브·무기·체력을 이어 받는다", () => {

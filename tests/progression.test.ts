@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createGame } from "../src/core/game.ts";
 import { RULES } from "../src/core/rules.ts";
 import type { Card } from "../src/core/types.ts";
-import { character, ENEMIES, PASSIVES, weapon } from "../src/data/index.ts";
+import { character, ENEMIES, PASSIVES, weapon, WEAPONS } from "../src/data/index.ts";
 import { applyCard, botChooseCard, checkLevelUp, drawCards, xpToNext, xpTotalFor } from "../src/progression/levelup.ts";
 import { addPassive } from "../src/progression/passives.ts";
 import { makeWeapon } from "../src/weapons/weapons.ts";
@@ -47,7 +47,7 @@ describe("2.1 레벨업 카드", () => {
 
   it("고를 것이 없으면 회복 카드로 채운다", () => {
     const g = game();
-    g.weapons = ["kick", "shockwave", "magnet_totem"].map((id) => makeWeapon(weapon(id), 3));
+    g.weapons = Object.values(WEAPONS).filter((d) => d.implemented).map((d) => makeWeapon(d, 3));
     for (const p of Object.values(PASSIVES).filter((x) => x.implemented)) for (let i = 0; i < p.maxLevel; i++) addPassive(g, p.id);
     expect(drawCards(g)).toEqual([{ kind: "heal" }, { kind: "heal" }, { kind: "heal" }]);
   });

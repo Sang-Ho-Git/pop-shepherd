@@ -1,4 +1,4 @@
-import { DT } from "../core/rules.ts";
+import { DT, RULES } from "../core/rules.ts";
 import { MATCH_COLORS } from "../core/types.ts";
 import type { Enemy, Game, MatchColor, WeaponDef, WeaponInstance, WeaponLevel } from "../core/types.ts";
 import { damage } from "../combat/pops.ts";
@@ -129,6 +129,115 @@ function fireZone(g: Game, w: WeaponInstance, buf: number[]): number {
   return dom.count;
 }
 
+/** 같은 색 적끼리 붙어 있는지 보는 여유 (반지름 합 + 이 값) */
+const TOUCH_SLACK = 30;
+
+function sameColorCluster(enemies: Enemy[], b: Enemy): number {
+  let n = 0;
+  for (const e of enemies) {
+    if (e.color !== b.color) continue;
+    const reach = e.radius + b.radius + TOUCH_SLACK;
+    const dx = e.x - b.x;
+    const dy = e.y - b.y;
+    if (dx * dx + dy * dy <= reach * reach) n++;
+  }
+  return n;
+}
+
+/** 감속 뒤 arrive 속도로 도착하도록 하는 출발 속도 (비행 거리 = (v0 - v) / damping) */
+function speedToArrive(dist: number, arrive: number): number {
+  return RULES.physics.damping * Math.max(0, dist) + arrive;
+}
+
+/** 올가미가 끌어온 적이 짝에 닿을 때의 속도. 충돌 매치 기준(60px/s)보다 넉넉하게. */
+export const LASSO_ARRIVE_SPEED = 220;
+
+/**
+ * pull (올가미): 사거리 안의 적 하나를 같은 색 짝에게 끌어다 부딪힌다.
+ * 짝은 이미 같은 색이 많이 붙어 있는 쪽을 고르고 (3매치를 만들기 쉬운 쪽), 같으면 가까운 쪽.
+ * Lv3부터 같은 색을 maxTargets마리까지 같은 짝에게 끌어온다. 짝이 없으면 쏘지 않는다.
+ */
+function firePull(g: Game, w: WeaponInstance, buf: number[]): number {
+  const p = g.player;
+  const range = param(w.level, "range");
+  const maxTargets = param(w.level, "maxTargets", 1);
+  const inRange = enemiesWithin(g, p.x, p.y, range, buf).filter((e) => e.state === "walk" && e.color !== "gray" && e.color !== "rainbow");
+  let best: { t: Enemy; b: Enemy; cluster: number; d: number } | null = null;
+  for (const t of inRange) {
+    for (const b of inRange) {
+      if (b === t || b.color !== t.color) continue;
+      const d = Math.hypot(b.x - t.x, b.y - t.y) - t.radius - b.radius;
+      if (d < TOUCH_SLACK) continue;
+      const cluster = sameColorCluster(inRange, b);
+      if (!best || cluster > best.cluster || (cluster === best.cluster && d < best.d)) best = { t, b, cluster, d };
+    }
+  }
+  if (!best) return -1;
+  const { b } = best;
+  const pulled = inRange
+    .filter((e) => e !== b && e.color === b.color && Math.hypot(b.x - e.x, b.y - e.y) - e.radius - b.radius >= TOUCH_SLACK)
+    .sort((x, y) => Math.hypot(b.x - x.x, b.y - x.y) - Math.hypot(b.x - y.x, b.y - y.y) || x.id - y.id);
+  // 가장 좋은 대상은 꼭 넣고, 나머지는 짝에 가까운 순서
+  const targets = [best.t, ...pulled.filter((e) => e !== best.t)].slice(0, maxTargets);
+  for (const e of targets) {
+    const d = Math.hypot(b.x - e.x, b.y - e.y) - e.radius - b.radius;
+    const v = Math.min(w.level.support, speedToArrive(d, LASSO_ARRIVE_SPEED));
+    launch(e, b.x - e.x, b.y - e.y, v * e.mass, WEAPON_LAUNCH);
+    damage(g, e, w.level.damage);
+  }
+  firedIds = targets.map((e) => e.id);
+  return targets.length;
+}
+
+/** 페인트 총 사거리 (데이터에 없으면) */
+export const PAINT_RANGE = 380;
+
+/**
+ * projectile (페인트 총): 사거리 안에서 색을 바꾸면 매치가 가장 크게 되는 적을 골라,
+ * 옆 무리의 색으로 칠하고 그 무리 쪽으로 살짝 밀어 부딪힌다 (지금은 즉시 명중으로 계산한다).
+ * 탄 수만큼 서로 다른 적을 맞힌다. 칠해서 짝이 생기는 적이 없으면 쏘지 않는다.
+ */
+function fireProjectile(g: Game, w: WeaponInstance, buf: number[]): number {
+  const p = g.player;
+  const range = param(w.level, "range", PAINT_RANGE);
+  const shots = param(w.level, "projectiles", 1);
+  const inRange = enemiesWithin(g, p.x, p.y, range, buf).filter((e) => e.state === "walk");
+  const options: { e: Enemy; color: MatchColor; n: number; cx: number; cy: number; d: number }[] = [];
+  for (const e of inRange) {
+    if (e.color === "rainbow") continue;
+    let bestC: { color: MatchColor; n: number; cx: number; cy: number } | null = null;
+    for (const c of MATCH_COLORS) {
+      if (c === e.color) continue;
+      let n = 0;
+      let cx = 0;
+      let cy = 0;
+      for (const o of inRange) {
+        if (o === e || o.color !== c) continue;
+        const reach = e.radius + o.radius + TOUCH_SLACK;
+        const dx = o.x - e.x;
+        const dy = o.y - e.y;
+        if (dx * dx + dy * dy > reach * reach) continue;
+        n++;
+        cx += o.x;
+        cy += o.y;
+      }
+      if (n > 0 && (!bestC || n > bestC.n)) bestC = { color: c, n, cx: cx / n, cy: cy / n };
+    }
+    if (bestC) options.push({ e, ...bestC, d: Math.hypot(e.x - p.x, e.y - p.y) });
+  }
+  if (options.length === 0) return -1;
+  options.sort((a, b) => b.n - a.n || a.d - b.d || a.e.id - b.e.id);
+  const targets = options.slice(0, shots);
+  const knock = knockOf(g, w.level);
+  for (const o of targets) {
+    o.e.color = o.color;
+    launch(o.e, o.cx - o.e.x, o.cy - o.e.y, knock, WEAPON_LAUNCH);
+    damage(g, o.e, w.level.damage);
+  }
+  firedIds = targets.map((o) => o.e.id);
+  return targets.length;
+}
+
 /** 쿨다운이 끝난 무기를 쏜다. 쏠 대상이 없으면 쿨다운 0에서 기다린다. */
 export function fireWeapons(g: Game): void {
   const buf: number[] = [];
@@ -145,6 +254,12 @@ export function fireWeapons(g: Game): void {
         break;
       case "zone":
         hits = fireZone(g, w, buf);
+        break;
+      case "pull":
+        hits = firePull(g, w, buf);
+        break;
+      case "projectile":
+        hits = fireProjectile(g, w, buf);
         break;
       default:
         throw new Error(`${w.def.id}: 동작 모듈(${w.def.behavior})이 아직 없음`);

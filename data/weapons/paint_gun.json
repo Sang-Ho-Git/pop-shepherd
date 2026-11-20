@@ -1,9 +1,9 @@
 {
-  "id": "paint_gun", "name": "페인트 총", "behavior": "projectile", "tags": ["paint", "knock"], "implemented": false,
+  "id": "paint_gun", "name": "페인트 총", "behavior": "projectile", "tags": ["paint", "knock"], "implemented": true,
   "levels": [
     { "lv": 1, "branch": null, "knock": 150, "support": 1050, "targets": 1, "aim": 0.8, "cooldown": 2, "damage": 4, "params": { "projectiles": 1 }, "note": "기본: 맞은 적의 색을 바꿈" },
     { "lv": 2, "branch": null, "knock": 150, "support": 1050, "targets": 1, "aim": 0.8, "cooldown": 1.6, "damage": 4, "params": { "projectiles": 1 }, "note": "탄속 ↑, 쿨다운 ↓" },
-    { "lv": 3, "branch": null, "knock": 150, "support": 1050, "targets": 1.4, "aim": 0.8, "cooldown": 1.6, "damage": 5, "params": { "projectiles": 2 }, "note": "투사체 +1" },
+    { "lv": 3, "branch": null, "knock": 150, "support": 1050, "targets": 2.0, "aim": 0.8, "cooldown": 2.3, "damage": 5, "params": { "projectiles": 2 }, "note": "투사체 +1" },
     { "lv": 4, "branch": "A", "knock": 150, "support": 1050, "targets": 2.1, "aim": 0.7, "cooldown": 1.6, "damage": 5, "params": { "projectiles": 3 }, "note": "산탄: 부채꼴로 여러 발 발사" },
     { "lv": 4, "branch": "B", "knock": 150, "support": 1050, "targets": 1.6, "aim": 1, "cooldown": 1.8, "damage": 7, "params": { "projectiles": 1, "pierce": 2 }, "note": "저격: 정밀 조준, 관통" },
     { "lv": 5, "branch": "A", "knock": 150, "support": 1050, "targets": 2.4, "aim": 0.7, "cooldown": 1.6, "damage": 5, "params": { "projectiles": 4 }, "note": "투사체 +1" },

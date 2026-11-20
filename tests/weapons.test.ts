@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { weapon } from "../src/data/index.ts";
 import { makeWeapon } from "../src/weapons/weapons.ts";
-import { emptyGame, put, run } from "./helpers.ts";
+import { emptyGame, pops, put, run } from "./helpers.ts";
 
 describe("무기 동작 모듈 (M1 3종)", () => {
   it("충격파(pulse): 반경 안의 적을 플레이어 바깥쪽으로 날리고 쿨다운을 건다", () => {
@@ -104,8 +104,65 @@ describe("무기 동작 모듈 (M1 3종)", () => {
   });
 
   it("동작이 없는 무기나 Lv4 이후 분기는 장착할 수 없다", () => {
-    expect(() => makeWeapon(weapon("lasso"), 1)).toThrow(/동작 모듈/);
+    expect(() => makeWeapon(weapon("whirlwind"), 1)).toThrow(/동작 모듈/);
     expect(() => makeWeapon(weapon("kick"), 4, "A")).toThrow(/분기/);
     expect(() => makeWeapon(weapon("kick"), "evo")).toThrow(/분기/);
+  });
+
+  it("올가미(pull): 떨어진 적을 같은 색 무리에게 끌어다 부딪혀 터뜨린다", () => {
+    const w = makeWeapon(weapon("lasso"), 1);
+    const g = emptyGame({ weapons: [w] });
+    const { x, y } = g.player;
+    // 빨강 둘이 붙어 있고, 떨어진 빨강 하나, 파랑 하나
+    put(g, "red", x + 100, y);
+    put(g, "red", x + 128, y);
+    const lone = put(g, "red", x - 150, y + 60);
+    put(g, "blue", x, y + 200);
+    const events = run(g, 90);
+    expect(w.fires).toBe(1);
+    expect(lone.dead).toBe(true);
+    expect(pops(events)[0]?.size).toBe(3);
+  });
+
+  it("올가미: 같은 색 짝이 없으면 쏘지 않는다", () => {
+    const w = makeWeapon(weapon("lasso"), 1);
+    const g = emptyGame({ weapons: [w] });
+    put(g, "red", g.player.x + 100, g.player.y);
+    put(g, "blue", g.player.x - 100, g.player.y);
+    run(g, 30);
+    expect(w.fires).toBe(0);
+  });
+
+  it("올가미 Lv3: 같은 색 2마리를 같은 짝에게 끌어온다", () => {
+    const w = makeWeapon(weapon("lasso"), 3);
+    const g = emptyGame({ weapons: [w] });
+    const { x, y } = g.player;
+    put(g, "blue", x + 120, y);
+    put(g, "blue", x - 150, y);
+    put(g, "blue", x, y - 160);
+    run(g, 1);
+    expect(w.hits).toBe(2);
+  });
+
+  it("페인트 총(projectile): 옆 무리의 색으로 칠하고 밀어 붙여 터뜨린다", () => {
+    const w = makeWeapon(weapon("paint_gun"), 1);
+    const g = emptyGame({ weapons: [w] });
+    const { x, y } = g.player;
+    put(g, "green", x + 200, y);
+    put(g, "green", x + 228, y);
+    const odd = put(g, "yellow", x + 172, y + 4);
+    const events = run(g, 60);
+    expect(w.fires).toBe(1);
+    expect(odd.dead).toBe(true);
+    expect(pops(events)[0]).toMatchObject({ size: 3, color: "green" });
+  });
+
+  it("페인트 총: 칠해서 짝이 생기는 적이 없으면 쏘지 않는다", () => {
+    const w = makeWeapon(weapon("paint_gun"), 1);
+    const g = emptyGame({ weapons: [w] });
+    put(g, "red", g.player.x + 150, g.player.y);
+    put(g, "blue", g.player.x - 150, g.player.y);
+    run(g, 30);
+    expect(w.fires).toBe(0);
   });
 });

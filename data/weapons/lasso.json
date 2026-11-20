@@ -1,9 +1,9 @@
 {
-  "id": "lasso", "name": "올가미 채찍", "behavior": "pull", "tags": ["pull", "precise"], "implemented": false,
+  "id": "lasso", "name": "올가미 채찍", "behavior": "pull", "tags": ["pull", "precise"], "implemented": true,
   "levels": [
     { "lv": 1, "branch": null, "knock": 0, "support": 1200, "targets": 1, "aim": 1, "cooldown": 2.5, "damage": 2, "params": { "range": 280 }, "note": "기본: 먼 적 1마리를 끌어옴" },
     { "lv": 2, "branch": null, "knock": 0, "support": 1200, "targets": 1, "aim": 1, "cooldown": 2, "damage": 2, "params": { "range": 320 }, "note": "사거리 ↑, 쿨다운 ↓" },
-    { "lv": 3, "branch": null, "knock": 0, "support": 1200, "targets": 1.4, "aim": 1, "cooldown": 2, "damage": 3, "params": { "range": 320, "maxTargets": 2 }, "note": "같은 색 2마리를 함께 끌어옴" },
+    { "lv": 3, "branch": null, "knock": 0, "support": 1200, "targets": 1.8, "aim": 1, "cooldown": 2.6, "damage": 3, "params": { "range": 320, "maxTargets": 2 }, "note": "같은 색 2마리를 함께 끌어옴" },
     { "lv": 4, "branch": "A", "knock": 0, "support": 1400, "targets": 1.4, "aim": 1, "cooldown": 2, "damage": 3, "params": { "range": 320, "maxTargets": 2 }, "note": "양떼: 끌어온 적끼리 붙여서 묶음" },
     { "lv": 4, "branch": "B", "knock": 500, "support": 1200, "targets": 1, "aim": 1, "cooldown": 1.8, "damage": 5, "params": { "range": 320 }, "note": "투척: 끌어온 적을 이동 방향으로 내던짐 (발사 상태)" },
     { "lv": 5, "branch": "A", "knock": 0, "support": 1400, "targets": 1.7, "aim": 1, "cooldown": 2, "damage": 3, "params": { "range": 320, "maxTargets": 3 }, "note": "끌어오는 수 ↑" },
