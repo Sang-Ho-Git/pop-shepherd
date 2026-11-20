@@ -69,6 +69,16 @@ export interface CharacterStats {
   heal_find: number;
 }
 
+export interface PassiveDef {
+  id: string;
+  name: string;
+  maxLevel: number;
+  implemented: boolean;
+  /** 레벨마다 더해지는 능력치 */
+  perLevel: Partial<CharacterStats>;
+  note: string;
+}
+
 export interface CharacterDef {
   id: string;
   name: string;
@@ -91,6 +101,12 @@ export interface Player {
   iframes: number;
   whistleCd: number;
   stats: CharacterStats;
+  /** 캐릭터 기본 능력치 (패시브를 더하기 전) */
+  baseStats: CharacterStats;
+  /** 런 레벨 (경험치로 오름) */
+  level: number;
+  /** 보유 패시브와 레벨 */
+  passives: Record<string, number>;
   /** 캐릭터 고유 특성 id */
   trait: string | null;
   dead: boolean;
@@ -159,6 +175,14 @@ export interface StageDef {
 /** 한 판의 진행 상태: 진행 중 → 마무리 시간(소환 멈춤) → 클리어, 또는 사망으로 실패 */
 export type StagePhase = "play" | "wrapup" | "cleared" | "failed";
 
+/** 레벨업 카드 */
+export type Card =
+  | { kind: "weaponUp"; id: string }
+  | { kind: "newWeapon"; id: string }
+  | { kind: "passiveUp"; id: string }
+  | { kind: "newPassive"; id: string }
+  | { kind: "heal" };
+
 export interface Input {
   moveX: number;
   moveY: number;
@@ -217,6 +241,7 @@ export type GameEvent =
   | { type: "player-hit"; damage: number; hp: number }
   | { type: "player-dead" }
   | { type: "wrapup-start" }
+  | { type: "level-up"; level: number; picked: string }
   | { type: "stage-clear"; vanished: number }
   | { type: "stall" };
 
@@ -267,6 +292,10 @@ export interface Game {
   spawnTimer: number;
   enemyDefs: Record<string, EnemyDef>;
   grid: SpatialHash;
+  /** 레벨업 카드 고르기 (없으면 기본 봇 규칙) */
+  chooseCard: ((cards: Card[], g: Game) => number) | null;
+  /** 레벨업 사용 여부. 무기 구성을 고정해 재는 측정(M1 시뮬, 보정)에서는 끈다. */
+  leveling: boolean;
   events: GameEvent[];
   stats: Stats;
 }

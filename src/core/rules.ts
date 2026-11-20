@@ -107,6 +107,20 @@ export const RULES = {
    */
   stage: { wrapUpSeconds: 15, wrapUpXpBonus: 0.5 },
 
+  /**
+   * 2.1 런 안 성장. 레벨 L에서 L+1까지 필요한 경험치 = base + growth × (L - 1).
+   * 카드 3장 중 1장. 가중치는 기획서 v2 (보유 무기 강화 35, 보유 패시브 강화 25, 새 무기 20, 새 패시브 20).
+   * 고를 것이 없으면 채움 카드 (체력 회복).
+   */
+  xp: { base: 12, growth: 4 },
+  cards: {
+    count: 3,
+    weaponSlots: 6,
+    passiveSlots: 6,
+    weights: { weaponUp: 35, passiveUp: 25, newWeapon: 20, newPassive: 20 },
+    fillerHealFrac: 0.3,
+  },
+
   /** 1.6 막힘 방지 */
   antiStall: {
     /** 직접 피해로 처치하면 매치 처치 경험치의 20% */

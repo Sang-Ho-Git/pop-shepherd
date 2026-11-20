@@ -1,6 +1,7 @@
 import enemiesJson from "../../data/enemies.json" with { type: "json" };
 import charactersJson from "../../data/characters.json" with { type: "json" };
 import balanceJson from "../../data/balance.json" with { type: "json" };
+import passivesJson from "../../data/passives.json" with { type: "json" };
 import stage01 from "../../data/stages/stage01.json" with { type: "json" };
 import m1Proving from "../../data/stages/m1_proving.json" with { type: "json" };
 import shockwave from "../../data/weapons/shockwave.json" with { type: "json" };
@@ -10,11 +11,12 @@ import lasso from "../../data/weapons/lasso.json" with { type: "json" };
 import paintGun from "../../data/weapons/paint_gun.json" with { type: "json" };
 import whirlwind from "../../data/weapons/whirlwind.json" with { type: "json" };
 import reflectWall from "../../data/weapons/reflect_wall.json" with { type: "json" };
-import type { CharacterDef, EnemyDef, StageDef, WeaponDef, WeaponLevel } from "../core/types.ts";
+import type { CharacterDef, EnemyDef, PassiveDef, StageDef, WeaponDef, WeaponLevel } from "../core/types.ts";
 
 /** data/ 아래 JSON을 타입이 붙은 정의로 묶는다. 값 검증은 tests/data.test.ts가 한다. */
 export const ENEMIES = enemiesJson as Record<string, EnemyDef>;
 export const CHARACTERS = charactersJson as Record<string, CharacterDef>;
+export const PASSIVES = passivesJson as Record<string, PassiveDef>;
 export const STAGES: Record<string, StageDef> = {
   stage01: stage01 as StageDef,
   m1_proving: m1Proving as StageDef,

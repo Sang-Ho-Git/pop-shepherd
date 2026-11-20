@@ -7,6 +7,7 @@ import { resolveImpacts } from "../combat/impacts.ts";
 import { detonateBomb, shockwave } from "../combat/pops.ts";
 import { tickSpawner } from "../combat/spawner.ts";
 import { fireWeapons, tickTotems } from "../weapons/weapons.ts";
+import { checkLevelUp } from "../progression/levelup.ts";
 
 export interface GameConfig {
   seed: number;
@@ -16,6 +17,8 @@ export interface GameConfig {
   stage: StageDef | null;
   weapons?: WeaponInstance[];
   arena?: { w: number; h: number };
+  /** 레벨업 사용 (기본 false: 고정 구성 측정). 런 시뮬에서 켠다. */
+  leveling?: boolean;
 }
 
 export function createGame(cfg: GameConfig): Game {
@@ -40,7 +43,10 @@ export function createGame(cfg: GameConfig): Game {
       faceY: 0,
       iframes: 0,
       whistleCd: 0,
-      stats: s,
+      stats: { ...s },
+      baseStats: { ...s },
+      level: 1,
+      passives: {},
       trait: cfg.character.trait ?? null,
       dead: false,
     },
@@ -55,6 +61,8 @@ export function createGame(cfg: GameConfig): Game {
     spawnTimer: 0,
     enemyDefs: cfg.enemyDefs,
     grid: new SpatialHash(arena.w, arena.h, 64),
+    chooseCard: null,
+    leveling: cfg.leveling ?? false,
     events: [],
     stats: {
       pops: 0,
@@ -288,6 +296,7 @@ export function step(g: Game, input: Input): void {
   g.stats.alivePeak = Math.max(g.stats.alivePeak, alive);
   g.tick++;
   g.time = g.tick * DT;
+  if (g.leveling) checkLevelUp(g);
   advancePhase(g);
 }
 
