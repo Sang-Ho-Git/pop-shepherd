@@ -14,7 +14,8 @@
     "check": "npm run typecheck && npm run test",
     "sim": "node tools/sim.ts",
     "campaign": "node tools/run.ts",
-    "calib": "node tools/calib.ts"
+    "calib": "node tools/calib.ts",
+    "progress": "node tools/progress.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
