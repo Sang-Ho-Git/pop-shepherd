@@ -121,7 +121,7 @@ export const RULES = {
     hardLimit: 900,
   },
   /** 드롭 (보물 상자, 골드 주머니) */
-  drops: { pickupRange: 40, goldLifetime: 20, chestPicksElite: 1, chestPicksBoss: 3, chestHealFrac: 0.3 },
+  drops: { pickupRange: 70, goldLifetime: 20, chestPicksElite: 1, chestPicksBoss: 3, chestHealFrac: 0.3 },
   stage: { wrapUpSeconds: 15, wrapUpXpBonus: 0.5, betweenHeal: 0 },
 
   /**

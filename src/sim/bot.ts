@@ -76,6 +76,31 @@ export function botInput(g: Game): Input {
 
   let tx = 0;
   let ty = 0;
+  // 엘리트·보스가 있으면 그 둘레를 돈다: 몰고 다니는 적이 보스 곁에서 터져야 팝 피해가 들어간다.
+  // 너무 붙으면 접촉 피해, 너무 멀면 팝이 닿지 않으므로 반지름 + 150px 근처를 유지한다.
+  let boss: Enemy | null = null;
+  let bossD = 1200;
+  for (const e of g.enemies) {
+    if (e.rank === "normal" || e.dead) continue;
+    const d = Math.hypot(e.x - p.x, e.y - p.y);
+    if (d < bossD) {
+      boss = e;
+      bossD = d;
+    }
+  }
+  if (boss) {
+    const dx = p.x - boss.x;
+    const dy = p.y - boss.y;
+    const d = Math.max(1e-6, Math.hypot(dx, dy));
+    const want = boss.radius + 150;
+    // 둘레 방향 + 원하는 거리로 당기거나 밀기
+    const radial = (want - d) / want;
+    return {
+      moveX: (-dy / d) * 0.8 + (dx / d) * radial * 2 + ax * 1.2 + wx * 2,
+      moveY: (dx / d) * 0.8 + (dy / d) * radial * 2 + ay * 1.2 + wy * 2,
+      whistle,
+    };
+  }
   if (cn > 0) {
     cx /= cn;
     cy /= cn;
