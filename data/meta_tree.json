@@ -1,6 +1,6 @@
 {
   "_note": "영구 강화 트리 (기획서: 가지 3개, 1단계 → 2단계(1단계 3레벨 필요) → 가지 끝). 전체를 채우는 데 15~20런.",
-  "coins": { "perStage": 10, "perPoppedEnemy": 0.01 },
+  "coins": { "perStage": 6, "perPoppedEnemy": 0.006 },
   "nodes": [
     { "id": "sturdy", "branch": "survival", "name": "튼튼한 몸", "maxLevel": 5, "costs": [20, 30, 40, 50, 60], "effect": { "max_hp_pct": 0.05 }, "note": "체력 +5%" },
     { "id": "fleece", "branch": "survival", "name": "두꺼운 털", "maxLevel": 2, "costs": [90, 120], "requires": { "sturdy": 3 }, "effect": { "armor": 1 }, "note": "방어 +1" },

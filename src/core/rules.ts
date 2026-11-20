@@ -108,7 +108,7 @@ export const RULES = {
    * 그사이 팝의 경험치는 +wrapUpXpBonus. 마무리 시간이 끝나면 남은 적은 사라지고 클리어.
    * 남은 적은 벌이 아니라 놓친 보상이다 (짝 안 맞는 잔챙이 때문에 막히지 않는다).
    */
-  stage: { wrapUpSeconds: 15, wrapUpXpBonus: 0.5, betweenHeal: 0.3 },
+  stage: { wrapUpSeconds: 15, wrapUpXpBonus: 0.5, betweenHeal: 0 },
 
   /**
    * 2.1 런 안 성장. 레벨 L에서 L+1까지 필요한 경험치 = base + growth × (L - 1).
