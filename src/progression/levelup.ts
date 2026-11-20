@@ -114,8 +114,12 @@ export function applyCard(g: Game, c: Card): void {
   }
 }
 
+/** 봇이 적극적으로 모으는 무기 수 */
+export const BOT_WEAPON_TARGET = 4;
+
 /**
- * 기본(봇) 카드 선택: 보유 무기 강화(레벨 낮은 것부터) > 새 무기 > 보유 패시브 강화 > 새 패시브 > 회복.
+ * 기본(봇) 카드 선택: 진화 > 보유 무기 강화(레벨 낮은 것부터)·새 무기(4개까지)·진화 짝 패시브와 털옷 > 그 밖의 패시브 > 회복.
+ * 체력이 절반 아래면 회복이 먼저.
  * 난수를 쓰지 않는다.
  */
 export function botChooseCard(cards: Card[], g: Game): number {
@@ -131,11 +135,16 @@ export function botChooseCard(cards: Card[], g: Game): number {
       case "evolve":
         return 150;
       case "newWeapon":
-        return 90;
+        // 무기는 4개까지 적극적으로, 그 뒤로는 패시브보다 뒤
+        return g.weapons.length < BOT_WEAPON_TARGET ? 90 : 40;
       case "passiveUp":
-        return 60 - (g.player.passives[c.id] ?? 0);
-      case "newPassive":
-        return 50;
+      case "newPassive": {
+        const lv = g.player.passives[c.id] ?? 0;
+        // 가진 무기의 진화 짝, 그리고 털옷(체력·방어)은 무기 강화만큼 중요하게
+        const partner = g.weapons.some((w) => w.def.evolvesWith === c.id);
+        if (partner || c.id === "thick_fleece") return (c.kind === "newPassive" ? 95 : 85) - lv;
+        return (c.kind === "newPassive" ? 50 : 60) - lv;
+      }
       case "heal":
         return g.player.hp < g.player.maxHp * 0.5 ? 200 : 0;
     }
