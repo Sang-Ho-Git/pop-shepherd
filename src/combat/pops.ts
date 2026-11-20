@@ -34,7 +34,17 @@ function recordPop(g: Game, size: number, depth: number): void {
  * - 4마리 이상: 무리 중심에서 팝 충격파 (날아간 적은 단계 + 1)
  * - 5마리 이상: 색 폭탄 드롭
  */
-export function popCluster(g: Game, indices: number[], trigger: Enemy, color: MatchColor): void {
+/** 팝 충격파 반경 배율 (도미노 진화를 들고 있으면 2배) */
+export function popShockMul(g: Game): number {
+  return g.weapons.some((w) => w.level.params.domino) ? 2 : 1;
+}
+
+export interface PopOptions {
+  /** 팝 충격파를 일으키는지 (기본 true). 토템 압축 팝은 완성 전까지 false */
+  shock?: boolean;
+}
+
+export function popCluster(g: Game, indices: number[], trigger: Enemy, color: MatchColor, opts: PopOptions = {}): void {
   const depth = trigger.chainT > 0 ? trigger.chainDepth : 0;
   let xp = 0;
   let cx = 0;
@@ -59,8 +69,8 @@ export function popCluster(g: Game, indices: number[], trigger: Enemy, color: Ma
   recordPop(g, n, depth);
   g.events.push({ type: "pop", ids, size: n, color, chainDepth: depth, xp, cushion, x: cx, y: cy });
 
-  if (n >= RULES.match.shockwaveMin) {
-    const radius = popShockRadius(n) * g.player.stats.chain_radius * (master ? 1 + RULES.threeCushion.shockBonus : 1);
+  if (n >= RULES.match.shockwaveMin && opts.shock !== false) {
+    const radius = popShockRadius(n) * g.player.stats.chain_radius * (master ? 1 + RULES.threeCushion.shockBonus : 1) * popShockMul(g);
     shockwave(g, cx, cy, radius, RULES.match.shockKnock, { chainDepth: depth + 1, chainT: RULES.chain.window });
   }
   if (depth >= RULES.heal.minChainDepth && g.rng.chance(RULES.heal.dropChance * (1 + g.player.stats.heal_find))) {

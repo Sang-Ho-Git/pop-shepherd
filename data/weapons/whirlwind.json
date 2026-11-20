@@ -1,5 +1,5 @@
 {
-  "id": "whirlwind", "name": "회오리", "behavior": "orbit", "tags": ["knock", "orbit"], "implemented": false,
+  "id": "whirlwind", "name": "회오리", "behavior": "orbit", "tags": ["knock", "orbit"], "evolvesWith": "centrifuge", "implemented": false,
   "levels": [
     { "lv": 1, "branch": null, "knock": 450, "support": 0, "targets": 2, "aim": 0.8, "cooldown": 1.5, "damage": 4, "params": { "blades": 1 }, "note": "기본: 주위를 돌며 적을 접선 방향으로 튕김 (쿨다운 = 회전 주기)" },
     { "lv": 2, "branch": null, "knock": 500, "support": 0, "targets": 2, "aim": 0.8, "cooldown": 1.3, "damage": 5, "params": { "blades": 1 }, "note": "날리는 힘 ↑, 회전 ↑" },

@@ -103,10 +103,11 @@ describe("무기 동작 모듈 (M1 3종)", () => {
     expect(e.vx).toBeCloseTo(750, 0);
   });
 
-  it("동작이 없는 무기나 Lv4 이후 분기는 장착할 수 없다", () => {
+  it("동작이 없는 무기는 장착할 수 없고, Lv4 이후는 갈래가 필요하다", () => {
     expect(() => makeWeapon(weapon("whirlwind"), 1)).toThrow(/동작 모듈/);
-    expect(() => makeWeapon(weapon("kick"), 4, "A")).toThrow(/분기/);
-    expect(() => makeWeapon(weapon("kick"), "evo")).toThrow(/분기/);
+    expect(() => makeWeapon(weapon("kick"), 4)).toThrow(/갈래/);
+    expect(makeWeapon(weapon("kick"), 4, "B").level.params.stunOnImpact).toBe(1);
+    expect(makeWeapon(weapon("kick"), "evo").level.lv).toBe("evo");
   });
 
   it("올가미(pull): 떨어진 적을 같은 색 무리에게 끌어다 부딪혀 터뜨린다", () => {

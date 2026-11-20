@@ -6,7 +6,7 @@ import { integrate, separate } from "../world/physics.ts";
 import { resolveImpacts } from "../combat/impacts.ts";
 import { detonateBomb, shockwave } from "../combat/pops.ts";
 import { tickSpawner } from "../combat/spawner.ts";
-import { fireWeapons, tickTotems } from "../weapons/weapons.ts";
+import { fireWeapons, tickEffects, tickTotems } from "../weapons/weapons.ts";
 import { checkLevelUp } from "../progression/levelup.ts";
 
 export interface GameConfig {
@@ -56,6 +56,7 @@ export function createGame(cfg: GameConfig): Game {
     totems: [],
     bombs: [],
     milks: [],
+    effects: [],
     stage: cfg.stage,
     phase: "play",
     spawnTimer: 0,
@@ -281,6 +282,7 @@ export function step(g: Game, input: Input): void {
   integrate(g);
   rebuildGrid(g);
   fireWeapons(g);
+  tickEffects(g);
   if (input.whistle) useWhistle(g);
   resolveImpacts(g);
   separate(g, []);

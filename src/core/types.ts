@@ -23,6 +23,20 @@ export interface EnemyDef {
   xp: number;
 }
 
+/** 무기 Lv4 이후 갈래가 날린 적에 붙이는 효과 */
+export interface LaunchFx {
+  /** 이 적에 부딪힌 다른 색 적을 기절시키는 시간 (s). 킥 강타 */
+  stunOnHit?: number;
+  /** 착지할 때 일으키는 작은 충격파 반경. 킥 강타 완성 */
+  landShock?: number;
+  /** 감속 계수 배율 (1보다 작으면 더 멀리 난다). 집중파 완성 */
+  dampMul?: number;
+  /** 다른 색 적을 뚫고 지나가는 남은 횟수. 올가미 투척 완성 */
+  pierce?: number;
+  /** 이미 뚫고 지나간 적 id (같은 적에 다시 부딪히지 않게) */
+  pierced?: number[];
+}
+
 export interface Enemy {
   id: number;
   kind: string;
@@ -48,6 +62,8 @@ export interface Enemy {
   wallBounces: number;
   /** 플레이어 무기로 날린 적인지 (큐의 쓰리쿠션 판정용). 팝 충격파·휘슬·당구로 날아간 적은 false */
   shot: boolean;
+  /** 무기 갈래가 이번 발사에 붙인 효과. 착지·기절하면 사라진다. */
+  fx: LaunchFx | null;
   dead: boolean;
 }
 
@@ -138,6 +154,8 @@ export interface WeaponDef {
   behavior: WeaponBehavior;
   tags: string[];
   /** 이 무기의 동작 모듈이 구현되어 시뮬에 쓸 수 있는지 */
+  /** 진화에 필요한 패시브 (Lv7에서 이 패시브를 가지고 있으면 진화 카드가 나온다) */
+  evolvesWith?: string;
   implemented: boolean;
   levels: WeaponLevel[];
 }
@@ -177,7 +195,8 @@ export type StagePhase = "play" | "wrapup" | "cleared" | "failed";
 
 /** 레벨업 카드 */
 export type Card =
-  | { kind: "weaponUp"; id: string }
+  | { kind: "weaponUp"; id: string; /** Lv3 → Lv4에서 고르는 갈래 */ branch?: string }
+  | { kind: "evolve"; id: string }
   | { kind: "newWeapon"; id: string }
   | { kind: "passiveUp"; id: string }
   | { kind: "newPassive"; id: string }
@@ -200,6 +219,12 @@ export interface WeaponInstance {
   hits: number;
 }
 
+export type DelayedEffect =
+  /** 플레이어 자리에서 다시 나가는 충격파 (이중파) */
+  | { kind: "pulse"; t: number; weapon: WeaponInstance; radius: number; knock: number; coneDeg: number | null }
+  /** 고정 지점의 작은 충격파 (착지 충격파) */
+  | { kind: "shock"; t: number; x: number; y: number; radius: number; knock: number };
+
 export interface Totem {
   x: number;
   y: number;
@@ -211,6 +236,12 @@ export interface Totem {
   pulled: Set<number>;
   /** 이 토템을 세운 무기. 새로 끌린 적마다 hits를 올린다. */
   weapon: WeaponInstance | null;
+  /** 압축 매치 (Lv4B) */
+  contact?: boolean;
+  /** 압축 팝이 충격파를 일으킴 (Lv7B) */
+  popShock?: boolean;
+  /** 모든 색을 끌어와 이 색으로 칠함 (진화) */
+  prism?: boolean;
 }
 
 export interface Milk {
@@ -298,4 +329,6 @@ export interface Game {
   leveling: boolean;
   events: GameEvent[];
   stats: Stats;
+  /** 지연 효과 (이중파, 착지 충격파) */
+  effects: DelayedEffect[];
 }

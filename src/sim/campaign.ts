@@ -13,7 +13,7 @@ export interface Carry {
   xp: number;
   hp: number;
   passives: Record<string, number>;
-  weapons: { id: string; lv: number }[];
+  weapons: { id: string; lv: number | "evo"; branch: string | null }[];
 }
 
 export interface StageResult {
@@ -57,7 +57,7 @@ export function startStage(seed: number, characterId: string, stageId: string, c
     character: character(characterId),
     enemyDefs: ENEMIES,
     stage: stage(stageId),
-    weapons: (carry?.weapons ?? [{ id: startWeapon(characterId), lv: 1 }]).map((w) => makeWeapon(weapon(w.id), w.lv)),
+    weapons: (carry?.weapons ?? [{ id: startWeapon(characterId), lv: 1, branch: null }]).map((w) => makeWeapon(weapon(w.id), w.lv, w.branch)),
     leveling: true,
   });
   if (carry) {
@@ -76,7 +76,7 @@ export function carryOf(g: Game): Carry {
     xp: g.stats.xp,
     hp: g.player.hp,
     passives: { ...g.player.passives },
-    weapons: g.weapons.map((w) => ({ id: w.def.id, lv: w.level.lv as number })),
+    weapons: g.weapons.map((w) => ({ id: w.def.id, lv: w.level.lv, branch: w.level.branch })),
   };
 }
 
@@ -109,7 +109,7 @@ export function runCampaign(seed: number, characterId: string, stages: string[] 
       pops: s.pops,
       avgChain: s.rootPops > 0 ? s.pops / s.rootPops : 0,
       alivePeak: s.alivePeak,
-      weapons: g.weapons.map((w) => `${w.def.id}${w.level.lv}`).join(" "),
+      weapons: g.weapons.map((w) => `${w.def.id}${w.level.lv}${w.level.branch ?? ""}`).join(" "),
       passives: Object.entries(g.player.passives).map(([k, v]) => `${k}${v}`).join(" "),
     });
     if (g.phase !== "cleared") break;

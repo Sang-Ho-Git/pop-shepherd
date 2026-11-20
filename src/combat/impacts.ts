@@ -31,6 +31,7 @@ export function resolveImpacts(g: Game): void {
       if (j === i) continue;
       const b = enemies[j] as Enemy;
       if (b.dead) continue;
+      if (a.fx?.pierced?.includes(b.id) || b.fx?.pierced?.includes(a.id)) continue;
       const dx = b.x - a.x;
       const dy = b.y - a.y;
       const d = Math.hypot(dx, dy);
@@ -67,16 +68,33 @@ export function resolveImpacts(g: Game): void {
     }
 
     // 다른 색: 당구
+    const fx = a.fx;
+    const avx = a.vx;
+    const avy = a.vy;
     impulse(a, b, bnx, bny);
     pushApart(a, b, 1);
+    if (fx?.pierce && fx.pierce > 0) {
+      // 관통: A는 속도를 잃지 않고 지나간다
+      a.vx = avx;
+      a.vy = avy;
+      fx.pierce--;
+      (fx.pierced ??= []).push(b.id);
+    }
     const end = RULES.physics.launchEndSpeed;
-    if (speedOf(b) >= end) {
+    if (fx?.stunOnHit) {
+      // 강타: 부딪힌 적은 날아가지 않고 그 자리에 기절한다
+      b.vx = 0;
+      b.vy = 0;
+      stun(b);
+      b.stunT = fx.stunOnHit;
+    } else if (speedOf(b) >= end) {
       b.state = "launched";
       b.stunT = 0;
       b.chainDepth = a.chainDepth;
       b.chainT = a.chainT;
       b.wallBounces = 0;
       b.shot = false;
+      b.fx = null;
       // 큐의 쓰리쿠션 (캐롬): 큐의 무기로 날린 적에 맞아 날아간 적은 '쿠션을 거친 샷'으로 친다.
       if (a.shot && g.player.trait === "three_cushion") {
         b.shot = true;

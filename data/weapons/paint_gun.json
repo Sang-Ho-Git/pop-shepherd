@@ -1,5 +1,5 @@
 {
-  "id": "paint_gun", "name": "페인트 총", "behavior": "projectile", "tags": ["paint", "knock"], "implemented": true,
+  "id": "paint_gun", "name": "페인트 총", "behavior": "projectile", "tags": ["paint", "knock"], "evolvesWith": "rainbow_ink", "implemented": true,
   "levels": [
     { "lv": 1, "branch": null, "knock": 150, "support": 1050, "targets": 1, "aim": 0.8, "cooldown": 2, "damage": 4, "params": { "projectiles": 1 }, "note": "기본: 맞은 적의 색을 바꿈" },
     { "lv": 2, "branch": null, "knock": 150, "support": 1050, "targets": 1, "aim": 0.8, "cooldown": 1.6, "damage": 4, "params": { "projectiles": 1 }, "note": "탄속 ↑, 쿨다운 ↓" },
@@ -11,7 +11,7 @@
     { "lv": 6, "branch": "A", "knock": 150, "support": 1050, "targets": 2.4, "aim": 0.7, "cooldown": 1.4, "damage": 6, "params": { "projectiles": 4 }, "note": "쿨다운 ↓" },
     { "lv": 6, "branch": "B", "knock": 150, "support": 1050, "targets": 1.9, "aim": 1, "cooldown": 1.6, "damage": 9, "params": { "projectiles": 1, "pierce": 3 }, "note": "쿨다운 ↓" },
     { "lv": 7, "branch": "A", "knock": 150, "support": 1050, "targets": 2.8, "aim": 0.7, "cooldown": 1.4, "damage": 6, "params": { "projectiles": 4, "puddleRadius": 40 }, "note": "완성: 맞은 지점에 작은 페인트 웅덩이" },
-    { "lv": 7, "branch": "B", "knock": 150, "support": 1250, "targets": 1.9, "aim": 1, "cooldown": 1.6, "damage": 10, "params": { "projectiles": 1, "pierce": 3 }, "note": "완성: 관통한 적을 첫 번째 적의 색으로 통일" },
-    { "lv": "evo", "branch": null, "knock": 150, "support": 1100, "targets": 4, "aim": 0.8, "cooldown": 1.6, "damage": 8, "params": {}, "note": "스플래시 (Lv7 + 무지개 잉크): 맞은 지점 주변을 광역으로 칠함" }
+    { "lv": 7, "branch": "B", "knock": 150, "support": 1250, "targets": 1.9, "aim": 1, "cooldown": 1.6, "damage": 10, "params": { "projectiles": 1, "pierce": 3, "unify": 1 }, "note": "완성: 관통한 적을 첫 번째 적의 색으로 통일" },
+    { "lv": "evo", "branch": null, "knock": 150, "support": 1100, "targets": 4, "aim": 0.8, "cooldown": 1.6, "damage": 8, "params": { "projectiles": 2, "splashRadius": 80 }, "note": "스플래시 (Lv7 + 무지개 잉크): 맞은 지점 주변을 광역으로 칠함" }
   ]
 }

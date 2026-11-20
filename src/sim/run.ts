@@ -9,14 +9,16 @@ export interface SimOptions {
   seed: number;
   stageId: string;
   characterId: string;
-  weapons: { id: string; lv: number }[];
+  /** lv: 1~7 또는 "evo". Lv4 이후는 branch("A"/"B") */
+  weapons: { id: string; lv: number | "evo"; branch?: string | null }[];
   /** 기본값: 스테이지 길이 */
   seconds?: number;
 }
 
 export interface WeaponReport {
   id: string;
-  lv: number;
+  lv: number | "evo";
+  branch: string | null;
   fires: number;
   /** 실측 타격 수 (발사 1회당 맞힌 적) */
   avgHits: number;
@@ -92,7 +94,8 @@ export function summarize(g: Game, opts: SimOptions, seconds: number): SimReport
       const avgHits = w.fires > 0 ? w.hits / w.fires : 0;
       return {
         id: w.def.id,
-        lv: w.level.lv as number,
+        lv: w.level.lv,
+        branch: w.level.branch,
         fires: w.fires,
         avgHits,
         assumedTargets: w.level.targets,
@@ -111,7 +114,7 @@ export function runSim(opts: SimOptions): SimReport {
     character: character(opts.characterId),
     enemyDefs: ENEMIES,
     stage: st,
-    weapons: opts.weapons.map((w) => makeWeapon(weapon(w.id), w.lv)),
+    weapons: opts.weapons.map((w) => makeWeapon(weapon(w.id), w.lv, w.branch ?? null)),
   });
   const seconds = opts.seconds ?? st.duration + RULES.stage.wrapUpSeconds;
   const ticks = Math.round(seconds * RULES.tickHz);

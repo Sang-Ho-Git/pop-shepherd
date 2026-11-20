@@ -1,5 +1,5 @@
 {
-  "id": "kick", "name": "킥", "behavior": "directional", "tags": ["knock", "precise"], "implemented": true,
+  "id": "kick", "name": "킥", "behavior": "directional", "tags": ["knock", "precise"], "evolvesWith": "elasticity", "implemented": true,
   "levels": [
     { "lv": 1, "branch": null, "knock": 600, "support": 0, "targets": 1, "aim": 1, "cooldown": 1.2, "damage": 5, "params": { "range": 60, "coneDeg": 40, "maxTargets": 1 }, "note": "기본: 이동 방향의 적 1마리를 강하게 날림" },
     { "lv": 2, "branch": null, "knock": 700, "support": 0, "targets": 1, "aim": 1, "cooldown": 1.2, "damage": 5, "params": { "range": 60, "coneDeg": 40, "maxTargets": 1 }, "note": "날리는 힘 ↑" },
@@ -10,8 +10,8 @@
     { "lv": 5, "branch": "B", "knock": 1050, "support": 100, "targets": 1, "aim": 1, "cooldown": 0.9, "damage": 12, "params": { "range": 60, "coneDeg": 40, "maxTargets": 1, "stunOnImpact": 1 }, "note": "날리는 힘 ↑, 쿨다운 ↓" },
     { "lv": 6, "branch": "A", "knock": 750, "support": 0, "targets": 1.6, "aim": 1, "cooldown": 0.8, "damage": 9, "params": { "range": 60, "coneDeg": 40, "maxTargets": 3 }, "note": "쿨다운 ↓" },
     { "lv": 6, "branch": "B", "knock": 1050, "support": 100, "targets": 1, "aim": 1, "cooldown": 0.8, "damage": 13, "params": { "range": 60, "coneDeg": 40, "maxTargets": 1, "stunOnImpact": 1.2 }, "note": "쿨다운 ↓, 기절 ↑" },
-    { "lv": 7, "branch": "A", "knock": 750, "support": 150, "targets": 1.6, "aim": 1, "cooldown": 0.8, "damage": 10, "params": { "range": 60, "coneDeg": 40, "maxTargets": 3 }, "note": "완성: 관통한 적끼리 색이 같으면 즉시 팝" },
-    { "lv": 7, "branch": "B", "knock": 1050, "support": 100, "targets": 1.25, "aim": 1, "cooldown": 0.8, "damage": 15, "params": { "range": 60, "coneDeg": 40, "maxTargets": 1, "landingShockRadius": 60 }, "note": "완성: 착지할 때 소형 충격파" },
-    { "lv": "evo", "branch": null, "knock": 1200, "support": 300, "targets": 1.5, "aim": 1, "cooldown": 0.8, "damage": 15, "params": {}, "note": "핀볼 (Lv7 + 탄성): 벽에서 계속 튕기다 같은 색을 찾아감" }
+    { "lv": 7, "branch": "A", "knock": 750, "support": 150, "targets": 1.6, "aim": 1, "cooldown": 0.8, "damage": 10, "params": { "range": 60, "coneDeg": 40, "maxTargets": 3, "samePop": 1 }, "note": "완성: 관통한 적끼리 색이 같으면 즉시 팝" },
+    { "lv": 7, "branch": "B", "knock": 1050, "support": 100, "targets": 1.25, "aim": 1, "cooldown": 0.8, "damage": 15, "params": { "range": 60, "coneDeg": 40, "maxTargets": 1, "landingShockRadius": 60, "stunOnImpact": 1.2 }, "note": "완성: 착지할 때 소형 충격파" },
+    { "lv": "evo", "branch": null, "knock": 1200, "support": 300, "targets": 1.5, "aim": 1, "cooldown": 0.8, "damage": 15, "params": { "range": 60, "coneDeg": 40, "maxTargets": 1 }, "note": "핀볼 (Lv7 + 탄성): 벽에서 계속 튕기다 같은 색을 찾아감" }
   ]
 }

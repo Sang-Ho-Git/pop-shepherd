@@ -1,6 +1,6 @@
 /**
  * 헤드리스 시뮬레이터 (구조 트리 6.3).
- *   npm run sim -- --seeds 5 --stage m1_proving --character shepherd --weapons shockwave:3,kick:3,magnet_totem:3
+ *   npm run sim -- --seeds 5 --stage m1_proving --character shepherd --weapons shockwave:3,kick:4B,magnet_totem:evo
  *   --seconds 120  판 길이 (기본: 스테이지 길이)
  *   --json         보고서를 JSON으로 출력
  */
@@ -20,8 +20,12 @@ const secondsArg = arg("seconds", "");
 const weapons = arg("weapons", "shockwave:3,kick:3,magnet_totem:3")
   .split(",")
   .map((s) => {
-    const [id, lv] = s.split(":");
-    return { id: id as string, lv: Number(lv ?? 1) };
+    // 예: kick:3, kick:4B, shockwave:evo
+    const [id, spec = "1"] = s.split(":");
+    if (spec === "evo") return { id: id as string, lv: "evo" as const, branch: null };
+    const m = /^(\d+)([AB]?)$/.exec(spec);
+    if (!m) throw new Error(`무기 표기 오류: ${s}`);
+    return { id: id as string, lv: Number(m[1]), branch: m[2] || null };
   });
 
 const reports: SimReport[] = [];

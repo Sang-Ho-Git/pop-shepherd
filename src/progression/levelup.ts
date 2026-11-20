@@ -1,7 +1,7 @@
 import { RULES } from "../core/rules.ts";
 import type { Card, Game } from "../core/types.ts";
-import { PASSIVES, WEAPONS } from "../data/index.ts";
-import { MAX_IMPLEMENTED_LEVEL, makeWeapon, weaponLevel } from "../weapons/weapons.ts";
+import { lp, PASSIVES, WEAPONS } from "../data/index.ts";
+import { BRANCH_LEVEL, MAX_LEVEL, makeWeapon, weaponLevel } from "../weapons/weapons.ts";
 import { addPassive } from "./passives.ts";
 
 /** 레벨 L에서 L+1로 가는 데 필요한 경험치 */
@@ -17,13 +17,32 @@ export function xpTotalFor(level: number): number {
 }
 
 /** 지금 뽑을 수 있는 카드 후보 (종류별) */
+/** 진화 카드 조건: Lv7, 진화 짝 패시브를 가지고 있고, 그 패시브의 동작이 있다 */
+export function canEvolve(g: Game, id: string): boolean {
+  const w = g.weapons.find((x) => x.def.id === id);
+  const need = w?.def.evolvesWith;
+  if (!w || w.level.lv !== MAX_LEVEL || !need || !PASSIVES[need]?.implemented) return false;
+  return (g.player.passives[need] ?? 0) > 0;
+}
+
 export function candidates(g: Game): Record<"weaponUp" | "newWeapon" | "passiveUp" | "newPassive", Card[]> {
   const owned = new Set(g.weapons.map((w) => w.def.id));
   const p = g.player;
+  const ups: Card[] = [];
+  for (const w of g.weapons) {
+    const lv = w.level.lv;
+    if (lv === "evo") continue;
+    if (lv === BRANCH_LEVEL - 1) {
+      // 갈래 고르기: A와 B가 각각 카드 한 장
+      ups.push({ kind: "weaponUp", id: w.def.id, branch: "A" }, { kind: "weaponUp", id: w.def.id, branch: "B" });
+    } else if (lv < MAX_LEVEL) {
+      ups.push({ kind: "weaponUp", id: w.def.id });
+    } else if (canEvolve(g, w.def.id)) {
+      ups.push({ kind: "evolve", id: w.def.id });
+    }
+  }
   return {
-    weaponUp: g.weapons
-      .filter((w) => typeof w.level.lv === "number" && w.level.lv < MAX_IMPLEMENTED_LEVEL)
-      .map((w) => ({ kind: "weaponUp", id: w.def.id }) as Card),
+    weaponUp: ups,
     newWeapon:
       g.weapons.length < RULES.cards.weaponSlots
         ? Object.values(WEAPONS)
@@ -67,7 +86,16 @@ export function applyCard(g: Game, c: Card): void {
     case "weaponUp": {
       const w = g.weapons.find((x) => x.def.id === c.id);
       if (!w || typeof w.level.lv !== "number") throw new Error(`${c.id}: 보유하지 않은 무기`);
-      w.level = weaponLevel(w.def, w.level.lv + 1);
+      const next = w.level.lv + 1;
+      const branch = next >= BRANCH_LEVEL ? (c.branch ?? w.level.branch) : null;
+      if (next >= BRANCH_LEVEL && !branch) throw new Error(`${c.id}: Lv${next}은 갈래가 필요함`);
+      w.level = weaponLevel(w.def, next, branch);
+      break;
+    }
+    case "evolve": {
+      const w = g.weapons.find((x) => x.def.id === c.id);
+      if (!w || !canEvolve(g, c.id)) throw new Error(`${c.id}: 진화 조건이 안 됨`);
+      w.level = weaponLevel(w.def, "evo");
       break;
     }
     case "newWeapon": {
@@ -95,8 +123,13 @@ export function botChooseCard(cards: Card[], g: Game): number {
     switch (c.kind) {
       case "weaponUp": {
         const w = g.weapons.find((x) => x.def.id === c.id);
-        return 100 - (typeof w?.level.lv === "number" ? w.level.lv : 0);
+        const lv = typeof w?.level.lv === "number" ? w.level.lv : 0;
+        // 갈래는 시트 발사력(LP)이 높은 쪽 (같으면 A)
+        const tie = w && c.branch ? lp(weaponLevel(w.def, lv + 1, c.branch)) / 10000 : 0;
+        return 100 - lv + tie;
       }
+      case "evolve":
+        return 150;
       case "newWeapon":
         return 90;
       case "passiveUp":
@@ -113,7 +146,8 @@ export function botChooseCard(cards: Card[], g: Game): number {
 }
 
 export function cardLabel(c: Card): string {
-  return c.kind === "heal" ? "heal" : `${c.kind}:${c.id}`;
+  if (c.kind === "heal") return "heal";
+  return c.kind === "weaponUp" && c.branch ? `${c.kind}:${c.id}:${c.branch}` : `${c.kind}:${c.id}`;
 }
 
 /** 누적 경험치가 다음 레벨 문턱을 넘을 때마다 카드를 뽑아 하나 고른다. */

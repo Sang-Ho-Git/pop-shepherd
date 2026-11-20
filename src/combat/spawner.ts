@@ -25,6 +25,7 @@ export function spawnEnemy(g: Game, kind: string, color: Color, x: number, y: nu
     chainDepth: 0,
     chainT: 0,
     wallBounces: 0,
+    fx: null,
     shot: false,
     dead: false,
   };

@@ -47,7 +47,7 @@ describe("2.1 레벨업 카드", () => {
 
   it("고를 것이 없으면 회복 카드로 채운다", () => {
     const g = game();
-    g.weapons = Object.values(WEAPONS).filter((d) => d.implemented).map((d) => makeWeapon(d, 3));
+    g.weapons = Object.values(WEAPONS).filter((d) => d.implemented).map((d) => makeWeapon(d, "evo"));
     for (const p of Object.values(PASSIVES).filter((x) => x.implemented)) for (let i = 0; i < p.maxLevel; i++) addPassive(g, p.id);
     expect(drawCards(g)).toEqual([{ kind: "heal" }, { kind: "heal" }, { kind: "heal" }]);
   });

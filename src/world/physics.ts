@@ -1,5 +1,5 @@
 import { DAMP_PER_TICK, DT, RULES } from "../core/rules.ts";
-import type { Enemy, Game } from "../core/types.ts";
+import type { Enemy, Game, LaunchFx } from "../core/types.ts";
 
 /** 이 게임에서 가장 큰 적 반지름. 이웃 질의 반경을 정할 때 쓴다. */
 export const MAX_ENEMY_RADIUS = 32;
@@ -10,6 +10,8 @@ export interface LaunchSource {
   chainT: number;
   /** 플레이어 무기의 발사인지 */
   weapon?: boolean;
+  /** 무기 갈래 효과 */
+  fx?: LaunchFx | null;
 }
 
 /** 휘슬 등: 연쇄 단계 0 */
@@ -43,10 +45,12 @@ export function launch(e: Enemy, dx: number, dy: number, knock: number, src: Lau
   e.chainT = src.chainT;
   e.wallBounces = 0;
   e.shot = src.weapon === true;
+  e.fx = src.fx ?? null;
 }
 
 /** 발사 상태를 끝내고 평소 상태로 */
 export function land(e: Enemy): void {
+  e.fx = null;
   e.state = "walk";
   e.chainDepth = 0;
   e.chainT = 0;
@@ -54,6 +58,7 @@ export function land(e: Enemy): void {
 }
 
 export function stun(e: Enemy): void {
+  e.fx = null;
   e.state = "stunned";
   e.stunT = RULES.physics.stunTime;
   e.chainDepth = 0;
@@ -72,8 +77,9 @@ export function integrate(g: Game): void {
   for (const e of g.enemies) {
     if (e.dead) continue;
     if (e.state !== "walk") {
-      e.vx *= DAMP_PER_TICK;
-      e.vy *= DAMP_PER_TICK;
+      const k = e.fx?.dampMul !== undefined ? Math.pow(DAMP_PER_TICK, e.fx.dampMul) : DAMP_PER_TICK;
+      e.vx *= k;
+      e.vy *= k;
     }
     e.x += e.vx * DT;
     e.y += e.vy * DT;
@@ -112,7 +118,10 @@ export function integrate(g: Game): void {
           e.chainDepth = 0;
         }
       }
-      if (speedOf(e) < endSpeed) land(e);
+      if (speedOf(e) < endSpeed) {
+        if (e.fx?.landShock) g.effects.push({ kind: "shock", t: 0, x: e.x, y: e.y, radius: e.fx.landShock, knock: RULES.match.shockKnock * 0.6 });
+        land(e);
+      }
     } else {
       e.x = Math.min(w - r, Math.max(r, e.x));
       e.y = Math.min(h - r, Math.max(r, e.y));
