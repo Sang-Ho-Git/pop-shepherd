@@ -43,14 +43,16 @@ export function botInput(g: Game): Input {
   if (calm) {
     let best: { x: number; y: number } | null = null;
     let bestD = 450;
-    // 우유병은 체력이 90% 아래일 때만 (가득 차 있으면 주워도 소용없다).
-    const items: { x: number; y: number }[] = p.hp < p.maxHp * 0.9 ? [...g.bombs, ...g.milks] : g.bombs;
+    // 우유병은 체력이 90% 아래일 때만 (가득 차 있으면 주워도 소용없다). 골드 주머니도 같은 조건으로 줍는다.
+    const items: { x: number; y: number; crowdOk?: number }[] = [...g.bombs, ...g.golds, ...(p.hp < p.maxHp * 0.9 ? g.milks : [])];
+    // 보물 상자는 조금 붐벼도 주우러 간다 (진화가 걸려 있다)
+    for (const c of g.chests) items.push({ x: c.x, y: c.y, crowdOk: 4 });
     for (const b of items) {
       const d = Math.hypot(b.x - p.x, b.y - p.y);
-      if (d >= bestD) continue;
+      if (d >= (b.crowdOk ? 900 : bestD)) continue;
       let crowd = 0;
       for (const e of g.enemies) if (e.state === "walk" && Math.hypot(e.x - b.x, e.y - b.y) < 100) crowd++;
-      if (crowd >= 2) continue;
+      if (crowd >= (b.crowdOk ?? 2)) continue;
       best = b;
       bestD = d;
     }

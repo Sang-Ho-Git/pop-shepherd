@@ -108,6 +108,20 @@ export const RULES = {
    * 그사이 팝의 경험치는 +wrapUpXpBonus. 마무리 시간이 끝나면 남은 적은 사라지고 클리어.
    * 남은 적은 벌이 아니라 놓친 보상이다 (짝 안 맞는 잔챙이 때문에 막히지 않는다).
    */
+  /** 엘리트·보스 (기획: 보스·엘리트·드롭 탭) */
+  boss: {
+    /** 팝 피해 = 터진 적 수 × 이 값 × 연쇄 배율, 약점 색이면 ×weakMul */
+    popDamagePerEnemy: 12,
+    weakMul: 2,
+    /** 보스가 살아 있는 동안 일반 소환 간격 배율 */
+    spawnSlowdown: 2,
+    /** 소환한 졸개가 서는 거리 (보스 반지름 바깥) */
+    summonGap: 30,
+    /** 처치형 스테이지의 안전 시간 제한 (시뮬이 끝나지 않는 것을 막는다) */
+    hardLimit: 900,
+  },
+  /** 드롭 (보물 상자, 골드 주머니) */
+  drops: { pickupRange: 40, goldLifetime: 20, chestPicksElite: 1, chestPicksBoss: 3, chestHealFrac: 0.3 },
   stage: { wrapUpSeconds: 15, wrapUpXpBonus: 0.5, betweenHeal: 0 },
 
   /**

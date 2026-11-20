@@ -45,5 +45,11 @@
         "yellow"
       ]
     }
+  ],
+  "elites": [
+    {
+      "at": 120,
+      "kind": "chief_jelly"
+    }
   ]
 }

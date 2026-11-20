@@ -11,7 +11,7 @@ describe("캠페인 (스테이지 1~10)", () => {
     CAMPAIGN.forEach((id, i) => {
       const st = stage(id);
       expect(st.contactMul ?? 1).toBe(BALANCE.stageContactMul.values[i]);
-      expect(st.clear ?? "survive").toBe("survive");
+      expect(st.clear ?? "survive").toBe(["stage05", "stage10"].includes(id) ? "boss" : id === "stage09" ? "elites" : "survive");
       expect(st.spawn.at(-1)?.to).toBe(st.duration);
     });
   });

@@ -1,6 +1,6 @@
 {
   "id": "stage09",
-  "name": "달빛 울타리 (엘리트 자리, 임시 생존형)",
+  "name": "달빛 울타리",
   "duration": 270,
   "colors": [
     "red",
@@ -12,7 +12,6 @@
   "maxAlive": 200,
   "enemyHpMul": 1,
   "contactMul": 3.24,
-  "_note": "보스·엘리트가 구현되기 전까지 생존형으로 둔다",
   "spawn": [
     {
       "from": 0,
@@ -72,6 +71,21 @@
         "yellow",
         "green"
       ]
+    }
+  ],
+  "clear": "elites",
+  "elites": [
+    {
+      "at": 40,
+      "kind": "chief_jelly"
+    },
+    {
+      "at": 110,
+      "kind": "chameleon"
+    },
+    {
+      "at": 180,
+      "kind": "armored"
     }
   ]
 }

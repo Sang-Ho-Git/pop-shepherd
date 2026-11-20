@@ -1,6 +1,6 @@
 {
   "id": "stage05",
-  "name": "양치기 오두막 (보스 자리, 임시 생존형)",
+  "name": "양치기 오두막",
   "duration": 240,
   "colors": [
     "red",
@@ -12,7 +12,6 @@
   "maxAlive": 160,
   "enemyHpMul": 1,
   "contactMul": 2.12,
-  "_note": "보스·엘리트가 구현되기 전까지 생존형으로 둔다",
   "spawn": [
     {
       "from": 0,
@@ -61,5 +60,10 @@
         "green"
       ]
     }
-  ]
+  ],
+  "clear": "boss",
+  "boss": {
+    "at": 60,
+    "kind": "wool_giant"
+  }
 }

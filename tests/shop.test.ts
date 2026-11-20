@@ -16,14 +16,21 @@ function game(gold = 0) {
 }
 
 describe("2.2 정비 상점", () => {
-  it("팝으로 골드를 번다 (터진 적 수 × goldPerPop)", () => {
+  it("팝은 그 자리에 골드 주머니(터진 적 수 × goldPerPop)를 떨어뜨리고, 가까이 가면 줍는다", () => {
     const g = game();
     const a = put(g, "red", 440, 400);
     put(g, "red", 500, 400);
     put(g, "red", 528, 400);
     launch(a, 1, 0, 600);
     expect(pops(run(g, 10))[0]?.size).toBe(3);
+    expect(g.player.gold).toBe(0);
+    expect(g.golds).toHaveLength(1);
+    expect(g.golds[0]!.amount).toBeCloseTo(3 * SHOP.goldPerPop);
+    g.player.x = g.golds[0]!.x;
+    g.player.y = g.golds[0]!.y;
+    run(g, 1);
     expect(g.player.gold).toBeCloseTo(3 * SHOP.goldPerPop);
+    expect(g.golds).toHaveLength(0);
   });
 
   it("품목은 slots개 + 회복이고, 사면 골드가 줄고 다음 가격이 오른다", () => {
@@ -49,13 +56,13 @@ describe("2.2 정비 상점", () => {
     expect(() => reroll(g, shop, SHOP.slots)).toThrow(/골드/);
   });
 
-  it("Lv7 + 짝 패시브인 무기는 상점에 들어오면 진화 상자로 무료 진화한다", () => {
+  it("상점은 진화시키지 않는다 (진화는 엘리트·보스의 보물 상자)", () => {
     const g = game(0);
     g.weapons = [makeWeapon(weapon("shockwave"), 7, "B")];
     addPassive(g, "chain_amp");
     const shop = openShop(g);
-    expect(shop.evolved).toEqual(["shockwave"]);
-    expect([g.weapons[0]!.level.lv, g.weapons[0]!.level.branch]).toEqual(["evo", "B"]);
+    expect(shop.evolved).toEqual([]);
+    expect(g.weapons[0]!.level.lv).toBe(7);
   });
 
   it("봇은 살 수 있는 만큼 사고, 골드가 음수가 되지 않는다", () => {

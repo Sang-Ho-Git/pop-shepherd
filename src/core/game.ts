@@ -7,6 +7,8 @@ import { resolveImpacts } from "../combat/impacts.ts";
 import { detonateBomb, shockwave } from "../combat/pops.ts";
 import { tickSpawner } from "../combat/spawner.ts";
 import { fireWeapons, tickEffects, tickTotems } from "../weapons/weapons.ts";
+import { spawnScheduled, tickBosses } from "../combat/bosses.ts";
+import { openChest } from "../progression/chest.ts";
 import { checkLevelUp } from "../progression/levelup.ts";
 
 export interface GameConfig {
@@ -22,9 +24,8 @@ export interface GameConfig {
 }
 
 export function createGame(cfg: GameConfig): Game {
-  if (cfg.stage && (cfg.stage.clear ?? "survive") !== "survive") {
-    throw new Error(`${cfg.stage.id}: 클리어 조건 ${cfg.stage.clear}은 아직 구현되지 않음 (엘리트·보스 필요)`);
-  }
+  if (cfg.stage?.clear === "boss" && !cfg.stage.boss) throw new Error(`${cfg.stage.id}: 보스 처치형인데 보스가 없음`);
+  if (cfg.stage?.clear === "elites" && !cfg.stage.elites?.length) throw new Error(`${cfg.stage.id}: 엘리트 처치형인데 엘리트가 없음`);
   const arena = cfg.arena ?? { w: RULES.arena.w, h: RULES.arena.h };
   const s = cfg.character.stats;
   return {
@@ -60,6 +61,9 @@ export function createGame(cfg: GameConfig): Game {
     bombs: [],
     milks: [],
     effects: [],
+    chests: [],
+    golds: [],
+    wrapUpAt: 0,
     stage: cfg.stage,
     phase: "play",
     spawnTimer: 0,
@@ -76,6 +80,14 @@ export function createGame(cfg: GameConfig): Game {
       bombDrops: 0,
       wrapUpPopped: 0,
       vanished: 0,
+      elitesSpawned: 0,
+      elitesKilled: 0,
+      bossSpawned: 0,
+      bossKilled: 0,
+      bossKilledAt: 0,
+      chestsOpened: 0,
+      goldDropped: 0,
+      goldPicked: 0,
       milkDrops: 0,
       milkPicked: 0,
       healed: 0,
@@ -132,13 +144,13 @@ function chase(g: Game): void {
     const d = Math.hypot(dx, dy);
     e.vx = d < 1e-9 ? 0 : (dx / d) * e.speed;
     e.vy = d < 1e-9 ? 0 : (dy / d) * e.speed;
-    if (cs <= 0 || e.speed <= 0 || e.color === "gray") continue;
+    if (cs <= 0 || e.speed <= 0 || e.color === "gray" || e.rank !== "normal") continue;
     let sx = 0;
     let sy = 0;
     g.grid.query(e.x, e.y, cr, buf);
     for (const j of buf) {
       const o = g.enemies[j];
-      if (!o || o === e || o.dead || o.color !== e.color) continue;
+      if (!o || o === e || o.dead || o.color !== e.color || o.rank !== "normal") continue;
       const ox = o.x - e.x;
       const oy = o.y - e.y;
       const od = Math.hypot(ox, oy);
@@ -237,6 +249,39 @@ function pickupMilks(g: Game): void {
   g.milks = keep;
 }
 
+/** 보물 상자: 가까이 가면 연다 */
+function pickupChests(g: Game): void {
+  if (g.chests.length === 0) return;
+  const p = g.player;
+  const range = RULES.drops.pickupRange * p.stats.pickup;
+  const keep = [];
+  for (const c of g.chests) {
+    if (Math.hypot(c.x - p.x, c.y - p.y) <= range) openChest(g, c);
+    else keep.push(c);
+  }
+  g.chests = keep;
+}
+
+function collectGold(g: Game, amount: number): void {
+  g.player.gold += amount;
+  g.stats.goldPicked += amount;
+  g.events.push({ type: "gold-pickup", amount });
+}
+
+/** 골드 주머니: 가까이 가면 줍는다. 오래 두면 사라진다. */
+function pickupGolds(g: Game): void {
+  if (g.golds.length === 0) return;
+  const p = g.player;
+  const range = RULES.drops.pickupRange * p.stats.pickup;
+  const keep = [];
+  for (const gp of g.golds) {
+    gp.t -= DT;
+    if (Math.hypot(gp.x - p.x, gp.y - p.y) <= range) collectGold(g, gp.amount);
+    else if (gp.t > 0) keep.push(gp);
+  }
+  g.golds = keep;
+}
+
 /** 플레이어 화면(1280×720) 안에 있는 적 수 */
 export function onScreenCount(g: Game): number {
   const hw = RULES.view.w / 2;
@@ -267,14 +312,34 @@ function trackStall(g: Game): void {
  *  9 접촉 피해  10 폭탄  11 막힘  12 죽은 적 제거
  */
 /** 생존형 클리어: 시간이 끝나면 마무리 시간, 그것도 끝나면 남은 적을 지우고 클리어 */
+/** 이 스테이지의 목표를 이뤘는지: 생존형은 시간, 보스형은 보스 처치, 엘리트형은 엘리트 전부 처치 */
+export function goalMet(g: Game): boolean {
+  const st = g.stage;
+  if (!st) return false;
+  switch (st.clear ?? "survive") {
+    case "survive":
+      return g.time >= st.duration;
+    case "boss":
+      return g.stats.bossKilled > 0;
+    case "elites":
+      return g.stats.elitesKilled >= (st.elites?.length ?? 0);
+  }
+}
+
 function advancePhase(g: Game): void {
   const st = g.stage;
   if (!st) return;
-  if (g.phase === "play" && g.time >= st.duration) {
+  if (g.phase === "play" && goalMet(g)) {
     g.phase = "wrapup";
+    g.wrapUpAt = g.time;
     g.events.push({ type: "wrapup-start" });
   }
-  if (g.phase === "wrapup" && g.time >= st.duration + RULES.stage.wrapUpSeconds) {
+  if (g.phase === "wrapup" && g.time >= g.wrapUpAt + RULES.stage.wrapUpSeconds) {
+    // 마무리 시간이 끝날 때 남은 골드 주머니와 상자는 자동으로 줍는다
+    for (const gp of g.golds) collectGold(g, gp.amount);
+    g.golds = [];
+    for (const c of g.chests) openChest(g, c);
+    g.chests = [];
     const vanished = g.enemies.length;
     g.enemies = [];
     g.totems = [];
@@ -290,7 +355,9 @@ export function step(g: Game, input: Input): void {
 
   movePlayer(g, input);
   tickSpawner(g, DT);
+  spawnScheduled(g);
   chase(g);
+  tickBosses(g);
   tickTotems(g);
   integrate(g);
   rebuildGrid(g);
@@ -304,6 +371,8 @@ export function step(g: Game, input: Input): void {
   contactDamage(g);
   pickupBombs(g);
   pickupMilks(g);
+  pickupChests(g);
+  pickupGolds(g);
 
   g.enemies = g.enemies.filter((e) => !e.dead);
   const alive = g.enemies.length;

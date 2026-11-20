@@ -2,7 +2,7 @@ import { DAMP_PER_TICK, DT, RULES } from "../core/rules.ts";
 import type { Enemy, Game, LaunchFx } from "../core/types.ts";
 
 /** 이 게임에서 가장 큰 적 반지름. 이웃 질의 반경을 정할 때 쓴다. */
-export const MAX_ENEMY_RADIUS = 32;
+export const MAX_ENEMY_RADIUS = 48;
 
 /** 발사의 출처. 연쇄 단계와 연쇄 인정 시간을 함께 넘긴다. */
 export interface LaunchSource {

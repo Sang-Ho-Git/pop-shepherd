@@ -49,6 +49,16 @@ export interface StageResult {
   evolved: string[];
   /** 부활을 썼는지 */
   revived: boolean;
+  /** 엘리트: 나온 수, 쓰러뜨린 수 */
+  elitesSpawned: number;
+  elitesKilled: number;
+  /** 보스를 쓰러뜨리는 데 걸린 시간 (s, 등장부터). 보스가 없거나 못 잡았으면 null */
+  bossTime: number | null;
+  chests: number;
+  /** 떨어진 골드 중 주운 비율 */
+  goldPickRate: number;
+  /** 처치형 스테이지가 시간 제한에 걸렸는지 */
+  timedOut: boolean;
 }
 
 export interface CampaignReport {
@@ -133,7 +143,9 @@ export function runCampaign(seed: number, characterId: string, stages: string[] 
     const levelStart = g.player.level;
     const xpStart = g.stats.xp;
     let hpMin = hpStart;
-    const ticks = Math.round((g.stage!.duration + RULES.stage.wrapUpSeconds) * RULES.tickHz) + 2;
+    const survive = (g.stage!.clear ?? "survive") === "survive";
+    const limit = survive ? g.stage!.duration + RULES.stage.wrapUpSeconds : RULES.boss.hardLimit;
+    const ticks = Math.round(limit * RULES.tickHz) + 2;
     for (let t = 0; t < ticks && (g.phase === "play" || g.phase === "wrapup"); t++) {
       step(g, botInput(g));
       hpMin = Math.min(hpMin, g.player.hp / g.player.maxHp);
@@ -160,6 +172,12 @@ export function runCampaign(seed: number, characterId: string, stages: string[] 
       bought: [],
       evolved: [],
       revived: g.player.revives < revivesStart,
+      elitesSpawned: s.elitesSpawned,
+      elitesKilled: s.elitesKilled,
+      bossTime: s.bossKilled > 0 && g.stage!.boss ? s.bossKilledAt - g.stage!.boss.at : null,
+      chests: s.chestsOpened,
+      goldPickRate: s.goldDropped > 0 ? s.goldPicked / s.goldDropped : 1,
+      timedOut: !g.player.dead && g.phase !== "cleared",
     });
     if (g.phase !== "cleared") break;
     // 스테이지 사이: 최대 체력의 일부를 회복한 뒤 정비 상점

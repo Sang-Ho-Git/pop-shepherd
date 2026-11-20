@@ -67,12 +67,14 @@ export function popCluster(g: Game, indices: number[], trigger: Enemy, color: Ma
   const master = cushion && g.player.trait === "three_cushion";
   if (master) xp *= 1 + RULES.threeCushion.xpBonus;
   g.stats.xp += xp;
-  g.player.gold += n * SHOP.goldPerPop * (1 + g.player.stats.gold_find);
+  dropGold(g, cx, cy, n * SHOP.goldPerPop * (1 + g.player.stats.gold_find), n);
   recordPop(g, n, depth);
   g.events.push({ type: "pop", ids, size: n, color, chainDepth: depth, xp, cushion, x: cx, y: cy });
 
+  const radius = popShockRadius(n) * g.player.stats.chain_radius * (master ? 1 + RULES.threeCushion.shockBonus : 1) * popShockMul(g);
+  // 엘리트·보스는 곁의 팝에 피해를 입는다 (충격파가 없는 압축 팝도 같은 반경으로 친다)
+  hitSpecials(g, cx, cy, radius, n, color, depth);
   if (n >= RULES.match.shockwaveMin && opts.shock !== false) {
-    const radius = popShockRadius(n) * g.player.stats.chain_radius * (master ? 1 + RULES.threeCushion.shockBonus : 1) * popShockMul(g);
     shockwave(g, cx, cy, radius, RULES.match.shockKnock, { chainDepth: depth + 1, chainT: RULES.chain.window });
   }
   if (depth >= RULES.heal.minChainDepth && g.rng.chance(RULES.heal.dropChance * (1 + g.player.stats.heal_find))) {
@@ -85,6 +87,64 @@ export function popCluster(g: Game, indices: number[], trigger: Enemy, color: Ma
     const p = (n >= 6 ? m.bombChance6 : m.bombChance5) * (depth >= 2 ? m.bombChainMul : 1) * (1 + g.player.stats.luck);
     if (g.rng.chance(p)) dropBomb(g, cx, cy, color);
   }
+}
+
+/**
+ * 골드 주머니: 3마리 이상 팝은 그 자리에 주머니를 떨어뜨린다 (걸어가서 줍는다, 20초 뒤 사라짐).
+ * 그보다 작은 팝(갈래 완성 효과의 2마리 팝)은 바로 들어온다.
+ */
+function dropGold(g: Game, x: number, y: number, amount: number, n: number): void {
+  if (amount <= 0) return;
+  if (n < RULES.match.minSize) {
+    g.player.gold += amount;
+    return;
+  }
+  g.golds.push({ x, y, amount, t: RULES.drops.goldLifetime });
+  g.stats.goldDropped += amount;
+}
+
+/**
+ * 곁의 팝이 엘리트·보스에 주는 피해 (기획: 팝 피해).
+ * 터진 적 수 × popDamagePerEnemy × 연쇄 배율, 약점 색(몸 색)이면 ×weakMul.
+ * 돌갑옷은 앞쪽(플레이어를 보는 쪽) frontHalfDeg 안에서 터진 팝을 frontMul만 받는다.
+ */
+export function hitSpecials(g: Game, cx: number, cy: number, radius: number, n: number, color: Color, depth: number): void {
+  for (const e of g.enemies) {
+    if (e.dead || e.rank === "normal") continue;
+    const dx = cx - e.x;
+    const dy = cy - e.y;
+    const d = Math.hypot(dx, dy);
+    if (d > radius + e.radius) continue;
+    let dmg = n * RULES.boss.popDamagePerEnemy * chainMultiplier(depth);
+    if (color === e.color) dmg *= RULES.boss.weakMul;
+    const prm = e.boss?.params;
+    if (prm?.frontHalfDeg !== undefined && d > 1e-9) {
+      const px = g.player.x - e.x;
+      const py = g.player.y - e.y;
+      const pl = Math.hypot(px, py);
+      const cos = pl > 1e-9 ? (dx * px + dy * py) / (d * pl) : -1;
+      if (cos >= Math.cos((prm.frontHalfDeg * Math.PI) / 180)) dmg *= prm.frontMul ?? 1;
+    }
+    e.hp -= dmg;
+    g.events.push({ type: "special-hit", id: e.id, damage: dmg, hp: e.hp });
+    if (e.hp <= 0) killSpecial(g, e);
+  }
+}
+
+/** 엘리트·보스 처치: 보물 상자를 떨어뜨린다 */
+export function killSpecial(g: Game, e: Enemy): void {
+  if (e.dead) return;
+  e.dead = true;
+  e.hp = 0;
+  g.stats.xp += e.xp;
+  const kind = e.rank === "boss" ? "boss" : "elite";
+  if (kind === "boss") {
+    g.stats.bossKilled++;
+    g.stats.bossKilledAt = g.time;
+  } else g.stats.elitesKilled++;
+  g.chests.push({ x: e.x, y: e.y, kind });
+  g.events.push({ type: "special-killed", id: e.id, kind: e.kind, rank: e.rank });
+  g.events.push({ type: "chest-drop", kind, x: e.x, y: e.y });
 }
 
 function dropBomb(g: Game, cx: number, cy: number, color: MatchColor): void {
@@ -128,7 +188,7 @@ export function detonateBomb(g: Game, color: MatchColor, x = g.player.x, y = g.p
   let cx = 0;
   let cy = 0;
   for (const e of g.enemies) {
-    if (e.dead || e.color !== color) continue;
+    if (e.dead || e.color !== color || e.rank !== "normal") continue;
     if (Math.abs(e.x - x) > hw || Math.abs(e.y - y) > hh) continue;
     e.dead = true;
     xp += e.xp;
@@ -156,6 +216,7 @@ export function damage(g: Game, e: Enemy, amount: number): void {
   e.hp -= amount * g.player.stats.direct_dmg;
   g.stats.directHits++;
   if (e.hp > 0) return;
+  if (e.rank !== "normal") return killSpecial(g, e);
   e.dead = true;
   const xp = e.xp * RULES.antiStall.directKillXpRatio;
   g.stats.xp += xp;

@@ -65,7 +65,8 @@ describe("스테이지 클리어 (생존형, 마무리 시간)", () => {
     expect(g.phase).toBe("failed");
   });
 
-  it("엘리트·보스 클리어 조건은 아직 만들 수 없다", () => {
-    expect(() => createGame({ seed: 1, character: character("shepherd"), enemyDefs: ENEMIES, stage: { ...stage("stage01"), clear: "boss" } })).toThrow(/아직 구현되지 않음/);
+  it("처치형인데 목표(보스·엘리트)가 없는 스테이지는 만들 수 없다", () => {
+    expect(() => createGame({ seed: 1, character: character("shepherd"), enemyDefs: ENEMIES, stage: { ...stage("stage01"), clear: "boss" } })).toThrow(/보스가 없음/);
+    expect(() => createGame({ seed: 1, character: character("shepherd"), enemyDefs: ENEMIES, stage: { ...stage("stage01"), clear: "elites" } })).toThrow(/엘리트가 없음/);
   });
 });

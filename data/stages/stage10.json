@@ -1,6 +1,6 @@
 {
   "id": "stage10",
-  "name": "무지개 목장 (최종 보스 자리, 임시 생존형)",
+  "name": "무지개 목장",
   "duration": 300,
   "colors": [
     "red",
@@ -12,7 +12,6 @@
   "maxAlive": 210,
   "enemyHpMul": 1,
   "contactMul": 3.52,
-  "_note": "보스·엘리트가 구현되기 전까지 생존형으로 둔다",
   "spawn": [
     {
       "from": 0,
@@ -73,5 +72,16 @@
         "green"
       ]
     }
-  ]
+  ],
+  "clear": "boss",
+  "elites": [
+    {
+      "at": 30,
+      "kind": "armored"
+    }
+  ],
+  "boss": {
+    "at": 60,
+    "kind": "rainbow_shepherd"
+  }
 }

@@ -60,5 +60,19 @@
         "green"
       ]
     }
+  ],
+  "elites": [
+    {
+      "at": 60,
+      "kind": "chameleon"
+    },
+    {
+      "at": 130,
+      "kind": "armored"
+    },
+    {
+      "at": 200,
+      "kind": "chief_jelly"
+    }
   ]
 }

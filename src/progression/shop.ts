@@ -2,11 +2,11 @@ import { RULES } from "../core/rules.ts";
 import type { Card, Game } from "../core/types.ts";
 import { SHOP } from "../data/index.ts";
 import type { ShopKind } from "../data/index.ts";
-import { applyCard, botCardScore, canEvolve, candidates } from "./levelup.ts";
+import { applyCard, botCardScore, candidates } from "./levelup.ts";
 
 /**
  * 2.2 정비 상점 (스테이지 사이).
- * - 진화 상자: Lv7 + 짝 패시브를 가진 무기는 상점에 들어오면 무료로 진화한다 (기획서: "다음 정비 화면에서 진화 상자").
+ * - 진화는 상점이 아니라 엘리트·보스의 보물 상자로 받는다 (progression/chest.ts).
  * - 품목 slots개: 무기 강화·새 무기·패시브 강화·새 패시브·회복. 레벨업 카드와 같은 가중치로 뽑는다.
  * - 가격은 한 번 살 때마다 inflation만큼 복리로 오른다 (런 전체에서 센다).
  * - 새로고침: rerollCost 골드, 영구 강화 흥정으로 무료 횟수.
@@ -67,15 +67,7 @@ export function rollItems(g: Game, slots: number): ShopItem[] {
 
 /** 상점을 연다: 진화 상자를 먼저 열고 품목을 뽑는다 */
 export function openShop(g: Game, opts: ShopOptions = {}): ShopState {
-  const evolved: string[] = [];
-  for (const w of g.weapons) {
-    if (canEvolve(g, w.def.id)) {
-      applyCard(g, { kind: "evolve", id: w.def.id });
-      evolved.push(w.def.id);
-      g.events.push({ type: "evolve", weapon: w.def.id });
-    }
-  }
-  return { items: rollItems(g, SHOP.slots + (opts.extraSlots ?? 0)), freeRerolls: opts.freeRerolls ?? 0, evolved };
+  return { items: rollItems(g, SHOP.slots + (opts.extraSlots ?? 0)), freeRerolls: opts.freeRerolls ?? 0, evolved: [] };
 }
 
 export function buy(g: Game, shop: ShopState, index: number): void {

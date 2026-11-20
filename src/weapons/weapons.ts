@@ -211,7 +211,7 @@ function fireZone(g: Game, w: WeaponInstance, buf: number[]): number {
   const p = g.player;
   const prm = w.level.params;
   const radius = param(w.level, "radius") * p.stats.area;
-  const inRange = enemiesWithin(g, p.x, p.y, radius, buf);
+  const inRange = enemiesWithin(g, p.x, p.y, radius, buf).filter((e) => e.rank === "normal");
   const minN = Math.max(2, param(w.level, "minTargets", 2));
   const counts = MATCH_COLORS.map((c) => ({ c, n: inRange.filter((e) => e.color === c).length }))
     .filter((x) => x.n >= minN)
@@ -283,7 +283,7 @@ function firePull(g: Game, w: WeaponInstance, buf: number[]): number {
   const p = g.player;
   const range = param(w.level, "range");
   const maxTargets = param(w.level, "maxTargets", 1);
-  const inRange = enemiesWithin(g, p.x, p.y, range, buf).filter((e) => e.state === "walk" && e.color !== "gray" && e.color !== "rainbow");
+  const inRange = enemiesWithin(g, p.x, p.y, range, buf).filter((e) => e.state === "walk" && e.rank === "normal" && e.color !== "gray" && e.color !== "rainbow");
   let best: { t: Enemy; b: Enemy; cluster: number; d: number; bp: number } | null = null;
   for (const t of inRange) {
     for (const b of inRange) {
@@ -339,7 +339,7 @@ function fireProjectile(g: Game, w: WeaponInstance, buf: number[]): number {
   const p = g.player;
   const range = param(w.level, "range", PAINT_RANGE);
   const shots = param(w.level, "projectiles", 1);
-  const inRange = enemiesWithin(g, p.x, p.y, range, buf).filter((e) => e.state === "walk");
+  const inRange = enemiesWithin(g, p.x, p.y, range, buf).filter((e) => e.state === "walk" && e.rank === "normal");
   const options: { e: Enemy; color: MatchColor; n: number; cx: number; cy: number; d: number }[] = [];
   for (const e of inRange) {
     if (e.color === "rainbow") continue;
@@ -451,7 +451,7 @@ export function tickTotems(g: Game): void {
     t.t -= DT;
     const inRange = [];
     for (const e of g.enemies) {
-      if (e.dead || e.state !== "walk" || e.color !== t.color) continue;
+      if (e.dead || e.state !== "walk" || e.color !== t.color || e.rank !== "normal") continue;
       const dx = t.x - e.x;
       const dy = t.y - e.y;
       const reach = t.radius + e.radius;
@@ -459,7 +459,7 @@ export function tickTotems(g: Game): void {
     }
     if (t.prism) {
       for (const e of g.enemies) {
-        if (e.dead || e.state !== "walk" || e.color === t.color || e.color === "rainbow") continue;
+        if (e.dead || e.state !== "walk" || e.color === t.color || e.color === "rainbow" || e.rank !== "normal") continue;
         const reach = t.radius + e.radius;
         if ((t.x - e.x) ** 2 + (t.y - e.y) ** 2 <= reach * reach) {
           e.color = t.color;
@@ -491,7 +491,7 @@ export function tickTotems(g: Game): void {
   for (const t of g.totems) {
     if (!t.contact) continue;
     // 토템 더미(끌려온 적이 쌓이는 반경) 안에 같은 색이 3마리 이상 모이면 한 무리로 본다
-    const pulledHere = g.enemies.filter((e) => !e.dead && e.color === t.color && t.pulled.has(e.id));
+    const pulledHere = g.enemies.filter((e) => !e.dead && e.rank === "normal" && e.color === t.color && t.pulled.has(e.id));
     const pile = pileRadius(pulledHere.length) + MAX_ENEMY_RADIUS;
     const group = pulledHere.filter((e) => (t.x - e.x) ** 2 + (t.y - e.y) ** 2 <= pile * pile);
     if (group.length >= RULES.match.minSize) popNow(g, group, group[0] as Enemy, { shock: t.popShock });

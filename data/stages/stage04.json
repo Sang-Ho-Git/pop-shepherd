@@ -47,5 +47,15 @@
         "green"
       ]
     }
+  ],
+  "elites": [
+    {
+      "at": 90,
+      "kind": "chief_jelly"
+    },
+    {
+      "at": 170,
+      "kind": "chameleon"
+    }
   ]
 }

@@ -9,6 +9,25 @@ export type MatchColor = (typeof MATCH_COLORS)[number];
 /** 1.3 적 상태: 평소 → 발사 → 기절 → (팝 / 처치는 dead 플래그로 표시하고 그 틱에 제거) */
 export type EnemyState = "walk" | "launched" | "stunned";
 
+export type EnemyRank = "normal" | "elite" | "boss";
+
+/** 엘리트·보스의 행동 상태 */
+export interface BossState {
+  ai: string;
+  params: Record<string, number>;
+  /** 1단계 / 2단계 (체력 절반 아래) */
+  phase: 1 | 2;
+  summonT: number;
+  shiftT: number;
+  dashCd: number;
+  /** 돌진 예고 남은 시간, 돌진 남은 시간 */
+  windup: number;
+  dashT: number;
+  dashX: number;
+  dashY: number;
+  blastT: number;
+}
+
 export interface EnemyDef {
   id: string;
   name: string;
@@ -21,6 +40,11 @@ export interface EnemyDef {
   contactDamage: number;
   /** 매치로 터뜨렸을 때 경험치 */
   xp: number;
+  /** 일반 / 엘리트 / 보스. 엘리트·보스는 매치로 터지지 않고 곁의 팝에 피해를 입는다 */
+  rank?: EnemyRank;
+  /** 엘리트·보스의 행동 (summoner, chameleon, armored, wool_giant, rainbow) */
+  ai?: string;
+  params?: Record<string, number>;
 }
 
 /** 무기 Lv4 이후 갈래가 날린 적에 붙이는 효과 */
@@ -64,6 +88,9 @@ export interface Enemy {
   shot: boolean;
   /** 무기 갈래가 이번 발사에 붙인 효과. 착지·기절하면 사라진다. */
   fx: LaunchFx | null;
+  rank: EnemyRank;
+  maxHp: number;
+  boss: BossState | null;
   dead: boolean;
 }
 
@@ -195,6 +222,10 @@ export interface StageDef {
    * "elites", "boss"는 엘리트·보스가 구현되면 쓴다.
    */
   clear?: "survive" | "elites" | "boss";
+  /** 정해진 시각에 나오는 엘리트 (시각 순) */
+  elites?: { at: number; kind: string }[];
+  /** 보스 (처치형 스테이지) */
+  boss?: { at: number; kind: string };
   spawn: SpawnPhase[];
 }
 
@@ -275,6 +306,14 @@ export type GameEvent =
   | { type: "bomb-pickup"; color: MatchColor; count: number }
   | { type: "milk-drop"; x: number; y: number }
   | { type: "milk-pickup"; heal: number; hp: number }
+  | { type: "elite-spawn"; kind: string; id: number }
+  | { type: "boss-spawn"; kind: string; id: number }
+  | { type: "boss-phase"; id: number; phase: 2 }
+  | { type: "special-hit"; id: number; damage: number; hp: number }
+  | { type: "special-killed"; id: number; kind: string; rank: EnemyRank }
+  | { type: "chest-drop"; kind: "elite" | "boss"; x: number; y: number }
+  | { type: "chest-open"; kind: "elite" | "boss"; evolved: string[]; picked: string[] }
+  | { type: "gold-pickup"; amount: number }
   /** ids: 이번 발사로 맞힌(날리거나 끌어당긴) 적 */
   | { type: "fire"; weapon: string; hits: number; ids: number[] }
   | { type: "whistle"; hits: number }
@@ -286,6 +325,19 @@ export type GameEvent =
   | { type: "level-up"; level: number; picked: string }
   | { type: "stage-clear"; vanished: number }
   | { type: "stall" };
+
+export interface Chest {
+  x: number;
+  y: number;
+  kind: "elite" | "boss";
+}
+
+export interface GoldPouch {
+  x: number;
+  y: number;
+  amount: number;
+  t: number;
+}
 
 export interface Stats {
   /** 팝 이벤트 수 */
@@ -300,6 +352,15 @@ export interface Stats {
   wrapUpPopped: number;
   /** 마무리 시간이 끝날 때 남아서 사라진 적 수 */
   vanished: number;
+  elitesSpawned: number;
+  elitesKilled: number;
+  bossSpawned: number;
+  bossKilled: number;
+  /** 보스를 쓰러뜨린 시각 (s). 없으면 0 */
+  bossKilledAt: number;
+  chestsOpened: number;
+  goldDropped: number;
+  goldPicked: number;
   milkDrops: number;
   milkPicked: number;
   /** 우유로 회복한 체력 합 */
@@ -329,6 +390,12 @@ export interface Game {
   totems: Totem[];
   bombs: Bomb[];
   milks: Milk[];
+  /** 엘리트·보스가 떨어뜨린 보물 상자 */
+  chests: Chest[];
+  /** 팝 자리에 떨어진 골드 주머니 */
+  golds: GoldPouch[];
+  /** 마무리 시간이 시작된 시각 */
+  wrapUpAt: number;
   stage: StageDef | null;
   phase: StagePhase;
   spawnTimer: number;

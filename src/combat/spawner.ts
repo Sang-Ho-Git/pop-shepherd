@@ -27,6 +27,11 @@ export function spawnEnemy(g: Game, kind: string, color: Color, x: number, y: nu
     wallBounces: 0,
     fx: null,
     shot: false,
+    rank: def.rank ?? "normal",
+    maxHp: def.hp * hpMul,
+    boss: def.ai
+      ? { ai: def.ai, params: def.params ?? {}, phase: 1, summonT: 0, shiftT: 0, dashCd: def.params?.dashEvery ?? 0, windup: 0, dashT: 0, dashX: 0, dashY: 0, blastT: 0 }
+      : null,
     dead: false,
   };
   g.enemies.push(e);
@@ -141,12 +146,18 @@ export function spawnGroup(g: Game, stage: StageDef): void {
 }
 
 /** 스테이지 출현표에 따라 매 틱 소환 타이머를 진행한다. */
+/**
+ * 생존형은 duration까지 소환한다. 처치형(보스·엘리트)은 목표를 다 쓰러뜨릴 때까지 마지막 구간으로 계속 소환한다.
+ * 보스가 살아 있는 동안은 간격 2배 (기획: 일반 출현 절반).
+ */
 export function tickSpawner(g: Game, dt: number): void {
   const stage = g.stage;
-  if (!stage || g.time >= stage.duration) return;
+  if (!stage || g.phase !== "play") return;
+  if ((stage.clear ?? "survive") === "survive" && g.time >= stage.duration) return;
   g.spawnTimer -= dt;
+  const bossAlive = g.enemies.some((e) => e.rank === "boss" && !e.dead);
   while (g.spawnTimer <= 0) {
     spawnGroup(g, stage);
-    g.spawnTimer += spawnInterval(stage, g.time);
+    g.spawnTimer += spawnInterval(stage, g.time) * (bossAlive ? RULES.boss.spawnSlowdown : 1);
   }
 }
