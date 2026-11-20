@@ -11,7 +11,7 @@
     { "lv": 6, "branch": "A", "knock": 0, "support": 1400, "targets": 1.7, "aim": 1, "cooldown": 1.7, "damage": 4, "params": { "range": 320, "maxTargets": 3 }, "note": "쿨다운 ↓" },
     { "lv": 6, "branch": "B", "knock": 650, "support": 1200, "targets": 1, "aim": 1, "cooldown": 1.3, "damage": 7, "params": { "range": 320 }, "note": "쿨다운 ↓" },
     { "lv": 7, "branch": "A", "knock": 0, "support": 1700, "targets": 1.7, "aim": 1, "cooldown": 1.7, "damage": 4, "params": { "range": 320, "maxTargets": 3, "instantPop": 1 }, "note": "완성: 묶인 적이 같은 색이면 즉시 팝" },
-    { "lv": 7, "branch": "B", "knock": 650, "support": 1200, "targets": 1.2, "aim": 1, "cooldown": 1.3, "damage": 8, "params": { "range": 320, "pierce": 2 }, "note": "완성: 던진 적이 2마리를 관통" },
-    { "lv": "evo", "branch": null, "knock": 0, "support": 1500, "targets": 3, "aim": 1, "cooldown": 1.8, "damage": 5, "params": { "range": 360, "maxTargets": 3, "instantPop": 1 }, "note": "양떼몰이 (Lv7 + 목동의 종): 같은 색 3마리를 한 번에 끌어와 묶음" }
+    { "lv": 7, "branch": "B", "knock": 650, "support": 1200, "targets": 1.0, "aim": 1, "cooldown": 1.09, "damage": 8, "params": { "range": 320, "pierce": 2 }, "note": "완성: 던진 적이 2마리를 관통" },
+    { "lv": "evo", "branch": null, "knock": 0, "support": 1500, "targets": 1.7, "aim": 1, "cooldown": 1.02, "damage": 5, "params": { "range": 360, "maxTargets": 3, "instantPop": 1 }, "note": "양떼몰이 (Lv7 + 목동의 종): 같은 색 3마리를 한 번에 끌어와 묶음" }
   ]
 }
