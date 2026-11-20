@@ -171,3 +171,17 @@ describe("처치형 스테이지", () => {
     expect(g.phase).toBe("wrapup");
   });
 });
+
+describe("엘리트·보스는 즉시 팝 효과에도 끼지 않는다", () => {
+  it("킥 7A로 같은 색 둘을 찼을 때 닿아 있던 같은 색 보스는 함께 터지지 않는다", () => {
+    const g = emptyGame({ weapons: [makeWeapon(weapon("kick"), 7, "A")] });
+    g.player.hp = g.player.maxHp = 1e9;
+    const { x, y } = g.player;
+    put(g, "green", x + 40, y);
+    put(g, "green", x + 44, y + 30);
+    const boss = spawnEnemy(g, "wool_giant", "green" as never, x + 100, y + 20);
+    boss.speed = 0;
+    run(g, 1);
+    expect(boss.dead).toBe(false);
+  });
+});

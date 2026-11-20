@@ -55,7 +55,8 @@ function touchingGroup(list: Enemy[], seed: Enemy[], slack: number): Enemy[] {
   for (let k = 0; k < out.length; k++) {
     const a = out[k] as Enemy;
     for (const b of list) {
-      if (seen.has(b) || b.dead || b.color !== a.color) continue;
+      // 엘리트·보스는 매치 무리에 끼지 않는다 (끼면 처치 처리 없이 사라진다: 시뮬에서 최종 보스가 사라져 900초 시간 초과)
+      if (seen.has(b) || b.dead || b.rank !== "normal" || b.color !== a.color) continue;
       const reach = a.radius + b.radius + slack;
       if ((a.x - b.x) ** 2 + (a.y - b.y) ** 2 <= reach * reach) {
         seen.add(b);
@@ -68,7 +69,7 @@ function touchingGroup(list: Enemy[], seed: Enemy[], slack: number): Enemy[] {
 
 /** 적 목록을 그 자리에서 바로 터뜨린다 (갈래 완성 효과: 즉시 팝). 2마리 이상이어야 한다. */
 function popNow(g: Game, group: Enemy[], trigger: Enemy, opts: { shock?: boolean } = {}): boolean {
-  const live = group.filter((e) => !e.dead);
+  const live = group.filter((e) => !e.dead && e.rank === "normal");
   if (live.length < 2 || trigger.color === "gray" || trigger.color === "rainbow") return false;
   popCluster(g, live.map((e) => g.enemies.indexOf(e)), trigger, trigger.color as MatchColor, opts);
   return true;
