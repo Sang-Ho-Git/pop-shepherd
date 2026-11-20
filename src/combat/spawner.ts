@@ -143,6 +143,11 @@ export function spawnGroup(g: Game, stage: StageDef): void {
       spawnEnemy(g, "jelly", color, px + tx * s, py + ty * s);
       alive++;
     }
+    // 무지개 잉크: 짝 옆에 어떤 색과도 이어지는 무지개 젤리 (짝과 닿지 않게 바깥쪽)
+    if (g.player.stats.rainbow > 0 && alive < stage.maxAlive && g.rng.chance(g.player.stats.rainbow)) {
+      spawnEnemy(g, "jelly", "rainbow", px + Math.cos(ang) * 40, py + Math.sin(ang) * 40);
+      alive++;
+    }
   }
 }
 

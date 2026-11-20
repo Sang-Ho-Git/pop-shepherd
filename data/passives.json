@@ -5,6 +5,6 @@
   "centrifuge": { "id": "centrifuge", "name": "원심 장치", "maxLevel": 5, "implemented": true, "perLevel": { "knock_power": 0.08 }, "note": "날리는 힘 +8% / 레벨 (진화: 회오리)" },
   "mirror_shard": { "id": "mirror_shard", "name": "거울 조각", "maxLevel": 5, "implemented": true, "perLevel": { "cooldown": 0.06 }, "note": "쿨다운 -6% / 레벨 (진화: 반사벽)" },
   "thick_fleece": { "id": "thick_fleece", "name": "튼튼한 털옷", "maxLevel": 5, "implemented": true, "perLevel": { "max_hp": 15, "armor": 1 }, "note": "최대 체력 +15, 방어 +1 / 레벨" },
-  "elasticity": { "id": "elasticity", "name": "탄성", "maxLevel": 5, "implemented": false, "perLevel": {}, "note": "튕김 횟수 +1 / 레벨 (진화: 킥). 동작 미구현" },
-  "rainbow_ink": { "id": "rainbow_ink", "name": "무지개 잉크", "maxLevel": 5, "implemented": false, "perLevel": {}, "note": "무지개 적 출현 +5% / 레벨 (진화: 페인트 총). 동작 미구현" }
+  "elasticity": { "id": "elasticity", "name": "탄성", "maxLevel": 5, "implemented": true, "perLevel": { "bounce": 1 }, "note": "무기로 날린 적이 울타리에서 속도를 잃지 않고 튕기는 횟수 +1 / 레벨 (진화: 킥)" },
+  "rainbow_ink": { "id": "rainbow_ink", "name": "무지개 잉크", "maxLevel": 5, "implemented": true, "perLevel": { "rainbow": 0.05 }, "note": "짝마다 무지개 젤리가 함께 나올 확률 +5% / 레벨 (진화: 페인트 총)" }
 }

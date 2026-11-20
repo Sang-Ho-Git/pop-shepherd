@@ -57,6 +57,8 @@ export interface LaunchFx {
   dampMul?: number;
   /** 다른 색 적을 뚫고 지나가는 남은 횟수. 올가미 투척 완성 */
   pierce?: number;
+  /** 같은 색을 찾아가는 회전 속도 (rad/s). 킥 진화 핀볼 */
+  homing?: number;
   /** 이미 뚫고 지나간 적 id (같은 적에 다시 부딪히지 않게) */
   pierced?: number[];
 }
@@ -112,6 +114,10 @@ export interface CharacterStats {
   heal_find: number;
   /** 골드 획득 배율 증가 (영구 강화 알뜰) */
   gold_find: number;
+  /** 무기로 날린 적이 울타리에서 속도를 잃지 않고 튕기는 횟수 (패시브 탄성) */
+  bounce: number;
+  /** 짝마다 무지개 젤리가 함께 나올 확률 (패시브 무지개 잉크) */
+  rainbow: number;
 }
 
 export interface PassiveDef {

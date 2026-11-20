@@ -220,10 +220,13 @@ describe("갈래·진화 카드", () => {
     expect(count(5)).toBeGreaterThan(count(4) * 1.3);
   });
 
-  it("짝 패시브의 동작이 없는 무기(킥·페인트 총)는 아직 진화하지 않는다", () => {
+  it("킥은 탄성, 페인트 총은 무지개 잉크가 있으면 진화할 수 있다", () => {
     const g = game();
     g.weapons = [w("kick", 7, "A"), w("paint_gun", 7, "A")];
     expect(canEvolve(g, "kick")).toBe(false);
-    expect(canEvolve(g, "paint_gun")).toBe(false);
+    addPassive(g, "elasticity");
+    addPassive(g, "rainbow_ink");
+    expect(canEvolve(g, "kick")).toBe(true);
+    expect(canEvolve(g, "paint_gun")).toBe(true);
   });
 });

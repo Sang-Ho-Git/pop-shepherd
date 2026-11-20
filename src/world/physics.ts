@@ -70,10 +70,36 @@ export function stun(e: Enemy): void {
  * 위치 적분. 발사·기절 상태는 지수 감속, 평소 상태는 AI가 정한 속도 그대로.
  * 발사된 적은 울타리에 튕기고(쿠션), 나머지는 울타리 안쪽에 붙잡힌다.
  */
+/** 핀볼: 가장 가까운 같은 색(450px 안) 쪽으로 진행 방향을 초당 turn 라디안까지 돌린다. 속력은 그대로. */
+function home(g: Game, e: Enemy, turn: number): void {
+  let best: Enemy | null = null;
+  let bestD = 450 * 450;
+  for (const o of g.enemies) {
+    if (o === e || o.dead || o.rank !== "normal" || (o.color !== e.color && o.color !== "rainbow")) continue;
+    const d = (o.x - e.x) ** 2 + (o.y - e.y) ** 2;
+    if (d < bestD) {
+      bestD = d;
+      best = o;
+    }
+  }
+  if (!best) return;
+  const sp = Math.hypot(e.vx, e.vy);
+  if (sp < 1e-6) return;
+  const cur = Math.atan2(e.vy, e.vx);
+  const want = Math.atan2(best.y - e.y, best.x - e.x);
+  let diff = want - cur;
+  while (diff > Math.PI) diff -= 2 * Math.PI;
+  while (diff < -Math.PI) diff += 2 * Math.PI;
+  const step = Math.max(-turn * DT, Math.min(turn * DT, diff));
+  e.vx = Math.cos(cur + step) * sp;
+  e.vy = Math.sin(cur + step) * sp;
+}
+
 export function integrate(g: Game): void {
   const { w, h } = g.arena;
   const endSpeed = RULES.physics.launchEndSpeed;
-  const wallE = RULES.physics.wallRestitution;
+  const wallE0 = RULES.physics.wallRestitution;
+  const bounce = g.player.stats.bounce;
   for (const e of g.enemies) {
     if (e.dead) continue;
     if (e.state !== "walk") {
@@ -86,6 +112,9 @@ export function integrate(g: Game): void {
 
     const r = e.radius;
     if (e.state === "launched") {
+      if (e.fx?.homing) home(g, e, e.fx.homing);
+      // 탄성: 무기로 날린 적은 처음 몇 번은 울타리에서 속도를 잃지 않는다. 핀볼은 늘.
+      const wallE = e.shot && (e.wallBounces < bounce || e.fx?.homing) ? 1 : wallE0;
       let bounced = false;
       if (e.x < r) {
         e.x = r + (r - e.x);

@@ -39,6 +39,7 @@ function launchFx(level: WeaponLevel): LaunchFx | null {
   if (p.stunOnImpact) fx.stunOnHit = p.stunOnImpact;
   if (p.landingShockRadius) fx.landShock = p.landingShockRadius;
   if (p.flightMul) fx.dampMul = 1 / p.flightMul;
+  if (p.homing) fx.homing = p.homing;
   if (p.pierce && level.knock > 0) fx.pierce = p.pierce;
   return Object.keys(fx).length > 0 ? fx : null;
 }
