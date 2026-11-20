@@ -325,6 +325,8 @@ export interface Game {
   grid: SpatialHash;
   /** 레벨업 카드 고르기 (없으면 기본 봇 규칙) */
   chooseCard: ((cards: Card[], g: Game) => number) | null;
+  /** Lv4 갈래 선택 창 (null이면 봇 규칙) */
+  chooseBranch: ((w: WeaponInstance, g: Game) => "A" | "B") | null;
   /** 레벨업 사용 여부. 무기 구성을 고정해 재는 측정(M1 시뮬, 보정)에서는 끈다. */
   leveling: boolean;
   events: GameEvent[];

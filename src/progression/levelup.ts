@@ -1,5 +1,5 @@
 import { RULES } from "../core/rules.ts";
-import type { Card, Game } from "../core/types.ts";
+import type { Card, Game, WeaponInstance } from "../core/types.ts";
 import { lp, PASSIVES, WEAPONS } from "../data/index.ts";
 import { BRANCH_LEVEL, MAX_LEVEL, makeWeapon, weaponLevel } from "../weapons/weapons.ts";
 import { addPassive } from "./passives.ts";
@@ -25,6 +25,12 @@ export function canEvolve(g: Game, id: string): boolean {
   return (g.player.passives[need] ?? 0) > 0;
 }
 
+/** Lv5 이상인 가진 무기의 진화 짝인데 아직 없는 패시브인지 */
+export function needsPartner(g: Game, passiveId: string): boolean {
+  if ((g.player.passives[passiveId] ?? 0) > 0) return false;
+  return g.weapons.some((w) => w.def.evolvesWith === passiveId && (w.level.lv === "evo" || w.level.lv >= 5));
+}
+
 export function candidates(g: Game): Record<"weaponUp" | "newWeapon" | "passiveUp" | "newPassive", Card[]> {
   const owned = new Set(g.weapons.map((w) => w.def.id));
   const p = g.player;
@@ -32,10 +38,8 @@ export function candidates(g: Game): Record<"weaponUp" | "newWeapon" | "passiveU
   for (const w of g.weapons) {
     const lv = w.level.lv;
     if (lv === "evo") continue;
-    if (lv === BRANCH_LEVEL - 1) {
-      // 갈래 고르기: A와 B가 각각 카드 한 장
-      ups.push({ kind: "weaponUp", id: w.def.id, branch: "A" }, { kind: "weaponUp", id: w.def.id, branch: "B" });
-    } else if (lv < MAX_LEVEL) {
+    if (lv < MAX_LEVEL) {
+      // Lv3 → Lv4 카드는 한 장이고, 고르는 순간 갈래 선택 창이 뜬다 (기획: 두 장이면 3칸 중 2칸을 차지한다)
       ups.push({ kind: "weaponUp", id: w.def.id });
     } else if (canEvolve(g, w.def.id)) {
       ups.push({ kind: "evolve", id: w.def.id });
@@ -74,7 +78,11 @@ export function drawCards(g: Game): Card[] {
     }
     const k = g.rng.weighted(live, live.map((x) => RULES.cards.weights[x]));
     const list = pool[k];
-    const i = Math.floor(g.rng.next() * list.length);
+    // Lv5 이상 무기의 진화 짝 패시브가 없으면 그 패시브 카드 가중치 2배 (진화 직전에 막히지 않게)
+    const i = g.rng.weighted(
+      list.map((_, j) => j),
+      list.map((c) => (c.kind === "newPassive" && needsPartner(g, c.id) ? RULES.cards.partnerMul : 1)),
+    );
     out.push(list[i] as Card);
     list.splice(i, 1);
   }
@@ -87,7 +95,7 @@ export function applyCard(g: Game, c: Card): void {
       const w = g.weapons.find((x) => x.def.id === c.id);
       if (!w || typeof w.level.lv !== "number") throw new Error(`${c.id}: 보유하지 않은 무기`);
       const next = w.level.lv + 1;
-      const branch = next >= BRANCH_LEVEL ? (c.branch ?? w.level.branch) : null;
+      const branch = next === BRANCH_LEVEL ? (c.branch ?? (g.chooseBranch ?? botChooseBranch)(w, g)) : next > BRANCH_LEVEL ? w.level.branch : null;
       if (next >= BRANCH_LEVEL && !branch) throw new Error(`${c.id}: Lv${next}은 갈래가 필요함`);
       w.level = weaponLevel(w.def, next, branch);
       break;
@@ -95,7 +103,7 @@ export function applyCard(g: Game, c: Card): void {
     case "evolve": {
       const w = g.weapons.find((x) => x.def.id === c.id);
       if (!w || !canEvolve(g, c.id)) throw new Error(`${c.id}: 진화 조건이 안 됨`);
-      w.level = weaponLevel(w.def, "evo");
+      w.level = weaponLevel(w.def, "evo", w.level.branch);
       break;
     }
     case "newWeapon": {
@@ -114,6 +122,11 @@ export function applyCard(g: Game, c: Card): void {
   }
 }
 
+/** 봇의 갈래 선택: 시트 Lv7 발사력(LP)이 높은 쪽, 같으면 A */
+export function botChooseBranch(w: WeaponInstance, _g: Game): "A" | "B" {
+  return lp(weaponLevel(w.def, MAX_LEVEL, "B")) > lp(weaponLevel(w.def, MAX_LEVEL, "A")) ? "B" : "A";
+}
+
 /** 봇이 적극적으로 모으는 무기 수 */
 export const BOT_WEAPON_TARGET = 4;
 
@@ -128,9 +141,7 @@ export function botChooseCard(cards: Card[], g: Game): number {
       case "weaponUp": {
         const w = g.weapons.find((x) => x.def.id === c.id);
         const lv = typeof w?.level.lv === "number" ? w.level.lv : 0;
-        // 갈래는 시트 발사력(LP)이 높은 쪽 (같으면 A)
-        const tie = w && c.branch ? lp(weaponLevel(w.def, lv + 1, c.branch)) / 10000 : 0;
-        return 100 - lv + tie;
+        return 100 - lv;
       }
       case "evolve":
         return 150;

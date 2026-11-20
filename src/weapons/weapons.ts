@@ -4,9 +4,20 @@ import type { Enemy, Game, LaunchFx, MatchColor, WeaponDef, WeaponInstance, Weap
 import { damage, popCluster, shockwave } from "../combat/pops.ts";
 import { launch, MAX_ENEMY_RADIUS, WEAPON_LAUNCH } from "../world/physics.ts";
 
-/** 무기 정의에서 레벨 한 줄을 찾는다. Lv1~3은 branch 없음, Lv4~7은 "A"/"B". */
+/**
+ * 무기 정의에서 레벨 한 줄을 찾는다. Lv1~3은 branch 없음, Lv4~7은 "A"/"B".
+ * 진화는 갈래를 유지한다 (기획: 진화해도 고른 갈래의 Lv7 완성 효과를 그대로 가진다, 최종 14형태).
+ * 그래서 갈래를 주면 진화 줄의 수치에 그 갈래 Lv7의 동작 파라미터를 깔고 진화 파라미터를 덮어쓴다.
+ */
 export function weaponLevel(def: WeaponDef, lv: number | "evo", branch: string | null = null): WeaponLevel {
-  const row = def.levels.find((l) => l.lv === lv && (typeof lv === "number" && lv <= 3 ? true : l.branch === branch));
+  if (lv === "evo") {
+    const evo = def.levels.find((l) => l.lv === "evo");
+    if (!evo) throw new Error(`${def.id}: 진화 없음`);
+    if (branch === null) return evo;
+    const top = weaponLevel(def, MAX_LEVEL, branch);
+    return { ...evo, branch, params: { ...top.params, ...evo.params } };
+  }
+  const row = def.levels.find((l) => l.lv === lv && (lv <= 3 ? true : l.branch === branch));
   if (!row) throw new Error(`${def.id}: Lv${lv}${branch ?? ""} 없음`);
   return row;
 }

@@ -119,6 +119,8 @@ export const RULES = {
     passiveSlots: 6,
     weights: { weaponUp: 35, passiveUp: 25, newWeapon: 20, newPassive: 20 },
     fillerHealFrac: 0.3,
+    /** Lv5 이상 무기의 진화 짝 패시브 카드 가중치 배율 */
+    partnerMul: 2,
   },
 
   /** 1.6 막힘 방지 */

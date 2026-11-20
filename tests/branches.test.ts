@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createGame } from "../src/core/game.ts";
 import { RULES } from "../src/core/rules.ts";
 import { character, ENEMIES, weapon } from "../src/data/index.ts";
-import { applyCard, candidates, canEvolve } from "../src/progression/levelup.ts";
+import { applyCard, candidates, canEvolve, drawCards } from "../src/progression/levelup.ts";
 import { addPassive } from "../src/progression/passives.ts";
 import { popShockMul } from "../src/combat/pops.ts";
 import { launch, WEAPON_LAUNCH } from "../src/world/physics.ts";
@@ -184,13 +184,11 @@ describe("갈래·진화 카드", () => {
     return createGame({ seed: 1, character: character("shepherd"), enemyDefs: ENEMIES, stage: null, weapons: [w("shockwave", 3)], leveling: true });
   }
 
-  it("Lv3 무기는 갈래 A·B 카드 두 장이 후보에 오르고, 고른 갈래로 Lv4가 된다", () => {
+  it("Lv3 무기의 강화 카드는 한 장이고, 고르면 갈래 선택 창(chooseBranch)에서 고른 갈래로 Lv4가 된다", () => {
     const g = game();
-    expect(candidates(g).weaponUp).toEqual([
-      { kind: "weaponUp", id: "shockwave", branch: "A" },
-      { kind: "weaponUp", id: "shockwave", branch: "B" },
-    ]);
-    applyCard(g, { kind: "weaponUp", id: "shockwave", branch: "B" });
+    expect(candidates(g).weaponUp).toEqual([{ kind: "weaponUp", id: "shockwave" }]);
+    g.chooseBranch = () => "B";
+    applyCard(g, { kind: "weaponUp", id: "shockwave" });
     expect([g.weapons[0]!.level.lv, g.weapons[0]!.level.branch]).toEqual([4, "B"]);
     applyCard(g, { kind: "weaponUp", id: "shockwave" });
     expect([g.weapons[0]!.level.lv, g.weapons[0]!.level.branch]).toEqual([5, "B"]);
@@ -205,6 +203,21 @@ describe("갈래·진화 카드", () => {
     expect(candidates(g).weaponUp).toEqual([{ kind: "evolve", id: "shockwave" }]);
     applyCard(g, { kind: "evolve", id: "shockwave" });
     expect(g.weapons[0]!.level.lv).toBe("evo");
+    // 진화해도 갈래 A(집중파)의 완성 효과가 남는다
+    expect(g.weapons[0]!.level.branch).toBe("A");
+    expect(g.weapons[0]!.level.params).toMatchObject({ coneDeg: 45, flightMul: 1.5, domino: 1, radius: 180 });
+  });
+
+  it("Lv5 이상 무기의 짝 패시브가 없으면 그 패시브가 카드에 더 자주 나온다", () => {
+    const count = (lv: 4 | 5) => {
+      let n = 0;
+      for (let s = 1; s <= 300; s++) {
+        const g = createGame({ seed: s, character: character("shepherd"), enemyDefs: ENEMIES, stage: null, weapons: [w("shockwave", lv, "A")], leveling: true });
+        if (drawCards(g).some((c) => c.kind === "newPassive" && c.id === "chain_amp")) n++;
+      }
+      return n;
+    };
+    expect(count(5)).toBeGreaterThan(count(4) * 1.3);
   });
 
   it("짝 패시브의 동작이 없는 무기(킥·페인트 총)는 아직 진화하지 않는다", () => {

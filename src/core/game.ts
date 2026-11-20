@@ -63,6 +63,7 @@ export function createGame(cfg: GameConfig): Game {
     enemyDefs: cfg.enemyDefs,
     grid: new SpatialHash(arena.w, arena.h, 64),
     chooseCard: null,
+    chooseBranch: null,
     leveling: cfg.leveling ?? false,
     events: [],
     stats: {
