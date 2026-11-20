@@ -1,5 +1,5 @@
 /**
- * 무기 레벨별 실측 타격 수와 발사력(LP)을 시트·목표와 비교한다 (검증장, 180초, 시드 2개, M1 기준 구성).
+ * 무기 레벨별 실측 타격 수와 발사력(LP)을 시트·목표와 비교한다 (검증장 300초(CALIB_SECONDS로 변경), 시드 2개, M1 기준 구성).
  *   npm run calib -- kick,shockwave
  */
 import { runSim } from "../src/sim/run.ts";
@@ -17,7 +17,7 @@ function loadout(id: string, lv: number | "evo", branch: string | null) {
 for (const id of ids) {
   const def = WEAPONS[id]!;
   for (const row of def.levels) {
-    const reps = [1, 2].map((seed) => runSim({ seed, stageId: "m1_proving", characterId: "shepherd", seconds: 180, weapons: loadout(id, row.lv, row.branch) }));
+    const reps = [1, 2].map((seed) => runSim({ seed, stageId: "m1_proving", characterId: "shepherd", seconds: Number(process.env.CALIB_SECONDS ?? 300), weapons: loadout(id, row.lv, row.branch) }));
     const ws = reps.map((r) => r.weapons.find((x) => x.id === id)!);
     const fires = ws.reduce((a, x) => a + x.fires, 0);
     const hits = ws.reduce((a, x) => a + x.avgHits * x.fires, 0) / Math.max(1, fires);
