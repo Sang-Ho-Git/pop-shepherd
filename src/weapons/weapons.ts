@@ -2,7 +2,7 @@ import { DT } from "../core/rules.ts";
 import { MATCH_COLORS } from "../core/types.ts";
 import type { Enemy, Game, MatchColor, WeaponDef, WeaponInstance, WeaponLevel } from "../core/types.ts";
 import { damage } from "../combat/pops.ts";
-import { launch, MAX_ENEMY_RADIUS } from "../world/physics.ts";
+import { launch, MAX_ENEMY_RADIUS, WEAPON_LAUNCH } from "../world/physics.ts";
 
 /** 무기 정의에서 레벨 한 줄을 찾는다. Lv1~3은 branch 없음, Lv4~7은 "A"/"B". */
 export function weaponLevel(def: WeaponDef, lv: number | "evo", branch: string | null = null): WeaponLevel {
@@ -64,7 +64,7 @@ function firePulse(g: Game, w: WeaponInstance, buf: number[]): number {
   if (targets.length === 0 || targets.length < param(w.level, "minTargets", 1)) return -1;
   const knock = knockOf(g, w.level);
   for (const e of targets) {
-    launch(e, e.x - p.x, e.y - p.y, knock);
+    launch(e, e.x - p.x, e.y - p.y, knock, WEAPON_LAUNCH);
     damage(g, e, w.level.damage);
   }
   firedIds = targets.map((e) => e.id);
@@ -93,7 +93,7 @@ function fireDirectional(g: Game, w: WeaponInstance, buf: number[]): number {
   if (candidates.length === 0) return -1;
   const knock = knockOf(g, w.level);
   for (const c of candidates) {
-    launch(c.e, p.faceX, p.faceY, knock);
+    launch(c.e, p.faceX, p.faceY, knock, WEAPON_LAUNCH);
     damage(g, c.e, w.level.damage);
   }
   firedIds = candidates.map((c) => c.e.id);

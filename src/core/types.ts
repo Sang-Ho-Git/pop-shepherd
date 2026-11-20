@@ -46,6 +46,8 @@ export interface Enemy {
   chainT: number;
   /** 이번 발사에서 울타리에 튕긴 횟수 (쿠션샷 판정) */
   wallBounces: number;
+  /** 플레이어 무기로 날린 적인지 (큐의 쓰리쿠션 판정용). 팝 충격파·휘슬·당구로 날아간 적은 false */
+  shot: boolean;
   dead: boolean;
 }
 
@@ -71,6 +73,8 @@ export interface CharacterDef {
   id: string;
   name: string;
   startWeapon: string;
+  /** 고유 특성 id (예: three_cushion) */
+  trait?: string;
   stats: CharacterStats;
 }
 
@@ -87,6 +91,8 @@ export interface Player {
   iframes: number;
   whistleCd: number;
   stats: CharacterStats;
+  /** 캐릭터 고유 특성 id */
+  trait: string | null;
   dead: boolean;
 }
 

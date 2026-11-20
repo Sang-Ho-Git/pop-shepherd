@@ -76,6 +76,12 @@ export function resolveImpacts(g: Game): void {
       b.chainDepth = a.chainDepth;
       b.chainT = a.chainT;
       b.wallBounces = 0;
+      b.shot = false;
+      // 큐의 쓰리쿠션 (캐롬): 큐의 무기로 날린 적에 맞아 날아간 적은 '쿠션을 거친 샷'으로 친다.
+      if (a.shot && g.player.trait === "three_cushion") {
+        b.shot = true;
+        b.wallBounces = 1;
+      }
     } else {
       stun(b);
     }

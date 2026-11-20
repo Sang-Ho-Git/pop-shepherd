@@ -38,6 +38,7 @@ export function createGame(cfg: GameConfig): Game {
       iframes: 0,
       whistleCd: 0,
       stats: s,
+      trait: cfg.character.trait ?? null,
       dead: false,
     },
     enemies: [],

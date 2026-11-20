@@ -8,10 +8,15 @@ export const MAX_ENEMY_RADIUS = 32;
 export interface LaunchSource {
   chainDepth: number;
   chainT: number;
+  /** 플레이어 무기의 발사인지 */
+  weapon?: boolean;
 }
 
-/** 무기·휘슬 발사: 연쇄 단계 0 */
+/** 휘슬 등: 연쇄 단계 0 */
 export const PLAIN_LAUNCH: LaunchSource = { chainDepth: 0, chainT: 0 };
+
+/** 플레이어 무기 발사: 연쇄 단계 0, 쓰리쿠션 대상 */
+export const WEAPON_LAUNCH: LaunchSource = { chainDepth: 0, chainT: 0, weapon: true };
 
 export function speedOf(e: { vx: number; vy: number }): number {
   return Math.hypot(e.vx, e.vy);
@@ -37,6 +42,7 @@ export function launch(e: Enemy, dx: number, dy: number, knock: number, src: Lau
   e.chainDepth = src.chainDepth;
   e.chainT = src.chainT;
   e.wallBounces = 0;
+  e.shot = src.weapon === true;
 }
 
 /** 발사 상태를 끝내고 평소 상태로 */

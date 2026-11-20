@@ -170,6 +170,33 @@ describe("우유병 (스테이지 안 회복)", () => {
   });
 });
 
+describe("큐 · 쓰리쿠션", () => {
+  // 킥으로 날린 파랑이 빨강을 쳐서, 밀려난 빨강이 빨강 둘에 꽂히는 캐롬.
+  function carom(characterId: string) {
+    const g = emptyGame({ characterId });
+    const blue = put(g, "blue", 400, 400);
+    put(g, "red", 440, 400);
+    put(g, "red", 560, 400);
+    put(g, "red", 588, 400);
+    launch(blue, 1, 0, 900, { chainDepth: 0, chainT: 0, weapon: true });
+    return pops(run(g, 60));
+  }
+
+  it("큐는 캐롬 팝을 쿠션 팝으로 치고, 경험치 +50%를 받는다", () => {
+    const p = carom("cue");
+    expect(p).toHaveLength(1);
+    expect(p[0]?.cushion).toBe(true);
+    expect(p[0]?.xp).toBeCloseTo(3 * 1.5);
+  });
+
+  it("다른 캐릭터에게 캐롬 팝은 쿠션이 아니다", () => {
+    const p = carom("shepherd");
+    expect(p).toHaveLength(1);
+    expect(p[0]?.cushion).toBe(false);
+    expect(p[0]?.xp).toBe(3);
+  });
+});
+
 describe("1.6 막힘 방지", () => {
   it("직접 피해로 처치하면 경험치는 매치의 20%", () => {
     const g = emptyGame();

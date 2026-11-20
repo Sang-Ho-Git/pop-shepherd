@@ -54,7 +54,8 @@ describe("데이터: 캐릭터·적·스테이지", () => {
   });
 
   it("캐릭터 능력치가 기획서 값과 같다", () => {
-    expect(CHARACTERS.cue?.stats).toMatchObject({ max_hp: 80, move_speed: 1.1, knock_power: 1.25 });
+    expect(CHARACTERS.cue?.stats).toMatchObject({ max_hp: 80, move_speed: 1.1, knock_power: 1.25, area: 1 });
+    expect(CHARACTERS.cue?.trait).toBe("three_cushion");
     expect(CHARACTERS.olly?.stats).toMatchObject({ max_hp: 130, armor: 2, pickup: 1.4 });
     expect(CHARACTERS.pale?.stats).toMatchObject({ cooldown: 0.1, chain_radius: 1.2 });
   });

@@ -46,12 +46,15 @@ export function popCluster(g: Game, indices: number[], trigger: Enemy, color: Ma
   cx /= n;
   cy /= n;
   xp *= chainMultiplier(depth);
+  const cushion = trigger.wallBounces > 0;
+  const master = cushion && g.player.trait === "three_cushion";
+  if (master) xp *= 1 + RULES.threeCushion.xpBonus;
   g.stats.xp += xp;
   recordPop(g, n, depth);
-  g.events.push({ type: "pop", ids, size: n, color, chainDepth: depth, xp, cushion: trigger.wallBounces > 0, x: cx, y: cy });
+  g.events.push({ type: "pop", ids, size: n, color, chainDepth: depth, xp, cushion, x: cx, y: cy });
 
   if (n >= RULES.match.shockwaveMin) {
-    const radius = popShockRadius(n) * g.player.stats.chain_radius;
+    const radius = popShockRadius(n) * g.player.stats.chain_radius * (master ? 1 + RULES.threeCushion.shockBonus : 1);
     shockwave(g, cx, cy, radius, RULES.match.shockKnock, { chainDepth: depth + 1, chainT: RULES.chain.window });
   }
   if (depth >= RULES.heal.minChainDepth && g.rng.chance(RULES.heal.dropChance * (1 + g.player.stats.heal_find))) {
