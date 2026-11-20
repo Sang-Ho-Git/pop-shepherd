@@ -61,6 +61,8 @@ export interface CharacterStats {
   pickup: number;
   armor: number;
   regen: number;
+  /** 레어 드롭(색 폭탄) 확률 배율 가산: 확률 × (1 + luck) */
+  luck: number;
 }
 
 export interface CharacterDef {
@@ -194,6 +196,8 @@ export interface Stats {
   rootPops: number;
   /** 색 폭탄으로 일어난 팝 (매치가 아니며 rootPops에도 들어 있다) */
   bombPops: number;
+  /** 이번 스테이지에 떨어진 색 폭탄 수 (스테이지당 상한) */
+  bombDrops: number;
   poppedEnemies: number;
   killedEnemies: number;
   maxChain: number;

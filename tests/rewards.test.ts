@@ -29,8 +29,9 @@ describe("1.5 매치 보상", () => {
     expect(popShockRadius(6)).toBe(135);
   });
 
-  it("5매치: 색 폭탄이 떨어지고, 주우면 반경 400 안의 그 색이 전부 터진다", () => {
+  it("5매치: 색 폭탄이 (확률로) 떨어지고, 주우면 화면 안의 그 색이 전부 터진다", () => {
     const g = emptyGame();
+    g.player.stats = { ...g.player.stats, luck: 100 }; // 확률을 1 이상으로
     const a = put(g, "red", 440, 400);
     for (let i = 0; i < 4; i++) put(g, "red", 500 + i * 28, 400);
     put(g, "red", 700, 500);
@@ -83,6 +84,44 @@ describe("1.5 매치 보상", () => {
     run(g, 2);
     expect(e.state).toBe("launched");
     expect(e.chainDepth).toBe(0);
+  });
+});
+
+describe("색 폭탄은 레어 아이템", () => {
+  function fivePop(seed: number, luck = 0, depthTwo = false) {
+    const g = emptyGame({ seed });
+    g.player.stats = { ...g.player.stats, luck };
+    const a = put(g, "red", 440, 400);
+    for (let i = 0; i < 4; i++) put(g, "red", 500 + i * 28, 400);
+    launch(a, 1, 0, 600, depthTwo ? { chainDepth: 2, chainT: 1 } : undefined);
+    run(g, 6);
+    return g;
+  }
+
+  it("5마리 매치의 드롭 확률은 약 8%, 연쇄 2단계면 약 16%", () => {
+    let base = 0;
+    let chained = 0;
+    for (let s = 1; s <= 600; s++) {
+      base += fivePop(s).bombs.length;
+      chained += fivePop(s, 0, true).bombs.length;
+    }
+    expect(base / 600).toBeGreaterThan(0.05);
+    expect(base / 600).toBeLessThan(0.11);
+    expect(chained / 600).toBeGreaterThan(0.12);
+    expect(chained / 600).toBeLessThan(0.21);
+  });
+
+  it("스테이지당 최대 2개", () => {
+    const g = emptyGame();
+    g.player.stats = { ...g.player.stats, luck: 100 };
+    for (let k = 0; k < 4; k++) {
+      const a = put(g, "red", 200, 200 + k * 200);
+      for (let i = 0; i < 4; i++) put(g, "red", 260 + i * 28, 200 + k * 200);
+      launch(a, 1, 0, 600);
+      run(g, 6);
+    }
+    expect(g.stats.bombDrops).toBe(RULES.match.bombMaxPerStage);
+    expect(g.bombs.length).toBe(2);
   });
 });
 

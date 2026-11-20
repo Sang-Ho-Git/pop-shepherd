@@ -54,10 +54,17 @@ export function popCluster(g: Game, indices: number[], trigger: Enemy, color: Ma
     const radius = popShockRadius(n) * g.player.stats.chain_radius;
     shockwave(g, cx, cy, radius, RULES.match.shockKnock, { chainDepth: depth + 1, chainT: RULES.chain.window });
   }
-  if (n >= RULES.match.bombMin) {
-    g.bombs.push({ x: cx, y: cy, color });
-    g.events.push({ type: "bomb-drop", color, x: cx, y: cy });
+  if (n >= RULES.match.bombMin && g.stats.bombDrops < RULES.match.bombMaxPerStage) {
+    const m = RULES.match;
+    const p = (n >= 6 ? m.bombChance6 : m.bombChance5) * (depth >= 2 ? m.bombChainMul : 1) * (1 + g.player.stats.luck);
+    if (g.rng.chance(p)) dropBomb(g, cx, cy, color);
   }
+}
+
+function dropBomb(g: Game, cx: number, cy: number, color: MatchColor): void {
+  g.stats.bombDrops++;
+  g.bombs.push({ x: cx, y: cy, color });
+  g.events.push({ type: "bomb-drop", color, x: cx, y: cy });
 }
 
 /** 중심에서 바깥으로 밀어내는 원형 충격파. 맞은 적 수를 돌려준다. */
@@ -85,9 +92,10 @@ export function shockwave(
   return hits;
 }
 
-/** 색 폭탄: 주운 자리에서 bombRadius 안의 그 색 적을 전부 터뜨린다. 한 번의 팝으로 세고, 충격파와 새 폭탄은 없다. */
+/** 색 폭탄: 주운 자리 기준 화면(1280×720) 안의 그 색 적을 전부 터뜨린다. 한 번의 팝으로 세고, 충격파와 새 폭탄은 없다. */
 export function detonateBomb(g: Game, color: MatchColor, x = g.player.x, y = g.player.y): number {
-  const range = RULES.match.bombRadius;
+  const hw = RULES.view.w / 2;
+  const hh = RULES.view.h / 2;
   let xp = 0;
   let count = 0;
   const ids: number[] = [];
@@ -95,7 +103,7 @@ export function detonateBomb(g: Game, color: MatchColor, x = g.player.x, y = g.p
   let cy = 0;
   for (const e of g.enemies) {
     if (e.dead || e.color !== color) continue;
-    if (Math.hypot(e.x - x, e.y - y) > range) continue;
+    if (Math.abs(e.x - x) > hw || Math.abs(e.y - y) > hh) continue;
     e.dead = true;
     xp += e.xp;
     cx += e.x;
