@@ -6,7 +6,7 @@ import { integrate, MAX_ENEMY_RADIUS, separate } from "../world/physics.ts";
 import { resolveImpacts } from "../combat/impacts.ts";
 import { detonateBomb, shockwave } from "../combat/pops.ts";
 import { tickSpawner } from "../combat/spawner.ts";
-import { fireWeapons, tickEffects, tickTotems } from "../weapons/weapons.ts";
+import { fireWeapons, tickEffects, tickTotems, tickWalls } from "../weapons/weapons.ts";
 import { spawnScheduled, tickBosses } from "../combat/bosses.ts";
 import { openChest } from "../progression/chest.ts";
 import { checkLevelUp } from "../progression/levelup.ts";
@@ -62,6 +62,7 @@ export function createGame(cfg: GameConfig): Game {
     milks: [],
     effects: [],
     chests: [],
+    walls: [],
     golds: [],
     wrapUpAt: 0,
     stage: cfg.stage,
@@ -371,6 +372,7 @@ export function step(g: Game, input: Input): void {
   tickBosses(g);
   tickTotems(g);
   integrate(g);
+  tickWalls(g);
   rebuildGrid(g);
   fireWeapons(g);
   tickEffects(g);

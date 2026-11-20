@@ -267,6 +267,26 @@ export interface WeaponInstance {
   fires: number;
   /** 발사로 맞힌 적 수 합계 (실측 타격 수 = hits / fires) */
   hits: number;
+  /** 회오리: 칼날 각도, 이번 회전에 흐른 시간, 적마다 마지막으로 맞은 시각 */
+  angle?: number;
+  spin?: number;
+  lastHit?: Map<number, number>;
+}
+
+/** 반사벽 한 장 (선분) */
+export interface Wall {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  t: number;
+  weapon: WeaponInstance;
+  /** 튕길 때 속도 배율 (가속 벽) */
+  boost: number;
+  /** 튕긴 방향을 가장 가까운 같은 색 쪽으로 보정 (7A, 진화) */
+  aimAssist: boolean;
+  /** 벽에 부딪힐 때 작은 충격파 반경 (7B) */
+  shock: number;
 }
 
 export type DelayedEffect =
@@ -408,6 +428,8 @@ export interface Game {
   totems: Totem[];
   bombs: Bomb[];
   milks: Milk[];
+  /** 반사벽 */
+  walls: Wall[];
   /** 엘리트·보스가 떨어뜨린 보물 상자 */
   chests: Chest[];
   /** 팝 자리에 떨어진 골드 주머니 */

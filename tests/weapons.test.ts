@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { weapon } from "../src/data/index.ts";
 import { makeWeapon } from "../src/weapons/weapons.ts";
 import { emptyGame, pops, put, run } from "./helpers.ts";
+import { launch } from "../src/world/physics.ts";
 
 describe("무기 동작 모듈 (M1 3종)", () => {
   it("충격파(pulse): 반경 안의 적을 플레이어 바깥쪽으로 날리고 쿨다운을 건다", () => {
@@ -104,7 +105,7 @@ describe("무기 동작 모듈 (M1 3종)", () => {
   });
 
   it("동작이 없는 무기는 장착할 수 없고, Lv4 이후는 갈래가 필요하다", () => {
-    expect(() => makeWeapon(weapon("whirlwind"), 1)).toThrow(/동작 모듈/);
+    expect(() => makeWeapon({ ...weapon("whirlwind"), implemented: false }, 1)).toThrow(/동작 모듈/);
     expect(() => makeWeapon(weapon("kick"), 4)).toThrow(/갈래/);
     expect(makeWeapon(weapon("kick"), 4, "B").level.params.stunOnImpact).toBe(1);
     expect(makeWeapon(weapon("kick"), "evo").level.lv).toBe("evo");
@@ -165,5 +166,55 @@ describe("무기 동작 모듈 (M1 3종)", () => {
     put(g, "blue", g.player.x - 150, g.player.y);
     run(g, 30);
     expect(w.fires).toBe(0);
+  });
+
+  it("회오리(orbit): 칼날이 둘레를 돌며 닿은 적을 접선 방향으로 튕기고, 한 바퀴를 발사 1회로 센다", () => {
+    const w = makeWeapon(weapon("whirlwind"), 1);
+    const g = emptyGame({ weapons: [w] });
+    const { x, y } = g.player;
+    // 칼날은 각도 0(오른쪽)에서 출발해 아래쪽(+y)으로 돈다
+    const e = put(g, "red", x + 80, y + 10);
+    run(g, 3);
+    expect(e.state).toBe("launched");
+    expect(e.vy).toBeGreaterThan(0);
+    run(g, Math.ceil(1.5 * 60));
+    expect(w.fires).toBe(1);
+    expect(w.hits).toBe(1);
+  });
+
+  it("회오리 4B 강풍: 바깥 방향으로 튕긴다", () => {
+    const w = makeWeapon(weapon("whirlwind"), 4, "B");
+    const g = emptyGame({ weapons: [w] });
+    const e = put(g, "red", g.player.x + 95, g.player.y + 5);
+    run(g, 3);
+    expect(e.vx).toBeGreaterThan(Math.abs(e.vy));
+  });
+
+  it("반사벽(wall): 앞에 적이 있으면 벽을 세우고, 날아온 적을 되튕겨 쿠션으로 센다", () => {
+    const w = makeWeapon(weapon("reflect_wall"), 1);
+    const g = emptyGame({ weapons: [w] });
+    const { x, y } = g.player;
+    put(g, "red", x + 250, y);
+    put(g, "blue", x + 250, y + 60);
+    put(g, "green", x + 250, y - 60);
+    run(g, 1);
+    expect(g.walls).toHaveLength(1);
+    const shot = put(g, "yellow", x + 60, y);
+    launch(shot, 1, 0, 700);
+    run(g, 20);
+    expect(shot.vx).toBeLessThan(0);
+    expect(shot.wallBounces).toBe(1);
+    expect(w.hits).toBe(1);
+    run(g, 7 * 60);
+    expect(g.walls).toHaveLength(0);
+  });
+
+  it("반사벽 진화 만화경: 플레이어를 둘러싼 벽 3장", () => {
+    const w = makeWeapon(weapon("reflect_wall"), "evo");
+    const g = emptyGame({ weapons: [w] });
+    const { x, y } = g.player;
+    for (let i = 0; i < 3; i++) put(g, "red", x + 200, y + (i - 1) * 50);
+    run(g, 1);
+    expect(g.walls).toHaveLength(3);
   });
 });

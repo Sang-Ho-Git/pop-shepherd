@@ -1,6 +1,6 @@
 import { DT, RULES } from "../core/rules.ts";
 import { MATCH_COLORS } from "../core/types.ts";
-import type { Enemy, Game, LaunchFx, MatchColor, WeaponDef, WeaponInstance, WeaponLevel } from "../core/types.ts";
+import type { Enemy, Game, LaunchFx, MatchColor, Wall, WeaponDef, WeaponInstance, WeaponLevel } from "../core/types.ts";
 import { damage, popCluster, shockwave } from "../combat/pops.ts";
 import { launch, MAX_ENEMY_RADIUS, WEAPON_LAUNCH } from "../world/physics.ts";
 
@@ -415,10 +415,179 @@ function fireProjectile(g: Game, w: WeaponInstance, buf: number[]): number {
   return hit.size;
 }
 
+/** 회오리 칼날 반경 (칼날 하나가 적을 치는 원) */
+export const BLADE_RADIUS = 22;
+/** 회오리: 같은 적을 다시 칠 수 있기까지 (s) */
+export const BLADE_REHIT = 0.5;
+
+/**
+ * orbit (회오리): 칼날 blades개가 플레이어 둘레 radius를 돈다. 쿨다운 = 한 바퀴 시간.
+ * 칼날에 닿은 적을 진행 방향(접선)으로 튕긴다. 갈래 B 강풍은 바깥 방향.
+ * 진화 사이클론: 반경 2배, 둘레 바깥의 적을 칼날 쪽으로 빨아들인다.
+ * 한 바퀴를 발사 1회로 센다 (타격 수 = 한 바퀴에 튕긴 적 수).
+ */
+function tickOrbit(g: Game, w: WeaponInstance, buf: number[]): void {
+  const p = g.player;
+  const lv = w.level;
+  const period = Math.max(0.3, cooldownOf(g, lv));
+  const radius = param(lv, "radius") * p.stats.area;
+  const blades = param(lv, "blades", 1);
+  const bladeR = BLADE_RADIUS * p.stats.area;
+  w.angle = ((w.angle ?? 0) + (2 * Math.PI * DT) / period) % (2 * Math.PI);
+  w.lastHit ??= new Map();
+  if (lv.params.suck) {
+    for (const e of g.enemies) {
+      if (e.dead || e.state !== "walk" || e.rank !== "normal") continue;
+      const dx = p.x - e.x;
+      const dy = p.y - e.y;
+      const d = Math.hypot(dx, dy);
+      if (d <= radius || d > radius * 1.8) continue;
+      e.vx += (dx / d) * 60;
+      e.vy += (dy / d) * 60;
+    }
+  }
+  const knock = knockOf(g, lv);
+  for (let k = 0; k < blades; k++) {
+    const a = w.angle + (k / blades) * 2 * Math.PI;
+    const bx = p.x + Math.cos(a) * radius;
+    const by = p.y + Math.sin(a) * radius;
+    for (const e of enemiesWithin(g, bx, by, bladeR, buf)) {
+      if (e.state === "launched") continue;
+      const last = w.lastHit.get(e.id);
+      if (last !== undefined && g.time - last < BLADE_REHIT) continue;
+      w.lastHit.set(e.id, g.time);
+      const dir = lv.params.outward ? { x: Math.cos(a), y: Math.sin(a) } : { x: -Math.sin(a), y: Math.cos(a) };
+      launch(e, dir.x, dir.y, knock, src(lv));
+      damage(g, e, lv.damage);
+      w.hits++;
+    }
+  }
+  if (w.lastHit.size > 400) for (const [id, t] of w.lastHit) if (g.time - t > BLADE_REHIT) w.lastHit.delete(id);
+  w.spin = (w.spin ?? 0) + DT;
+  if (w.spin >= period) {
+    w.spin -= period;
+    w.fires++;
+  }
+}
+
+/** 반사벽이 놓이는 거리 (플레이어 앞) */
+export const WALL_AHEAD = 110;
+
+/**
+ * wall (반사벽): 이동 방향 앞에 이동 방향과 수직인 벽을 세운다. 날아가던 적이 벽에 맞으면 튕긴다 (쿠션 1회로 센다).
+ * 앞쪽 350px 안에 적이 3마리 이상 있을 때만 세운다. 갈래 A는 V자 2장, 진화 만화경은 플레이어를 둘러싼 삼각형 3장.
+ * 타격 수 = 벽 한 번 세운 동안 튕긴 횟수 (tickWalls가 더한다).
+ */
+function fireWall(g: Game, w: WeaponInstance, buf: number[]): number {
+  const p = g.player;
+  const lv = w.level;
+  const ahead = enemiesWithin(g, p.x, p.y, 350, buf).filter((e) => inCone(g, e, 70));
+  if (ahead.length < 3) return -1;
+  const len = param(lv, "length") * p.stats.area;
+  const t = param(lv, "duration");
+  const base = { t, weapon: w, boost: lv.params.boost ?? 1, aimAssist: !!lv.params.aimAssist, shock: lv.params.wallShock ?? 0 };
+  const seg = (cx: number, cy: number, ang: number): Wall => ({
+    ...base,
+    x1: cx + (Math.cos(ang) * len) / 2,
+    y1: cy + (Math.sin(ang) * len) / 2,
+    x2: cx - (Math.cos(ang) * len) / 2,
+    y2: cy - (Math.sin(ang) * len) / 2,
+  });
+  const face = Math.atan2(p.faceY, p.faceX);
+  if (lv.params.triangle) {
+    // 플레이어를 둘러싼 정삼각형의 세 변
+    const r = WALL_AHEAD;
+    for (let k = 0; k < 3; k++) {
+      const a = face + (k * 2 * Math.PI) / 3;
+      g.walls.push(seg(p.x + Math.cos(a) * r * 0.6, p.y + Math.sin(a) * r * 0.6, a + Math.PI / 2));
+    }
+  } else if (param(lv, "walls", 1) >= 2) {
+    // V자: 앞쪽 양옆에 안으로 30° 기울인 벽 두 장 (튕긴 적이 가운데로 모인다)
+    const cx = p.x + p.faceX * WALL_AHEAD;
+    const cy = p.y + p.faceY * WALL_AHEAD;
+    const sx = -p.faceY * len * 0.45;
+    const sy = p.faceX * len * 0.45;
+    g.walls.push(seg(cx + sx, cy + sy, face + Math.PI / 2 - Math.PI / 6), seg(cx - sx, cy - sy, face + Math.PI / 2 + Math.PI / 6));
+  } else {
+    g.walls.push(seg(p.x + p.faceX * WALL_AHEAD, p.y + p.faceY * WALL_AHEAD, face + Math.PI / 2));
+  }
+  firedIds = [];
+  return 0;
+}
+
+/** 반사벽: 날아가는 적이 벽에 닿고 벽 쪽으로 움직이면 거울 반사. 적분 뒤에 돈다. */
+export function tickWalls(g: Game): void {
+  if (g.walls.length === 0) return;
+  for (const wl of g.walls) wl.t -= DT;
+  g.walls = g.walls.filter((wl) => wl.t > 0);
+  for (const e of g.enemies) {
+    if (e.dead || e.state !== "launched") continue;
+    for (const wl of g.walls) {
+      const vx = wl.x2 - wl.x1;
+      const vy = wl.y2 - wl.y1;
+      const l2 = vx * vx + vy * vy;
+      const u = l2 > 0 ? Math.max(0, Math.min(1, ((e.x - wl.x1) * vx + (e.y - wl.y1) * vy) / l2)) : 0;
+      const qx = wl.x1 + vx * u;
+      const qy = wl.y1 + vy * u;
+      const dx = e.x - qx;
+      const dy = e.y - qy;
+      const d = Math.hypot(dx, dy);
+      if (d > e.radius || d < 1e-9) continue;
+      const nx = dx / d;
+      const ny = dy / d;
+      const vn = e.vx * nx + e.vy * ny;
+      if (vn >= 0) continue;
+      e.vx -= 2 * vn * nx;
+      e.vy -= 2 * vn * ny;
+      if (wl.aimAssist) aimAtSameColor(g, e, Math.PI / 7);
+      const sp = Math.hypot(e.vx, e.vy);
+      const want = Math.min(1100, sp * wl.boost);
+      if (sp > 1e-9) {
+        e.vx *= want / sp;
+        e.vy *= want / sp;
+      }
+      e.x = qx + nx * (e.radius + 0.5);
+      e.y = qy + ny * (e.radius + 0.5);
+      e.wallBounces++;
+      wl.weapon.hits++;
+      if (wl.shock > 0) shockwave(g, qx, qy, wl.shock, RULES.match.shockKnock * 0.4, { chainDepth: e.chainDepth, chainT: e.chainT });
+      break;
+    }
+  }
+}
+
+/** 진행 방향을 가장 가까운 같은 색(400px 안) 쪽으로 최대 maxTurn 라디안 돌린다 */
+function aimAtSameColor(g: Game, e: Enemy, maxTurn: number): void {
+  let best: Enemy | null = null;
+  let bestD = 400 * 400;
+  for (const o of g.enemies) {
+    if (o === e || o.dead || o.rank !== "normal" || (o.color !== e.color && o.color !== "rainbow")) continue;
+    const d = (o.x - e.x) ** 2 + (o.y - e.y) ** 2;
+    if (d < bestD) {
+      bestD = d;
+      best = o;
+    }
+  }
+  if (!best) return;
+  const sp = Math.hypot(e.vx, e.vy);
+  const cur = Math.atan2(e.vy, e.vx);
+  let diff = Math.atan2(best.y - e.y, best.x - e.x) - cur;
+  while (diff > Math.PI) diff -= 2 * Math.PI;
+  while (diff < -Math.PI) diff += 2 * Math.PI;
+  if (Math.abs(diff) > Math.PI / 2) return;
+  const a = cur + Math.max(-maxTurn, Math.min(maxTurn, diff));
+  e.vx = Math.cos(a) * sp;
+  e.vy = Math.sin(a) * sp;
+}
+
 /** 쿨다운이 끝난 무기를 쏜다. 쏠 대상이 없으면 쿨다운 0에서 기다린다. */
 export function fireWeapons(g: Game): void {
   const buf: number[] = [];
   for (const w of g.weapons) {
+    if (w.def.behavior === "orbit") {
+      tickOrbit(g, w, buf);
+      continue;
+    }
     w.cd = Math.max(0, w.cd - DT);
     if (w.cd > 0) continue;
     let hits: number;
@@ -437,6 +606,9 @@ export function fireWeapons(g: Game): void {
         break;
       case "projectile":
         hits = fireProjectile(g, w, buf);
+        break;
+      case "wall":
+        hits = fireWall(g, w, buf);
         break;
       default:
         throw new Error(`${w.def.id}: 동작 모듈(${w.def.behavior})이 아직 없음`);
