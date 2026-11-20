@@ -14,6 +14,7 @@ export function openChest(g: Game, chest: Chest): { evolved: string[]; picked: s
     if (!canEvolve(g, w.def.id)) continue;
     applyCard(g, { kind: "evolve", id: w.def.id });
     evolved.push(w.def.id);
+    g.stats.evolutions++;
     g.events.push({ type: "evolve", weapon: w.def.id });
     if (chest.kind === "elite") break;
   }

@@ -55,6 +55,12 @@ export interface StageResult {
   /** 보스를 쓰러뜨리는 데 걸린 시간 (s, 등장부터). 보스가 없거나 못 잡았으면 null */
   bossTime: number | null;
   chests: number;
+  evolutions: number;
+  /** 스테이지가 끝났을 때 남은 보스 체력 비율 (보스가 없으면 null) */
+  bossHpLeft: number | null;
+  /** 엘리트·보스가 팝으로 입은 피해, 그런 팝 수 */
+  specialDamage: number;
+  specialHits: number;
   /** 떨어진 골드 중 주운 비율 */
   goldPickRate: number;
   /** 처치형 스테이지가 시간 제한에 걸렸는지 */
@@ -176,6 +182,15 @@ export function runCampaign(seed: number, characterId: string, stages: string[] 
       elitesKilled: s.elitesKilled,
       bossTime: s.bossKilled > 0 && g.stage!.boss ? s.bossKilledAt - g.stage!.boss.at : null,
       chests: s.chestsOpened,
+      evolutions: s.evolutions,
+      bossHpLeft: (() => {
+        if (!g.stage!.boss) return null;
+        if (s.bossKilled > 0) return 0;
+        const b = g.enemies.find((e) => e.rank === "boss");
+        return b ? b.hp / b.maxHp : 1;
+      })(),
+      specialDamage: s.specialDamage,
+      specialHits: s.specialHits,
       goldPickRate: s.goldDropped > 0 ? s.goldPicked / s.goldDropped : 1,
       timedOut: !g.player.dead && g.phase !== "cleared",
     });

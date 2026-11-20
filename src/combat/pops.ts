@@ -126,6 +126,8 @@ export function hitSpecials(g: Game, cx: number, cy: number, radius: number, n: 
       if (cos >= Math.cos((prm.frontHalfDeg * Math.PI) / 180)) dmg *= prm.frontMul ?? 1;
     }
     e.hp -= dmg;
+    g.stats.specialDamage += dmg;
+    g.stats.specialHits++;
     g.events.push({ type: "special-hit", id: e.id, damage: dmg, hp: e.hp });
     if (e.hp <= 0) killSpecial(g, e);
   }
