@@ -154,14 +154,17 @@ export function botCardScore(c: Card, g: Game): number {
       case "evolve":
         return 150;
       case "newWeapon":
-        // 무기는 4개까지 적극적으로, 그 뒤로는 패시브보다 뒤
-        return g.weapons.length < BOT_WEAPON_TARGET ? 90 : 40;
+        // 무기는 4개까지 적극적으로, 그 뒤로는 패시브보다 뒤. 충격파(둘레를 밀어내는 방어)는 먼저.
+        // 시뮬: 무기가 7종이 되자 봇이 충격파를 놓쳐 완주가 9/12 → 4/12로 떨어졌다.
+        return (g.weapons.length < BOT_WEAPON_TARGET ? 90 : 40) + (c.id === "shockwave" ? 15 : 0);
       case "passiveUp":
       case "newPassive": {
         const lv = g.player.passives[c.id] ?? 0;
         // 가진 무기의 진화 짝, 그리고 털옷(체력·방어)은 무기 강화만큼 중요하게
         const partner = g.weapons.some((w) => w.def.evolvesWith === c.id);
-        if (partner || c.id === "thick_fleece") return (c.kind === "newPassive" ? 95 : 85) - lv;
+        // 털옷은 무기 강화보다 먼저 (생존의 바탕)
+        if (c.id === "thick_fleece") return 105 - lv;
+        if (partner) return (c.kind === "newPassive" ? 95 : 85) - lv;
         return (c.kind === "newPassive" ? 50 : 60) - lv;
       }
       case "heal":
