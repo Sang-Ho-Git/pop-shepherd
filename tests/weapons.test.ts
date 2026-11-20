@@ -200,14 +200,16 @@ describe("무기 동작 모듈 (M1 3종)", () => {
     put(g, "green", x + 250, y - 60);
     run(g, 1);
     expect(g.walls).toHaveLength(1);
+    const first = g.walls[0]!;
     const shot = put(g, "yellow", x + 60, y);
     launch(shot, 1, 0, 700);
     run(g, 20);
     expect(shot.vx).toBeLessThan(0);
     expect(shot.wallBounces).toBe(1);
     expect(w.hits).toBe(1);
-    run(g, 7 * 60);
-    expect(g.walls).toHaveLength(0);
+    // 첫 벽은 지속 시간이 지나면 사라진다 (쿨다운이 더 짧으면 그사이 새 벽이 선다)
+    run(g, Math.ceil(w.level.params.duration! * 60));
+    expect(g.walls).not.toContain(first);
   });
 
   it("반사벽 진화 만화경: 플레이어를 둘러싼 벽 3장", () => {
