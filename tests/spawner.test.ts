@@ -142,10 +142,11 @@ describe("1.7 출현 보정", () => {
 
   it("출현 간격은 시간대 표를 따르고, 표가 끝나면 마지막 값을 쓴다", () => {
     const st = stage("m1_proving");
-    expect(spawnInterval(st, 0)).toBe(3.5);
-    expect(spawnInterval(st, 61)).toBe(2.8);
-    expect(spawnInterval(st, 299)).toBe(1.6);
-    expect(spawnInterval(st, 999)).toBe(1.6);
+    const at = (i: number) => st.spawn[i]!.interval;
+    expect(spawnInterval(st, 0)).toBe(at(0));
+    expect(spawnInterval(st, 61)).toBe(at(1));
+    expect(spawnInterval(st, 299)).toBe(at(st.spawn.length - 1));
+    expect(spawnInterval(st, 999)).toBe(at(st.spawn.length - 1));
   });
 
   it("타이머: 시작하자마자 한 무리, 그 뒤로 간격마다 한 무리", () => {
@@ -154,7 +155,8 @@ describe("1.7 출현 보정", () => {
     tickSpawner(g, 1 / 60);
     const first = g.enemies.length;
     expect(first).toBeGreaterThanOrEqual(RULES.spawn.pairsMin * RULES.spawn.pairSize);
-    for (let t = 0; t < 3.4 * 60; t++) tickSpawner(g, 1 / 60);
+    const gap = st.spawn[0]!.interval;
+    for (let t = 0; t < (gap - 0.1) * 60; t++) tickSpawner(g, 1 / 60);
     expect(g.enemies.length).toBe(first);
     for (let t = 0; t < 0.2 * 60; t++) tickSpawner(g, 1 / 60);
     expect(g.enemies.length).toBeGreaterThan(first);

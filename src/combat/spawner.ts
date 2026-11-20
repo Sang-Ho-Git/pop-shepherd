@@ -17,7 +17,7 @@ export function spawnEnemy(g: Game, kind: string, color: Color, x: number, y: nu
     radius: def.radius,
     mass: def.mass,
     hp: def.hp * hpMul,
-    speed: def.speed,
+    speed: def.speed * (g.stage ? spawnPhase(g.stage, g.time).speedMul ?? 1 : 1),
     contactDamage: def.contactDamage,
     xp: def.xp,
     state: "walk",

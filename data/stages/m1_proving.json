@@ -5,7 +5,8 @@
   "colors": [
     "red",
     "blue",
-    "yellow"
+    "yellow",
+    "green"
   ],
   "grayRatio": 0.08,
   "maxAlive": 160,
@@ -14,31 +15,58 @@
     {
       "from": 0,
       "to": 60,
-      "interval": 3.5,
+      "interval": 2.8,
       "colors": [
         "red",
         "blue"
-      ]
+      ],
+      "speedMul": 1
     },
     {
       "from": 60,
       "to": 120,
-      "interval": 2.8
+      "interval": 2.24,
+      "speedMul": 1.2,
+      "colors": [
+        "red",
+        "blue",
+        "yellow"
+      ]
     },
     {
       "from": 120,
       "to": 180,
-      "interval": 2.3
+      "interval": 1.84,
+      "speedMul": 1.4,
+      "colors": [
+        "red",
+        "blue",
+        "yellow"
+      ]
     },
     {
       "from": 180,
       "to": 240,
-      "interval": 1.9
+      "interval": 1.52,
+      "speedMul": 1.55,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
     },
     {
       "from": 240,
       "to": 300,
-      "interval": 1.6
+      "interval": 1.28,
+      "speedMul": 1.7,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
     }
   ]
 }

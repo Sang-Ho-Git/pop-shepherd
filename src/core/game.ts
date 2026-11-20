@@ -154,16 +154,20 @@ function contactDamage(g: Game): void {
   const buf: number[] = [];
   g.grid.query(p.x, p.y, p.radius + 40, buf);
   let worst = 0;
+  let sum = 0;
   for (const j of buf) {
     const e = g.enemies[j];
     if (!e || e.dead || e.state !== "walk") continue;
     const reach = p.radius + e.radius + 2;
     const dx = e.x - p.x;
     const dy = e.y - p.y;
-    if (dx * dx + dy * dy <= reach * reach) worst = Math.max(worst, e.contactDamage);
+    if (dx * dx + dy * dy > reach * reach) continue;
+    worst = Math.max(worst, e.contactDamage);
+    sum += Math.max(1, e.contactDamage - p.stats.armor);
   }
   if (worst <= 0) return;
-  const dmg = Math.max(1, worst - p.stats.armor);
+  // "worst": 닿은 적 중 가장 센 한 마리 피해. "sum": 닿은 적마다 피해 (포위가 위험해진다).
+  const dmg = RULES.player.contactMode === "sum" ? sum : Math.max(1, worst - p.stats.armor);
   p.hp -= dmg;
   p.iframes = RULES.player.iframes;
   g.events.push({ type: "player-hit", damage: dmg, hp: p.hp });

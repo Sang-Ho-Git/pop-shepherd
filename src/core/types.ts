@@ -131,6 +131,8 @@ export interface SpawnPhase {
   to: number;
   /** 무리 하나를 소환하는 간격 (s) */
   interval: number;
+  /** 이 구간에 소환되는 적의 추적 속도 배율 (기본 1) */
+  speedMul?: number;
   /** 이 구간에 나오는 색. 없으면 스테이지 colors 전체. 초반에 색 수를 줄여 짝이 맞을 기회를 늘린다. */
   colors?: MatchColor[];
 }

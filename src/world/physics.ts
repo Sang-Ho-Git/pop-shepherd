@@ -171,6 +171,13 @@ export function pushApart(a: Enemy, b: Enemy, ratio: number): void {
 export function separate(g: Game, buf: number[]): void {
   const { enemies, grid } = g;
   const ratio = RULES.physics.separation;
+
+  // 순서: 플레이어 밖으로 밀기 → 울타리 → 적끼리 떼기 → 울타리.
+  // 적끼리 먼저 떼고 플레이어·울타리를 나중에 처리하면, 벽에 몰린 플레이어 주변에서 적이 플레이어와 벽 사이에
+  // 끼어 서로 깊게 겹친 채 남았다 (접촉 피해 합산에서 실제보다 많이 닿는다).
+  pushOutOfPlayer(g, buf);
+  clampToArena(g);
+
   for (let i = 0; i < enemies.length; i++) {
     const a = enemies[i] as Enemy;
     if (a.dead) continue;
@@ -183,11 +190,15 @@ export function separate(g: Game, buf: number[]): void {
     }
   }
 
-  // 플레이어와 겹친 적은 플레이어 밖으로 완전히 밀어낸다 (플레이어는 밀리지 않는다).
+  clampToArena(g);
+}
+
+/** 플레이어와 겹친 적은 플레이어 밖으로 완전히 밀어낸다 (플레이어는 밀리지 않는다). */
+function pushOutOfPlayer(g: Game, buf: number[]): void {
   const p = g.player;
-  grid.query(p.x, p.y, p.radius + MAX_ENEMY_RADIUS, buf);
+  g.grid.query(p.x, p.y, p.radius + MAX_ENEMY_RADIUS, buf);
   for (const j of buf) {
-    const e = enemies[j] as Enemy;
+    const e = g.enemies[j] as Enemy;
     if (e.dead) continue;
     const dx = e.x - p.x;
     const dy = e.y - p.y;
@@ -199,9 +210,6 @@ export function separate(g: Game, buf: number[]): void {
     e.x = p.x + nx * min;
     e.y = p.y + ny * min;
   }
-
-  // 밀어낸 결과가 울타리를 넘으면 다시 안쪽으로 (벽에 붙은 적이 이웃이나 플레이어에게 밀려 나가는 것을 막는다).
-  clampToArena(g);
 }
 
 /** 모든 적을 울타리 안쪽(반지름만큼)으로 붙잡는다. */
