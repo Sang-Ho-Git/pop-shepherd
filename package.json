@@ -2,7 +2,7 @@
   "name": "pop-shepherd",
   "version": "0.1.0",
   "private": true,
-  "description": "팝 셰퍼드: 적을 날려 같은 색끼리 부딪쳐 터뜨리는 서바이벌 게임의 코어 시뮬레이션",
+  "description": "\ud31d \uc170\ud37c\ub4dc: \uc801\uc744 \ub0a0\ub824 \uac19\uc740 \uc0c9\ub07c\ub9ac \ubd80\ub52a\uccd0 \ud130\ub728\ub9ac\ub294 \uc11c\ubc14\uc774\ubc8c \uac8c\uc784\uc758 \ucf54\uc5b4 \uc2dc\ubbac\ub808\uc774\uc158",
   "type": "module",
   "engines": {
     "node": ">=22.18"
@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm run test",
-    "sim": "node tools/sim.ts"
+    "sim": "node tools/sim.ts",
+    "campaign": "node tools/run.ts"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

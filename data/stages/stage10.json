@@ -1,0 +1,77 @@
+{
+  "id": "stage10",
+  "name": "무지개 목장 (최종 보스 자리, 임시 생존형)",
+  "duration": 300,
+  "colors": [
+    "red",
+    "blue",
+    "yellow",
+    "green"
+  ],
+  "grayRatio": 0.12,
+  "maxAlive": 210,
+  "enemyHpMul": 1,
+  "contactMul": 3.52,
+  "_note": "보스·엘리트가 구현되기 전까지 생존형으로 둔다",
+  "spawn": [
+    {
+      "from": 0,
+      "to": 60,
+      "interval": 1.23,
+      "speedMul": 1.81,
+      "colors": [
+        "red",
+        "blue",
+        "yellow"
+      ]
+    },
+    {
+      "from": 60,
+      "to": 120,
+      "interval": 1.06,
+      "speedMul": 1.92,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 120,
+      "to": 180,
+      "interval": 0.89,
+      "speedMul": 2.03,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 180,
+      "to": 240,
+      "interval": 0.72,
+      "speedMul": 2.13,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 240,
+      "to": 300,
+      "interval": 0.55,
+      "speedMul": 2.24,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "id": "stage08",
+  "name": "폭풍 초원",
+  "duration": 270,
+  "colors": [
+    "red",
+    "blue",
+    "yellow",
+    "green"
+  ],
+  "grayRatio": 0.09,
+  "maxAlive": 190,
+  "enemyHpMul": 1,
+  "contactMul": 2.96,
+  "spawn": [
+    {
+      "from": 0,
+      "to": 54,
+      "interval": 1.38,
+      "speedMul": 1.63,
+      "colors": [
+        "red",
+        "blue",
+        "yellow"
+      ]
+    },
+    {
+      "from": 54,
+      "to": 108,
+      "interval": 1.19,
+      "speedMul": 1.73,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 108,
+      "to": 162,
+      "interval": 1.01,
+      "speedMul": 1.83,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 162,
+      "to": 216,
+      "interval": 0.83,
+      "speedMul": 1.92,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 216,
+      "to": 270,
+      "interval": 0.65,
+      "speedMul": 2.02,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    }
+  ]
+}

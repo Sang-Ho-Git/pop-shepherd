@@ -1,0 +1,49 @@
+{
+  "id": "stage03",
+  "name": "바람 언덕",
+  "duration": 210,
+  "colors": [
+    "red",
+    "blue",
+    "yellow"
+  ],
+  "grayRatio": 0.04,
+  "maxAlive": 140,
+  "enemyHpMul": 1,
+  "contactMul": 1.56,
+  "spawn": [
+    {
+      "from": 0,
+      "to": 70,
+      "interval": 1.75,
+      "speedMul": 1.18,
+      "colors": [
+        "red",
+        "blue",
+        "yellow"
+      ]
+    },
+    {
+      "from": 70,
+      "to": 140,
+      "interval": 1.33,
+      "speedMul": 1.33,
+      "colors": [
+        "red",
+        "blue",
+        "yellow"
+      ]
+    },
+    {
+      "from": 140,
+      "to": 210,
+      "interval": 0.9,
+      "speedMul": 1.47,
+      "colors": [
+        "red",
+        "blue",
+        "yellow"
+      ]
+    }
+  ]
+}

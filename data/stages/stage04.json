@@ -1,0 +1,52 @@
+{
+  "id": "stage04",
+  "name": "안개 골짜기",
+  "duration": 210,
+  "colors": [
+    "red",
+    "blue",
+    "yellow",
+    "green"
+  ],
+  "grayRatio": 0.05,
+  "maxAlive": 150,
+  "enemyHpMul": 1,
+  "contactMul": 1.84,
+  "spawn": [
+    {
+      "from": 0,
+      "to": 70,
+      "interval": 1.67,
+      "speedMul": 1.27,
+      "colors": [
+        "red",
+        "blue",
+        "yellow"
+      ]
+    },
+    {
+      "from": 70,
+      "to": 140,
+      "interval": 1.26,
+      "speedMul": 1.43,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 140,
+      "to": 210,
+      "interval": 0.85,
+      "speedMul": 1.58,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    }
+  ]
+}

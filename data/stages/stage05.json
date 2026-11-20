@@ -1,0 +1,65 @@
+{
+  "id": "stage05",
+  "name": "양치기 오두막 (보스 자리, 임시 생존형)",
+  "duration": 240,
+  "colors": [
+    "red",
+    "blue",
+    "yellow",
+    "green"
+  ],
+  "grayRatio": 0.06,
+  "maxAlive": 160,
+  "enemyHpMul": 1,
+  "contactMul": 2.12,
+  "_note": "보스·엘리트가 구현되기 전까지 생존형으로 둔다",
+  "spawn": [
+    {
+      "from": 0,
+      "to": 60,
+      "interval": 1.6,
+      "speedMul": 1.36,
+      "colors": [
+        "red",
+        "blue",
+        "yellow"
+      ]
+    },
+    {
+      "from": 60,
+      "to": 120,
+      "interval": 1.33,
+      "speedMul": 1.47,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 120,
+      "to": 180,
+      "interval": 1.07,
+      "speedMul": 1.58,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 180,
+      "to": 240,
+      "interval": 0.8,
+      "speedMul": 1.69,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    }
+  ]
+}

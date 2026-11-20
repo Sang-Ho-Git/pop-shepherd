@@ -1,0 +1,49 @@
+{
+  "id": "stage02",
+  "name": "갈대 개울",
+  "duration": 180,
+  "colors": [
+    "red",
+    "blue",
+    "yellow"
+  ],
+  "grayRatio": 0,
+  "maxAlive": 130,
+  "enemyHpMul": 1,
+  "contactMul": 1.28,
+  "spawn": [
+    {
+      "from": 0,
+      "to": 60,
+      "interval": 1.83,
+      "speedMul": 1.09,
+      "colors": [
+        "red",
+        "blue",
+        "yellow"
+      ]
+    },
+    {
+      "from": 60,
+      "to": 120,
+      "interval": 1.39,
+      "speedMul": 1.23,
+      "colors": [
+        "red",
+        "blue",
+        "yellow"
+      ]
+    },
+    {
+      "from": 120,
+      "to": 180,
+      "interval": 0.95,
+      "speedMul": 1.36,
+      "colors": [
+        "red",
+        "blue",
+        "yellow"
+      ]
+    }
+  ]
+}

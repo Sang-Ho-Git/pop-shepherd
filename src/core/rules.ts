@@ -105,14 +105,14 @@ export const RULES = {
    * 그사이 팝의 경험치는 +wrapUpXpBonus. 마무리 시간이 끝나면 남은 적은 사라지고 클리어.
    * 남은 적은 벌이 아니라 놓친 보상이다 (짝 안 맞는 잔챙이 때문에 막히지 않는다).
    */
-  stage: { wrapUpSeconds: 15, wrapUpXpBonus: 0.5 },
+  stage: { wrapUpSeconds: 15, wrapUpXpBonus: 0.5, betweenHeal: 0.3 },
 
   /**
    * 2.1 런 안 성장. 레벨 L에서 L+1까지 필요한 경험치 = base + growth × (L - 1).
    * 카드 3장 중 1장. 가중치는 기획서 v2 (보유 무기 강화 35, 보유 패시브 강화 25, 새 무기 20, 새 패시브 20).
    * 고를 것이 없으면 채움 카드 (체력 회복).
    */
-  xp: { base: 12, growth: 4 },
+  xp: { base: 160, growth: 8 },
   cards: {
     count: 3,
     weaponSlots: 6,

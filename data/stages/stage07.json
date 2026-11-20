@@ -1,0 +1,64 @@
+{
+  "id": "stage07",
+  "name": "돌무지 고개",
+  "duration": 240,
+  "colors": [
+    "red",
+    "blue",
+    "yellow",
+    "green"
+  ],
+  "grayRatio": 0.08,
+  "maxAlive": 180,
+  "enemyHpMul": 1,
+  "contactMul": 2.68,
+  "spawn": [
+    {
+      "from": 0,
+      "to": 60,
+      "interval": 1.45,
+      "speedMul": 1.54,
+      "colors": [
+        "red",
+        "blue",
+        "yellow"
+      ]
+    },
+    {
+      "from": 60,
+      "to": 120,
+      "interval": 1.2,
+      "speedMul": 1.66,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 120,
+      "to": 180,
+      "interval": 0.95,
+      "speedMul": 1.79,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 180,
+      "to": 240,
+      "interval": 0.7,
+      "speedMul": 1.91,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    }
+  ]
+}

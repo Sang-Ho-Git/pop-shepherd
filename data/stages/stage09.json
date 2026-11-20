@@ -1,0 +1,77 @@
+{
+  "id": "stage09",
+  "name": "달빛 울타리 (엘리트 자리, 임시 생존형)",
+  "duration": 270,
+  "colors": [
+    "red",
+    "blue",
+    "yellow",
+    "green"
+  ],
+  "grayRatio": 0.1,
+  "maxAlive": 200,
+  "enemyHpMul": 1,
+  "contactMul": 3.24,
+  "_note": "보스·엘리트가 구현되기 전까지 생존형으로 둔다",
+  "spawn": [
+    {
+      "from": 0,
+      "to": 54,
+      "interval": 1.3,
+      "speedMul": 1.72,
+      "colors": [
+        "red",
+        "blue",
+        "yellow"
+      ]
+    },
+    {
+      "from": 54,
+      "to": 108,
+      "interval": 1.12,
+      "speedMul": 1.82,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 108,
+      "to": 162,
+      "interval": 0.95,
+      "speedMul": 1.92,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 162,
+      "to": 216,
+      "interval": 0.77,
+      "speedMul": 2.03,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 216,
+      "to": 270,
+      "interval": 0.6,
+      "speedMul": 2.13,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    }
+  ]
+}

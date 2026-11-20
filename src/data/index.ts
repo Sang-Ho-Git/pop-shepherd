@@ -3,6 +3,15 @@ import charactersJson from "../../data/characters.json" with { type: "json" };
 import balanceJson from "../../data/balance.json" with { type: "json" };
 import passivesJson from "../../data/passives.json" with { type: "json" };
 import stage01 from "../../data/stages/stage01.json" with { type: "json" };
+import stage02 from "../../data/stages/stage02.json" with { type: "json" };
+import stage03 from "../../data/stages/stage03.json" with { type: "json" };
+import stage04 from "../../data/stages/stage04.json" with { type: "json" };
+import stage05 from "../../data/stages/stage05.json" with { type: "json" };
+import stage06 from "../../data/stages/stage06.json" with { type: "json" };
+import stage07 from "../../data/stages/stage07.json" with { type: "json" };
+import stage08 from "../../data/stages/stage08.json" with { type: "json" };
+import stage09 from "../../data/stages/stage09.json" with { type: "json" };
+import stage10 from "../../data/stages/stage10.json" with { type: "json" };
 import m1Proving from "../../data/stages/m1_proving.json" with { type: "json" };
 import shockwave from "../../data/weapons/shockwave.json" with { type: "json" };
 import kick from "../../data/weapons/kick.json" with { type: "json" };
@@ -17,8 +26,19 @@ import type { CharacterDef, EnemyDef, PassiveDef, StageDef, WeaponDef, WeaponLev
 export const ENEMIES = enemiesJson as Record<string, EnemyDef>;
 export const CHARACTERS = charactersJson as Record<string, CharacterDef>;
 export const PASSIVES = passivesJson as Record<string, PassiveDef>;
+/** 캠페인 순서 */
+export const CAMPAIGN = Array.from({ length: 10 }, (_, i) => `stage${String(i + 1).padStart(2, "0")}`);
 export const STAGES: Record<string, StageDef> = {
   stage01: stage01 as StageDef,
+  stage02: stage02 as StageDef,
+  stage03: stage03 as StageDef,
+  stage04: stage04 as StageDef,
+  stage05: stage05 as StageDef,
+  stage06: stage06 as StageDef,
+  stage07: stage07 as StageDef,
+  stage08: stage08 as StageDef,
+  stage09: stage09 as StageDef,
+  stage10: stage10 as StageDef,
   m1_proving: m1Proving as StageDef,
 };
 export const WEAPONS: Record<string, WeaponDef> = Object.fromEntries(

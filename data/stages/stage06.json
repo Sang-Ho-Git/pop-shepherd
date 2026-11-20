@@ -1,0 +1,64 @@
+{
+  "id": "stage06",
+  "name": "꽃가루 들판",
+  "duration": 240,
+  "colors": [
+    "red",
+    "blue",
+    "yellow",
+    "green"
+  ],
+  "grayRatio": 0.07,
+  "maxAlive": 170,
+  "enemyHpMul": 1,
+  "contactMul": 2.4,
+  "spawn": [
+    {
+      "from": 0,
+      "to": 60,
+      "interval": 1.53,
+      "speedMul": 1.45,
+      "colors": [
+        "red",
+        "blue",
+        "yellow"
+      ]
+    },
+    {
+      "from": 60,
+      "to": 120,
+      "interval": 1.27,
+      "speedMul": 1.57,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 120,
+      "to": 180,
+      "interval": 1.01,
+      "speedMul": 1.68,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 180,
+      "to": 240,
+      "interval": 0.75,
+      "speedMul": 1.8,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    }
+  ]
+}
