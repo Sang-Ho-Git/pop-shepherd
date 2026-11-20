@@ -10,7 +10,7 @@
     { "lv": 5, "branch": "B", "knock": 150, "support": 1050, "targets": 2.3, "aim": 1, "cooldown": 2.31, "damage": 8, "params": { "projectiles": 1, "pierce": 3 }, "note": "관통 +1" },
     { "lv": 6, "branch": "A", "knock": 150, "support": 1050, "targets": 3.6, "aim": 0.7, "cooldown": 2.07, "damage": 6, "params": { "projectiles": 4 }, "note": "쿨다운 ↓" },
     { "lv": 6, "branch": "B", "knock": 150, "support": 1050, "targets": 2.4, "aim": 1, "cooldown": 1.94, "damage": 9, "params": { "projectiles": 1, "pierce": 3 }, "note": "쿨다운 ↓" },
-    { "lv": 7, "branch": "A", "knock": 150, "support": 1050, "targets": 4.8, "aim": 0.7, "cooldown": 2.4, "damage": 6, "params": { "projectiles": 4, "puddleRadius": 40 }, "note": "완성: 맞은 지점에 작은 페인트 웅덩이" },
+    { "lv": 7, "branch": "A", "knock": 150, "support": 1050, "targets": 5.7, "aim": 0.7, "cooldown": 2.8, "damage": 6, "params": { "projectiles": 4, "puddleRadius": 40 }, "note": "완성: 맞은 지점에 작은 페인트 웅덩이" },
     { "lv": 7, "branch": "B", "knock": 150, "support": 1250, "targets": 1.9, "aim": 1, "cooldown": 1.6, "damage": 10, "params": { "projectiles": 1, "pierce": 3, "unify": 1 }, "note": "완성: 관통한 적을 첫 번째 적의 색으로 통일" },
     { "lv": "evo", "branch": null, "knock": 150, "support": 1100, "targets": 5.6, "aim": 0.8, "cooldown": 2.24, "damage": 8, "params": { "projectiles": 2, "splashRadius": 80 }, "note": "스플래시 (Lv7 + 무지개 잉크): 맞은 지점 주변을 광역으로 칠함" }
   ]

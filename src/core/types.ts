@@ -222,6 +222,8 @@ export interface StageDef {
    * "elites", "boss"는 엘리트·보스가 구현되면 쓴다.
    */
   clear?: "survive" | "elites" | "boss";
+  /** 엘리트 체력 배율 (기본 1). 후반 스테이지 엘리트가 바로 녹지 않게 */
+  eliteHpMul?: number;
   /** 무리 하나에 나오는 짝 수 [최소, 최대] (기본 RULES.spawn) */
   pairs?: [number, number];
   /** 정해진 시각에 나오는 엘리트 (시각 순) */

@@ -27,6 +27,8 @@ export function spawnScheduled(g: Game): void {
     const at = spawnPoint(g);
     const color = kind === "armored" ? "gray" : (stageColors(g)[g.rng.int(0, stageColors(g).length - 1)] as MatchColor);
     const e = spawnEnemy(g, kind, color, at.x, at.y);
+    e.hp *= st.eliteHpMul ?? 1;
+    e.maxHp = e.hp;
     g.stats.elitesSpawned++;
     g.events.push({ type: "elite-spawn", kind, id: e.id });
   }
