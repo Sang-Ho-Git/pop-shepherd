@@ -475,6 +475,7 @@ export const WALL_AHEAD = 110;
 
 /**
  * wall (반사벽): 이동 방향 앞에 이동 방향과 수직인 벽을 세운다. 날아가던 적이 벽에 맞으면 튕긴다 (쿠션 1회로 센다).
+ * 걸어오는 적에게는 울타리다 (뚫고 지나가지 못한다).
  * 앞쪽 350px 안에 적이 3마리 이상 있을 때만 세운다. 갈래 A는 V자 2장, 진화 만화경은 플레이어를 둘러싼 삼각형 3장.
  * 타격 수 = 벽 한 번 세운 동안 튕긴 횟수 (tickWalls가 더한다).
  */
@@ -521,7 +522,12 @@ export function tickWalls(g: Game): void {
   for (const wl of g.walls) wl.t -= DT;
   g.walls = g.walls.filter((wl) => wl.t > 0);
   for (const e of g.enemies) {
-    if (e.dead || e.state !== "launched") continue;
+    if (e.dead) continue;
+    if (e.state !== "launched") {
+      // 걸어오는 적에게 벽은 울타리: 뚫고 지나가지 못하고 벽 바깥으로 밀려난다
+      for (const wl of g.walls) blockWalker(e, wl);
+      continue;
+    }
     for (const wl of g.walls) {
       const vx = wl.x2 - wl.x1;
       const vy = wl.y2 - wl.y1;
@@ -554,6 +560,22 @@ export function tickWalls(g: Game): void {
       break;
     }
   }
+}
+
+/** 평소·기절 상태의 적이 벽에 겹치면 벽에서 가까운 쪽으로 밀어낸다 (벽을 사이에 두고 플레이어를 막는다) */
+function blockWalker(e: Enemy, wl: Wall): void {
+  const vx = wl.x2 - wl.x1;
+  const vy = wl.y2 - wl.y1;
+  const l2 = vx * vx + vy * vy;
+  const u = l2 > 0 ? Math.max(0, Math.min(1, ((e.x - wl.x1) * vx + (e.y - wl.y1) * vy) / l2)) : 0;
+  const qx = wl.x1 + vx * u;
+  const qy = wl.y1 + vy * u;
+  const dx = e.x - qx;
+  const dy = e.y - qy;
+  const d = Math.hypot(dx, dy);
+  if (d >= e.radius || d < 1e-9) return;
+  e.x = qx + (dx / d) * e.radius;
+  e.y = qy + (dy / d) * e.radius;
 }
 
 /** 진행 방향을 가장 가까운 같은 색(400px 안) 쪽으로 최대 maxTurn 라디안 돌린다 */

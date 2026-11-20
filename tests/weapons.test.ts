@@ -220,4 +220,18 @@ describe("무기 동작 모듈 (M1 3종)", () => {
     run(g, 1);
     expect(g.walls).toHaveLength(3);
   });
+
+  it("반사벽은 걸어오는 적에게 울타리: 뚫고 지나가지 못한다", () => {
+    const w = makeWeapon(weapon("reflect_wall"), 1);
+    const g = emptyGame({ weapons: [w] });
+    const { x, y } = g.player;
+    for (let i = 0; i < 3; i++) put(g, "red", x + 300, y + (i - 1) * 50);
+    run(g, 1);
+    const wall = g.walls[0]!;
+    const walker = put(g, "blue", x + 200, y, { moving: true });
+    w.cd = 999;
+    run(g, 120);
+    // 벽(플레이어 앞 110px)보다 플레이어 쪽으로 넘어오지 못한다
+    expect(walker.x).toBeGreaterThan(wall.x1 - 1);
+  });
 });
