@@ -82,6 +82,12 @@ export const RULES = {
     xpPerStep: 1.5,
   },
 
+  /**
+   * 스테이지 안 회복: 연쇄 2번째 팝부터(단계 1 이상) 우유병이 떨어진다. 잘 플레이한 보상으로만 회복된다.
+   * 확률 × (1 + heal_find). 주우면 최대 체력의 healFrac 회복, lifetime초 뒤 사라짐.
+   */
+  heal: { minChainDepth: 1, dropChance: 0.15, healFrac: 0.08, lifetime: 20, pickupRange: 40 },
+
   /** 1.6 막힘 방지 */
   antiStall: {
     /** 직접 피해로 처치하면 매치 처치 경험치의 20% */

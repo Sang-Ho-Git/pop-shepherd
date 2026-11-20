@@ -45,6 +45,7 @@ export function createGame(cfg: GameConfig): Game {
     weapons: cfg.weapons ?? [],
     totems: [],
     bombs: [],
+    milks: [],
     stage: cfg.stage,
     spawnTimer: 0,
     enemyDefs: cfg.enemyDefs,
@@ -55,6 +56,9 @@ export function createGame(cfg: GameConfig): Game {
       rootPops: 0,
       bombPops: 0,
       bombDrops: 0,
+      milkDrops: 0,
+      milkPicked: 0,
+      healed: 0,
       poppedEnemies: 0,
       killedEnemies: 0,
       maxChain: 0,
@@ -180,6 +184,24 @@ function pickupBombs(g: Game): void {
   g.bombs = keep;
 }
 
+/** 우유병: 가까이 가면 최대 체력의 일부를 회복. 오래 두면 사라진다. */
+function pickupMilks(g: Game): void {
+  const p = g.player;
+  const range = RULES.heal.pickupRange * p.stats.pickup;
+  const keep = [];
+  for (const m of g.milks) {
+    m.t -= DT;
+    if (Math.hypot(m.x - p.x, m.y - p.y) <= range) {
+      const heal = Math.min(p.maxHp - p.hp, p.maxHp * RULES.heal.healFrac);
+      p.hp += heal;
+      g.stats.milkPicked++;
+      g.stats.healed += heal;
+      g.events.push({ type: "milk-pickup", heal, hp: p.hp });
+    } else if (m.t > 0) keep.push(m);
+  }
+  g.milks = keep;
+}
+
 /** 플레이어 화면(1280×720) 안에 있는 적 수 */
 export function onScreenCount(g: Game): number {
   const hw = RULES.view.w / 2;
@@ -227,6 +249,7 @@ export function step(g: Game, input: Input): void {
   if (g.enemies.length >= 100) separate(g, []);
   contactDamage(g);
   pickupBombs(g);
+  pickupMilks(g);
 
   g.enemies = g.enemies.filter((e) => !e.dead);
   const alive = g.enemies.length;

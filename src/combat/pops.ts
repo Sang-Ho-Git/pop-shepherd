@@ -54,6 +54,11 @@ export function popCluster(g: Game, indices: number[], trigger: Enemy, color: Ma
     const radius = popShockRadius(n) * g.player.stats.chain_radius;
     shockwave(g, cx, cy, radius, RULES.match.shockKnock, { chainDepth: depth + 1, chainT: RULES.chain.window });
   }
+  if (depth >= RULES.heal.minChainDepth && g.rng.chance(RULES.heal.dropChance * (1 + g.player.stats.heal_find))) {
+    g.milks.push({ x: cx, y: cy, t: RULES.heal.lifetime });
+    g.stats.milkDrops++;
+    g.events.push({ type: "milk-drop", x: cx, y: cy });
+  }
   if (n >= RULES.match.bombMin && g.stats.bombDrops < RULES.match.bombMaxPerStage) {
     const m = RULES.match;
     const p = (n >= 6 ? m.bombChance6 : m.bombChance5) * (depth >= 2 ? m.bombChainMul : 1) * (1 + g.player.stats.luck);

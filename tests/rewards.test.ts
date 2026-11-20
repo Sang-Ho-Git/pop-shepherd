@@ -125,6 +125,51 @@ describe("색 폭탄은 레어 아이템", () => {
   });
 });
 
+describe("우유병 (스테이지 안 회복)", () => {
+  function chainPop(seed: number, depth: number, healFind = 0) {
+    const g = emptyGame({ seed });
+    g.player.stats = { ...g.player.stats, heal_find: healFind };
+    const a = put(g, "red", 440, 400);
+    put(g, "red", 500, 400);
+    put(g, "red", 528, 400);
+    launch(a, 1, 0, 600, { chainDepth: depth, chainT: 1 });
+    run(g, 6);
+    return g;
+  }
+
+  it("연쇄 단계 0 팝에서는 떨어지지 않는다", () => {
+    for (let s = 1; s <= 100; s++) expect(chainPop(s, 0).milks).toHaveLength(0);
+  });
+
+  it("연쇄 단계 1 이상 팝에서 약 15% 확률로 떨어지고, heal_find가 확률을 올린다", () => {
+    let base = 0;
+    let boosted = 0;
+    for (let s = 1; s <= 600; s++) {
+      base += chainPop(s, 1).milks.length;
+      boosted += chainPop(s, 1, 1).milks.length;
+    }
+    expect(base / 600).toBeGreaterThan(0.11);
+    expect(base / 600).toBeLessThan(0.19);
+    expect(boosted / 600).toBeGreaterThan(0.25);
+  });
+
+  it("주우면 최대 체력의 8%를 회복하고(최대치 초과 없음), 20초 뒤에는 사라진다", () => {
+    const g = emptyGame();
+    g.player.hp = 50;
+    g.milks.push({ x: g.player.x + 10, y: g.player.y, t: RULES.heal.lifetime });
+    run(g, 1);
+    expect(g.player.hp).toBeCloseTo(58);
+    expect(g.milks).toHaveLength(0);
+    g.player.hp = g.player.maxHp - 2;
+    g.milks.push({ x: g.player.x, y: g.player.y, t: RULES.heal.lifetime });
+    run(g, 1);
+    expect(g.player.hp).toBe(g.player.maxHp);
+    g.milks.push({ x: 100, y: 100, t: RULES.heal.lifetime });
+    run(g, RULES.heal.lifetime * RULES.tickHz + 2);
+    expect(g.milks).toHaveLength(0);
+  });
+});
+
 describe("1.6 막힘 방지", () => {
   it("직접 피해로 처치하면 경험치는 매치의 20%", () => {
     const g = emptyGame();

@@ -63,6 +63,8 @@ export interface CharacterStats {
   regen: number;
   /** 레어 드롭(색 폭탄) 확률 배율 가산: 확률 × (1 + luck) */
   luck: number;
+  /** 우유병 드롭 확률 가산: 확률 × (1 + heal_find) */
+  heal_find: number;
 }
 
 export interface CharacterDef {
@@ -169,6 +171,13 @@ export interface Totem {
   weapon: WeaponInstance | null;
 }
 
+export interface Milk {
+  x: number;
+  y: number;
+  /** 남은 시간 (s) */
+  t: number;
+}
+
 export interface Bomb {
   x: number;
   y: number;
@@ -182,6 +191,8 @@ export type GameEvent =
   | { type: "stick"; a: number; b: number }
   | { type: "bomb-drop"; color: MatchColor; x: number; y: number }
   | { type: "bomb-pickup"; color: MatchColor; count: number }
+  | { type: "milk-drop"; x: number; y: number }
+  | { type: "milk-pickup"; heal: number; hp: number }
   /** ids: 이번 발사로 맞힌(날리거나 끌어당긴) 적 */
   | { type: "fire"; weapon: string; hits: number; ids: number[] }
   | { type: "whistle"; hits: number }
@@ -198,6 +209,10 @@ export interface Stats {
   bombPops: number;
   /** 이번 스테이지에 떨어진 색 폭탄 수 (스테이지당 상한) */
   bombDrops: number;
+  milkDrops: number;
+  milkPicked: number;
+  /** 우유로 회복한 체력 합 */
+  healed: number;
   poppedEnemies: number;
   killedEnemies: number;
   maxChain: number;
@@ -222,6 +237,7 @@ export interface Game {
   weapons: WeaponInstance[];
   totems: Totem[];
   bombs: Bomb[];
+  milks: Milk[];
   stage: StageDef | null;
   spawnTimer: number;
   enemyDefs: Record<string, EnemyDef>;

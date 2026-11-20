@@ -6,7 +6,7 @@ import type { Enemy, Game, Input } from "../core/types.ts";
  *    줄 중간에 다른 색이 먼저 있으면 막힌 줄로 보고 노리지 않는다.
  * 2) 아니면 가까운 적을 피하면서 적 무리 둘레를 돈다 (카이팅).
  * 3) 둘러싸이거나 체력이 35% 아래면 휘슬.
- * 4) 450px 안의 색 폭탄은, 가까이 위협이 없고 폭탄 주변이 한산할 때만 킥보다 먼저 주우러 간다.
+ * 4) 450px 안의 색 폭탄(과 체력이 90% 아래면 우유병)은, 가까이 위협이 없고 폭탄 주변이 한산할 때만 킥보다 먼저 주우러 간다.
  * 봇은 난수를 쓰지 않는다. 공간 해시는 지난 틱 기준이라 적 목록을 직접 훑는다.
  */
 export function botInput(g: Game): Input {
@@ -43,7 +43,9 @@ export function botInput(g: Game): Input {
   if (calm) {
     let best: { x: number; y: number } | null = null;
     let bestD = 450;
-    for (const b of g.bombs) {
+    // 우유병은 체력이 90% 아래일 때만 (가득 차 있으면 주워도 소용없다).
+    const items: { x: number; y: number }[] = p.hp < p.maxHp * 0.9 ? [...g.bombs, ...g.milks] : g.bombs;
+    for (const b of items) {
       const d = Math.hypot(b.x - p.x, b.y - p.y);
       if (d >= bestD) continue;
       let crowd = 0;
