@@ -12,8 +12,14 @@ export function popShockRadius(size: number): number {
   return RULES.match.shockRadiusBase + RULES.match.shockRadiusPerExtra * Math.max(0, size - RULES.match.shockwaveMin);
 }
 
+/** 마무리 시간에는 팝 경험치 보너스 */
+function phaseXpMul(g: Game): number {
+  return g.phase === "wrapup" ? 1 + RULES.stage.wrapUpXpBonus : 1;
+}
+
 function recordPop(g: Game, size: number, depth: number): void {
   const s = g.stats;
+  if (g.phase === "wrapup") s.wrapUpPopped += size;
   s.pops++;
   if (depth === 0) s.rootPops++;
   s.poppedEnemies += size;
@@ -45,7 +51,7 @@ export function popCluster(g: Game, indices: number[], trigger: Enemy, color: Ma
   const n = indices.length;
   cx /= n;
   cy /= n;
-  xp *= chainMultiplier(depth);
+  xp *= chainMultiplier(depth) * phaseXpMul(g);
   const cushion = trigger.wallBounces > 0;
   const master = cushion && g.player.trait === "three_cushion";
   if (master) xp *= 1 + RULES.threeCushion.xpBonus;
@@ -121,6 +127,7 @@ export function detonateBomb(g: Game, color: MatchColor, x = g.player.x, y = g.p
   }
   g.events.push({ type: "bomb-pickup", color, count });
   if (count === 0) return 0;
+  xp *= phaseXpMul(g);
   g.stats.xp += xp;
   recordPop(g, count, 0);
   g.stats.bombPops++;

@@ -33,6 +33,12 @@ export interface SimReport {
   seconds: number;
   survived: number;
   died: boolean;
+  /** 클리어 (마무리 시간까지 생존) */
+  cleared: boolean;
+  /** 마무리 시간에 터뜨린 적 */
+  wrapUpPopped: number;
+  /** 마무리 시간이 끝날 때 남아서 사라진 적 */
+  vanished: number;
   spawned: number;
   alivePeak: number;
   pops: number;
@@ -66,6 +72,9 @@ export function summarize(g: Game, opts: SimOptions, seconds: number): SimReport
     seconds,
     survived,
     died: g.player.dead,
+    cleared: g.phase === "cleared",
+    wrapUpPopped: s.wrapUpPopped,
+    vanished: s.vanished,
     spawned: s.spawned,
     alivePeak: s.alivePeak,
     pops: s.pops,
@@ -104,15 +113,16 @@ export function runSim(opts: SimOptions): SimReport {
     stage: st,
     weapons: opts.weapons.map((w) => makeWeapon(weapon(w.id), w.lv)),
   });
-  const seconds = opts.seconds ?? st.duration;
+  const seconds = opts.seconds ?? st.duration + RULES.stage.wrapUpSeconds;
   const ticks = Math.round(seconds * RULES.tickHz);
-  for (let t = 0; t < ticks && !g.player.dead; t++) step(g, botInput(g));
+  for (let t = 0; t < ticks && (g.phase === "play" || g.phase === "wrapup"); t++) step(g, botInput(g));
   return summarize(g, opts, seconds);
 }
 
 export interface Aggregate {
   runs: number;
   deaths: number;
+  clearRate: number;
   matchKillRatio: number;
   avgChain: number;
   stallsPerMinute: number;
@@ -132,5 +142,5 @@ export function aggregate(reports: SimReport[]): Aggregate {
     all: false,
   };
   pass.all = pass.matchKillRatio && pass.avgChain && pass.stallsPerMinute;
-  return { runs: reports.length, deaths: reports.filter((r) => r.died).length, matchKillRatio, avgChain, stallsPerMinute, pass };
+  return { runs: reports.length, deaths: reports.filter((r) => r.died).length, clearRate: reports.filter((r) => r.cleared).length / Math.max(1, reports.length), matchKillRatio, avgChain, stallsPerMinute, pass };
 }

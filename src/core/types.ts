@@ -148,8 +148,16 @@ export interface StageDef {
   enemyHpMul: number;
   /** 접촉 피해 배율 (기본 1). 방어는 배율을 곱한 뒤에 빼므로, 배율이 오를수록 방어의 비중이 줄어든다. */
   contactMul?: number;
+  /**
+   * 클리어 조건. "survive"(기본): duration 동안 버틴 뒤 마무리 시간을 지나면 클리어.
+   * "elites", "boss"는 엘리트·보스가 구현되면 쓴다.
+   */
+  clear?: "survive" | "elites" | "boss";
   spawn: SpawnPhase[];
 }
+
+/** 한 판의 진행 상태: 진행 중 → 마무리 시간(소환 멈춤) → 클리어, 또는 사망으로 실패 */
+export type StagePhase = "play" | "wrapup" | "cleared" | "failed";
 
 export interface Input {
   moveX: number;
@@ -208,6 +216,8 @@ export type GameEvent =
   | { type: "whistle"; hits: number }
   | { type: "player-hit"; damage: number; hp: number }
   | { type: "player-dead" }
+  | { type: "wrapup-start" }
+  | { type: "stage-clear"; vanished: number }
   | { type: "stall" };
 
 export interface Stats {
@@ -219,6 +229,10 @@ export interface Stats {
   bombPops: number;
   /** 이번 스테이지에 떨어진 색 폭탄 수 (스테이지당 상한) */
   bombDrops: number;
+  /** 마무리 시간에 터뜨린 적 수 */
+  wrapUpPopped: number;
+  /** 마무리 시간이 끝날 때 남아서 사라진 적 수 */
+  vanished: number;
   milkDrops: number;
   milkPicked: number;
   /** 우유로 회복한 체력 합 */
@@ -249,6 +263,7 @@ export interface Game {
   bombs: Bomb[];
   milks: Milk[];
   stage: StageDef | null;
+  phase: StagePhase;
   spawnTimer: number;
   enemyDefs: Record<string, EnemyDef>;
   grid: SpatialHash;

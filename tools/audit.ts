@@ -103,8 +103,8 @@ export function runOne(sc: Scenario, seed: number): RunResult {
   const a: Anomalies = { nonFinite: 0, outOfArena: 0, overCap: 0, deepOverlap: 0, longFlight: 0, slowTicks: 0, maxTickMs: 0, p99TickMs: 0, bombsLeft: 0 };
   const tickMs: number[] = [];
   const flight = new Map<number, number>();
-  const ticks = st.duration * RULES.tickHz;
-  for (let t = 0; t < ticks && !g.player.dead; t++) {
+  const ticks = (st.duration + RULES.stage.wrapUpSeconds) * RULES.tickHz;
+  for (let t = 0; t < ticks && (g.phase === "play" || g.phase === "wrapup"); t++) {
     const input = botInput(g);
     const t0 = performance.now();
     step(g, input);

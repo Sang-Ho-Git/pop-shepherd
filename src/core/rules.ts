@@ -100,6 +100,13 @@ export const RULES = {
    */
   heal: { minChainDepth: 1, dropChance: 0.15, healFrac: 0.08, lifetime: 20, pickupRange: 40 },
 
+  /**
+   * 스테이지 클리어 (생존형): duration이 끝나면 wrapUpSeconds 동안 소환이 멈춘 "마무리 시간".
+   * 그사이 팝의 경험치는 +wrapUpXpBonus. 마무리 시간이 끝나면 남은 적은 사라지고 클리어.
+   * 남은 적은 벌이 아니라 놓친 보상이다 (짝 안 맞는 잔챙이 때문에 막히지 않는다).
+   */
+  stage: { wrapUpSeconds: 15, wrapUpXpBonus: 0.5 },
+
   /** 1.6 막힘 방지 */
   antiStall: {
     /** 직접 피해로 처치하면 매치 처치 경험치의 20% */

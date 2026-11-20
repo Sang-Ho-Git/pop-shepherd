@@ -19,6 +19,9 @@ export interface GameConfig {
 }
 
 export function createGame(cfg: GameConfig): Game {
+  if (cfg.stage && (cfg.stage.clear ?? "survive") !== "survive") {
+    throw new Error(`${cfg.stage.id}: 클리어 조건 ${cfg.stage.clear}은 아직 구현되지 않음 (엘리트·보스 필요)`);
+  }
   const arena = cfg.arena ?? { w: RULES.arena.w, h: RULES.arena.h };
   const s = cfg.character.stats;
   return {
@@ -48,6 +51,7 @@ export function createGame(cfg: GameConfig): Game {
     bombs: [],
     milks: [],
     stage: cfg.stage,
+    phase: "play",
     spawnTimer: 0,
     enemyDefs: cfg.enemyDefs,
     grid: new SpatialHash(arena.w, arena.h, 64),
@@ -57,6 +61,8 @@ export function createGame(cfg: GameConfig): Game {
       rootPops: 0,
       bombPops: 0,
       bombDrops: 0,
+      wrapUpPopped: 0,
+      vanished: 0,
       milkDrops: 0,
       milkPicked: 0,
       healed: 0,
@@ -175,6 +181,7 @@ function contactDamage(g: Game): void {
   if (p.hp <= 0) {
     p.hp = 0;
     p.dead = true;
+    g.phase = "failed";
     g.events.push({ type: "player-dead" });
   }
 }
@@ -237,9 +244,27 @@ function trackStall(g: Game): void {
  *  1 이동  2 소환  3 추적·토템  4 적분  5 공간 해시  6 무기·휘슬  7 충돌 매치  8 겹침 해소
  *  9 접촉 피해  10 폭탄  11 막힘  12 죽은 적 제거
  */
+/** 생존형 클리어: 시간이 끝나면 마무리 시간, 그것도 끝나면 남은 적을 지우고 클리어 */
+function advancePhase(g: Game): void {
+  const st = g.stage;
+  if (!st) return;
+  if (g.phase === "play" && g.time >= st.duration) {
+    g.phase = "wrapup";
+    g.events.push({ type: "wrapup-start" });
+  }
+  if (g.phase === "wrapup" && g.time >= st.duration + RULES.stage.wrapUpSeconds) {
+    const vanished = g.enemies.length;
+    g.enemies = [];
+    g.totems = [];
+    g.stats.vanished = vanished;
+    g.phase = "cleared";
+    g.events.push({ type: "stage-clear", vanished });
+  }
+}
+
 export function step(g: Game, input: Input): void {
   g.events = [];
-  if (g.player.dead) return;
+  if (g.player.dead || g.phase === "cleared" || g.phase === "failed") return;
 
   movePlayer(g, input);
   tickSpawner(g, DT);
@@ -263,6 +288,7 @@ export function step(g: Game, input: Input): void {
   g.stats.alivePeak = Math.max(g.stats.alivePeak, alive);
   g.tick++;
   g.time = g.tick * DT;
+  advancePhase(g);
 }
 
 /** 상태 해시 (FNV-1a, 위치·속도 비트 단위). 재현성 테스트용. */

@@ -78,6 +78,9 @@ if (process.argv.includes("--json")) {
   }
   console.log("");
   const mark = (ok: boolean): string => (ok ? "통과" : "미달");
+  const avg = (f: (r: SimReport) => number): number => reports.reduce((a, r) => a + f(r), 0) / reports.length;
+  console.log(`클리어 ${pct(agg.clearRate)} · 마무리 시간에 터뜨림 판당 ${avg((r) => r.wrapUpPopped).toFixed(1)} · 남아서 사라짐 ${avg((r) => r.vanished).toFixed(1)}`);
+  console.log("");
   console.log(`M1 기준 (${agg.runs}판 평균, 사망 ${agg.deaths}판)`);
   console.log(`  매치 처치 비율 ${pct(agg.matchKillRatio)}  (기준 ≥ ${pct(M1_CRITERIA.matchKillRatio)})  ${mark(agg.pass.matchKillRatio)}`);
   console.log(`  평균 연쇄      ${agg.avgChain.toFixed(2)}    (기준 ≥ ${M1_CRITERIA.avgChain})      ${mark(agg.pass.avgChain)}`);
