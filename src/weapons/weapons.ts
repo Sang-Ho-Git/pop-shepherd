@@ -416,7 +416,7 @@ function fireProjectile(g: Game, w: WeaponInstance, buf: number[]): number {
 }
 
 /** 회오리 칼날 반경 (칼날 하나가 적을 치는 원) */
-export const BLADE_RADIUS = 22;
+export const BLADE_RADIUS = 30;
 /** 회오리: 같은 적을 다시 칠 수 있기까지 (s) */
 export const BLADE_REHIT = 0.5;
 

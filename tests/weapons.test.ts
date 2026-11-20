@@ -177,7 +177,8 @@ describe("무기 동작 모듈 (M1 3종)", () => {
     run(g, 3);
     expect(e.state).toBe("launched");
     expect(e.vy).toBeGreaterThan(0);
-    run(g, Math.ceil(1.5 * 60));
+    // 한 바퀴 = 쿨다운
+    run(g, Math.ceil(w.level.cooldown * 60) - 3);
     expect(w.fires).toBe(1);
     expect(w.hits).toBe(1);
   });
