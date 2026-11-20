@@ -2,7 +2,7 @@ import { DT, RULES } from "./rules.ts";
 import { Rng } from "./rng.ts";
 import type { CharacterDef, EnemyDef, Game, Input, StageDef, WeaponInstance } from "./types.ts";
 import { SpatialHash } from "../world/spatialHash.ts";
-import { integrate, separate } from "../world/physics.ts";
+import { integrate, MAX_ENEMY_RADIUS, separate } from "../world/physics.ts";
 import { resolveImpacts } from "../combat/impacts.ts";
 import { detonateBomb, shockwave } from "../combat/pops.ts";
 import { tickSpawner } from "../combat/spawner.ts";
@@ -86,6 +86,8 @@ export function createGame(cfg: GameConfig): Game {
       bossKilled: 0,
       bossKilledAt: 0,
       chestsOpened: 0,
+      damageTaken: 0,
+      damageFromSpecial: 0,
       evolutions: 0,
       specialDamage: 0,
       specialHits: 0,
@@ -186,10 +188,12 @@ function contactDamage(g: Game): void {
   const p = g.player;
   if (p.iframes > 0 || p.dead) return;
   const buf: number[] = [];
-  g.grid.query(p.x, p.y, p.radius + 40, buf);
+  // 가장 큰 적(보스 반지름 48)까지 닿을 수 있게 찾는다. 예전에는 +40이라 보스 접촉이 빠질 수 있었다.
+  g.grid.query(p.x, p.y, p.radius + MAX_ENEMY_RADIUS + 2, buf);
   const mul = g.stage?.contactMul ?? 1;
   let worst = 0;
   let sum = 0;
+  let fromSpecial = 0;
   for (const j of buf) {
     const e = g.enemies[j];
     if (!e || e.dead || e.state !== "walk") continue;
@@ -198,12 +202,16 @@ function contactDamage(g: Game): void {
     const dy = e.y - p.y;
     if (dx * dx + dy * dy > reach * reach) continue;
     worst = Math.max(worst, e.contactDamage * mul);
-    sum += Math.max(1, e.contactDamage * mul - p.stats.armor);
+    const d = Math.max(1, e.contactDamage * mul - p.stats.armor);
+    sum += d;
+    if (e.rank !== "normal") fromSpecial += d;
   }
   if (worst <= 0) return;
   // "worst": 닿은 적 중 가장 센 한 마리 피해. "sum": 닿은 적마다 피해 (포위가 위험해진다).
   const dmg = RULES.player.contactMode === "sum" ? sum : Math.max(1, worst - p.stats.armor);
   p.hp -= dmg;
+  g.stats.damageTaken += dmg;
+  g.stats.damageFromSpecial += RULES.player.contactMode === "sum" ? fromSpecial : 0;
   p.iframes = RULES.player.iframes;
   g.events.push({ type: "player-hit", damage: dmg, hp: p.hp });
   if (p.hp <= 0 && p.revives > 0) {

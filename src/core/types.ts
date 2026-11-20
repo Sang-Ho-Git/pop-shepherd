@@ -359,6 +359,9 @@ export interface Stats {
   /** 보스를 쓰러뜨린 시각 (s). 없으면 0 */
   bossKilledAt: number;
   chestsOpened: number;
+  /** 받은 접촉 피해 합계, 그중 엘리트·보스에게 받은 것 */
+  damageTaken: number;
+  damageFromSpecial: number;
   /** 진화한 무기 수 */
   evolutions: number;
   /** 엘리트·보스가 팝으로 입은 피해 합계, 그런 팝의 수 */

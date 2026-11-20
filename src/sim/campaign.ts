@@ -55,6 +55,9 @@ export interface StageResult {
   /** 보스를 쓰러뜨리는 데 걸린 시간 (s, 등장부터). 보스가 없거나 못 잡았으면 null */
   bossTime: number | null;
   chests: number;
+  /** 받은 접촉 피해, 그중 엘리트·보스 몫 */
+  damageTaken: number;
+  damageFromSpecial: number;
   evolutions: number;
   /** 스테이지가 끝났을 때 남은 보스 체력 비율 (보스가 없으면 null) */
   bossHpLeft: number | null;
@@ -182,6 +185,8 @@ export function runCampaign(seed: number, characterId: string, stages: string[] 
       elitesKilled: s.elitesKilled,
       bossTime: s.bossKilled > 0 && g.stage!.boss ? s.bossKilledAt - g.stage!.boss.at : null,
       chests: s.chestsOpened,
+      damageTaken: s.damageTaken,
+      damageFromSpecial: s.damageFromSpecial,
       evolutions: s.evolutions,
       bossHpLeft: (() => {
         if (!g.stage!.boss) return null;
