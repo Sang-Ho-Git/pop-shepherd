@@ -194,13 +194,13 @@ describe("갈래·진화 카드", () => {
     expect([g.weapons[0]!.level.lv, g.weapons[0]!.level.branch]).toEqual([5, "B"]);
   });
 
-  it("Lv7에서 짝 패시브가 있어야 진화 카드가 나온다", () => {
+  it("Lv7에서 짝 패시브가 있어야 진화할 수 있고, 진화는 레벨업 카드가 아니라 상점의 진화 상자로 받는다", () => {
     const g = game();
     g.weapons = [w("shockwave", 7, "A")];
     expect(canEvolve(g, "shockwave")).toBe(false);
-    expect(candidates(g).weaponUp).toEqual([]);
     addPassive(g, "chain_amp");
-    expect(candidates(g).weaponUp).toEqual([{ kind: "evolve", id: "shockwave" }]);
+    expect(canEvolve(g, "shockwave")).toBe(true);
+    expect(candidates(g).weaponUp).toEqual([]);
     applyCard(g, { kind: "evolve", id: "shockwave" });
     expect(g.weapons[0]!.level.lv).toBe("evo");
     // 진화해도 갈래 A(집중파)의 완성 효과가 남는다

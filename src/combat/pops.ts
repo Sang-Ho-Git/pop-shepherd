@@ -1,6 +1,7 @@
 import { RULES } from "../core/rules.ts";
 import type { Color, Enemy, Game, MatchColor } from "../core/types.ts";
 import { launch, MAX_ENEMY_RADIUS } from "../world/physics.ts";
+import { SHOP } from "../data/index.ts";
 
 /** 연쇄 단계 depth의 경험치 배율 */
 export function chainMultiplier(depth: number): number {
@@ -66,6 +67,7 @@ export function popCluster(g: Game, indices: number[], trigger: Enemy, color: Ma
   const master = cushion && g.player.trait === "three_cushion";
   if (master) xp *= 1 + RULES.threeCushion.xpBonus;
   g.stats.xp += xp;
+  g.player.gold += n * SHOP.goldPerPop * (1 + g.player.stats.gold_find);
   recordPop(g, n, depth);
   g.events.push({ type: "pop", ids, size: n, color, chainDepth: depth, xp, cushion, x: cx, y: cy });
 

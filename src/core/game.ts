@@ -48,6 +48,9 @@ export function createGame(cfg: GameConfig): Game {
       level: 1,
       passives: {},
       trait: cfg.character.trait ?? null,
+      gold: 0,
+      purchases: 0,
+      revives: 0,
       dead: false,
     },
     enemies: [],
@@ -188,6 +191,15 @@ function contactDamage(g: Game): void {
   p.hp -= dmg;
   p.iframes = RULES.player.iframes;
   g.events.push({ type: "player-hit", damage: dmg, hp: p.hp });
+  if (p.hp <= 0 && p.revives > 0) {
+    // 두 번째 기회: 체력 절반으로 일어나며 주변 적을 밀어낸다
+    p.revives--;
+    p.hp = p.maxHp * RULES.player.reviveHpFrac;
+    p.iframes = RULES.player.reviveIframes;
+    shockwave(g, p.x, p.y, RULES.whistle.radius, RULES.whistle.knock, { chainDepth: 0, chainT: 0 });
+    g.events.push({ type: "player-revive" });
+    return;
+  }
   if (p.hp <= 0) {
     p.hp = 0;
     p.dead = true;

@@ -2,6 +2,8 @@ import enemiesJson from "../../data/enemies.json" with { type: "json" };
 import charactersJson from "../../data/characters.json" with { type: "json" };
 import balanceJson from "../../data/balance.json" with { type: "json" };
 import passivesJson from "../../data/passives.json" with { type: "json" };
+import shopJson from "../../data/shop.json" with { type: "json" };
+import metaJson from "../../data/meta_tree.json" with { type: "json" };
 import stage01 from "../../data/stages/stage01.json" with { type: "json" };
 import stage02 from "../../data/stages/stage02.json" with { type: "json" };
 import stage03 from "../../data/stages/stage03.json" with { type: "json" };
@@ -53,6 +55,46 @@ export interface Balance {
   stageContactMul: { values: number[] };
 }
 export const BALANCE = balanceJson as Balance;
+
+export type ShopKind = "weaponUp" | "newWeapon" | "passiveUp" | "newPassive" | "heal";
+export interface ShopDef {
+  goldPerPop: number;
+  fillerGold: number;
+  slots: number;
+  rerollCost: number;
+  /** 한 번 살 때마다 모든 가격이 이만큼 (복리로) 오른다 */
+  inflation: number;
+  healFrac: number;
+  prices: Record<ShopKind, number>;
+}
+export const SHOP = shopJson as ShopDef;
+
+export interface MetaEffect {
+  max_hp_pct?: number;
+  armor?: number;
+  revive?: number;
+  knock_power?: number;
+  cooldown?: number;
+  startWeaponLevel?: number;
+  gold_find?: number;
+  freeRerolls?: number;
+  shopSlots?: number;
+}
+export interface MetaNode {
+  id: string;
+  branch: string;
+  name: string;
+  maxLevel: number;
+  costs: number[];
+  requires?: Record<string, number>;
+  effect: MetaEffect;
+  note: string;
+}
+export interface MetaTree {
+  coins: { perStage: number; perPoppedEnemy: number };
+  nodes: MetaNode[];
+}
+export const META = metaJson as MetaTree;
 
 /**
  * 발사력 점수 (밸런스 시트와 같은 식):

@@ -83,6 +83,8 @@ export interface CharacterStats {
   luck: number;
   /** 우유병 드롭 확률 가산: 확률 × (1 + heal_find) */
   heal_find: number;
+  /** 골드 획득 배율 증가 (영구 강화 알뜰) */
+  gold_find: number;
 }
 
 export interface PassiveDef {
@@ -125,6 +127,12 @@ export interface Player {
   passives: Record<string, number>;
   /** 캐릭터 고유 특성 id */
   trait: string | null;
+  /** 정비 상점에 쓰는 골드 (스테이지를 넘어 이어진다) */
+  gold: number;
+  /** 이번 런에 상점에서 산 횟수 (가격 인상) */
+  purchases: number;
+  /** 남은 부활 횟수 (영구 강화 두 번째 기회) */
+  revives: number;
   dead: boolean;
 }
 
@@ -197,6 +205,7 @@ export type StagePhase = "play" | "wrapup" | "cleared" | "failed";
 export type Card =
   | { kind: "weaponUp"; id: string; /** Lv3 → Lv4에서 고르는 갈래 */ branch?: string }
   | { kind: "evolve"; id: string }
+  | { kind: "gold" }
   | { kind: "newWeapon"; id: string }
   | { kind: "passiveUp"; id: string }
   | { kind: "newPassive"; id: string }
@@ -271,6 +280,8 @@ export type GameEvent =
   | { type: "whistle"; hits: number }
   | { type: "player-hit"; damage: number; hp: number }
   | { type: "player-dead" }
+  | { type: "player-revive" }
+  | { type: "evolve"; weapon: string }
   | { type: "wrapup-start" }
   | { type: "level-up"; level: number; picked: string }
   | { type: "stage-clear"; vanished: number }

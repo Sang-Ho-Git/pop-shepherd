@@ -45,11 +45,11 @@ describe("2.1 레벨업 카드", () => {
     }
   });
 
-  it("고를 것이 없으면 회복 카드로 채운다", () => {
+  it("고를 것이 없으면 채움 카드(회복 한 장, 나머지 골드)로 채운다", () => {
     const g = game();
     g.weapons = Object.values(WEAPONS).filter((d) => d.implemented).map((d) => makeWeapon(d, "evo"));
     for (const p of Object.values(PASSIVES).filter((x) => x.implemented)) for (let i = 0; i < p.maxLevel; i++) addPassive(g, p.id);
-    expect(drawCards(g)).toEqual([{ kind: "heal" }, { kind: "heal" }, { kind: "heal" }]);
+    expect(drawCards(g)).toEqual([{ kind: "heal" }, { kind: "gold" }, { kind: "gold" }]);
   });
 
   it("무기 강화는 레벨을 올리고, 새 무기는 Lv1로 더한다", () => {

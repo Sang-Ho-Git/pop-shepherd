@@ -1,6 +1,6 @@
 import { RULES } from "../core/rules.ts";
 import type { Card, Game, WeaponInstance } from "../core/types.ts";
-import { lp, PASSIVES, WEAPONS } from "../data/index.ts";
+import { lp, PASSIVES, SHOP, WEAPONS } from "../data/index.ts";
 import { BRANCH_LEVEL, MAX_LEVEL, makeWeapon, weaponLevel } from "../weapons/weapons.ts";
 import { addPassive } from "./passives.ts";
 
@@ -41,9 +41,8 @@ export function candidates(g: Game): Record<"weaponUp" | "newWeapon" | "passiveU
     if (lv < MAX_LEVEL) {
       // Lv3 → Lv4 카드는 한 장이고, 고르는 순간 갈래 선택 창이 뜬다 (기획: 두 장이면 3칸 중 2칸을 차지한다)
       ups.push({ kind: "weaponUp", id: w.def.id });
-    } else if (canEvolve(g, w.def.id)) {
-      ups.push({ kind: "evolve", id: w.def.id });
     }
+    // 진화는 레벨업 카드가 아니라 정비 상점의 진화 상자로 받는다 (기획서)
   }
   return {
     weaponUp: ups,
@@ -65,7 +64,7 @@ export function candidates(g: Game): Record<"weaponUp" | "newWeapon" | "passiveU
   };
 }
 
-/** 카드 3장 뽑기: 종류를 가중치로 고르고 그 안에서 하나, 중복 없이. 후보가 모자라면 회복 카드로 채운다. */
+/** 카드 3장 뽑기: 종류를 가중치로 고르고 그 안에서 하나, 중복 없이. 후보가 모자라면 채움 카드(회복, 골드)로 채운다. */
 export function drawCards(g: Game): Card[] {
   const pool = candidates(g);
   const kinds = Object.keys(pool) as (keyof typeof pool)[];
@@ -73,7 +72,7 @@ export function drawCards(g: Game): Card[] {
   while (out.length < RULES.cards.count) {
     const live = kinds.filter((k) => pool[k].length > 0);
     if (live.length === 0) {
-      out.push({ kind: "heal" });
+      out.push(out.some((c) => c.kind === "heal") ? { kind: "gold" } : { kind: "heal" });
       continue;
     }
     const k = g.rng.weighted(live, live.map((x) => RULES.cards.weights[x]));
@@ -119,6 +118,9 @@ export function applyCard(g: Game, c: Card): void {
     case "heal":
       g.player.hp = Math.min(g.player.maxHp, g.player.hp + g.player.maxHp * RULES.cards.fillerHealFrac);
       break;
+    case "gold":
+      g.player.gold += SHOP.fillerGold;
+      break;
   }
 }
 
@@ -136,7 +138,13 @@ export const BOT_WEAPON_TARGET = 4;
  * 난수를 쓰지 않는다.
  */
 export function botChooseCard(cards: Card[], g: Game): number {
-  const score = (c: Card): number => {
+  let best = 0;
+  for (let i = 1; i < cards.length; i++) if (botCardScore(cards[i] as Card, g) > botCardScore(cards[best] as Card, g)) best = i;
+  return best;
+}
+
+/** 봇이 카드(또는 상점 품목) 하나에 매기는 점수. 0 이하는 원하지 않음. */
+export function botCardScore(c: Card, g: Game): number {
     switch (c.kind) {
       case "weaponUp": {
         const w = g.weapons.find((x) => x.def.id === c.id);
@@ -158,15 +166,13 @@ export function botChooseCard(cards: Card[], g: Game): number {
       }
       case "heal":
         return g.player.hp < g.player.maxHp * 0.5 ? 200 : 0;
+      case "gold":
+        return 1;
     }
-  };
-  let best = 0;
-  for (let i = 1; i < cards.length; i++) if (score(cards[i] as Card) > score(cards[best] as Card)) best = i;
-  return best;
 }
 
 export function cardLabel(c: Card): string {
-  if (c.kind === "heal") return "heal";
+  if (c.kind === "heal" || c.kind === "gold") return c.kind;
   return c.kind === "weaponUp" && c.branch ? `${c.kind}:${c.id}:${c.branch}` : `${c.kind}:${c.id}`;
 }
 

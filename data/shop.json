@@ -1,0 +1,10 @@
+{
+  "_note": "정비 상점. 기획서에는 가격만 방향이 있어 시뮬로 맞춘 임시값. 목표: 한 런에 구매 약 10번.",
+  "goldPerPop": 0.25,
+  "fillerGold": 50,
+  "slots": 3,
+  "rerollCost": 25,
+  "inflation": 0.1,
+  "healFrac": 0.5,
+  "prices": { "weaponUp": 100, "newWeapon": 120, "passiveUp": 70, "newPassive": 80, "heal": 60 }
+}

@@ -1,6 +1,9 @@
 import { createGame, step } from "../core/game.ts";
 import { RULES } from "../core/rules.ts";
-import type { Game } from "../core/types.ts";
+import type { CharacterDef, Game } from "../core/types.ts";
+import { applyMeta, coinsForRun } from "../progression/meta.ts";
+import type { MetaProfile, MetaSpecials } from "../progression/meta.ts";
+import { botShop } from "../progression/shop.ts";
 import { CAMPAIGN, character, ENEMIES, stage, weapon } from "../data/index.ts";
 import { recomputeStats } from "../progression/passives.ts";
 import { makeWeapon } from "../weapons/weapons.ts";
@@ -14,6 +17,9 @@ export interface Carry {
   hp: number;
   passives: Record<string, number>;
   weapons: { id: string; lv: number | "evo"; branch: string | null }[];
+  gold: number;
+  purchases: number;
+  revives: number;
 }
 
 export interface StageResult {
@@ -33,6 +39,16 @@ export interface StageResult {
   alivePeak: number;
   weapons: string;
   passives: string;
+  /** 스테이지에서 터뜨린 적 수 */
+  popped: number;
+  /** 스테이지가 끝났을 때 골드, 이 스테이지에서 번 골드 */
+  gold: number;
+  goldEarned: number;
+  /** 이어진 정비 상점에서 산 것, 진화한 무기 */
+  bought: string[];
+  evolved: string[];
+  /** 부활을 썼는지 */
+  revived: boolean;
 }
 
 export interface CampaignReport {
@@ -42,6 +58,15 @@ export interface CampaignReport {
   reached: number;
   won: boolean;
   stages: StageResult[];
+  /** 런이 끝나고 받는 영구 강화 코인 */
+  coins: number;
+}
+
+export interface CampaignOptions {
+  /** 영구 강화 (기본: 없음) */
+  meta?: MetaProfile;
+  /** 정비 상점을 쓰는지 (기본 true) */
+  shop?: boolean;
 }
 
 /** 캐릭터의 시작 무기. 동작이 아직 없는 무기(올가미·물감총)는 킥으로 대신한다. */
@@ -51,13 +76,20 @@ export function startWeapon(characterId: string): string {
 }
 
 /** 성장 상태를 이어 받아 스테이지 하나를 만든다 */
-export function startStage(seed: number, characterId: string, stageId: string, carry: Carry | null): Game {
+export function startStage(
+  seed: number,
+  characterId: string,
+  stageId: string,
+  carry: Carry | null,
+  meta: { character: CharacterDef; specials: MetaSpecials } | null = null,
+): Game {
+  const startLv = meta?.specials.startWeaponLevel ?? 1;
   const g = createGame({
     seed,
-    character: character(characterId),
+    character: meta?.character ?? character(characterId),
     enemyDefs: ENEMIES,
     stage: stage(stageId),
-    weapons: (carry?.weapons ?? [{ id: startWeapon(characterId), lv: 1, branch: null }]).map((w) => makeWeapon(weapon(w.id), w.lv, w.branch)),
+    weapons: (carry?.weapons ?? [{ id: startWeapon(characterId), lv: startLv, branch: null }]).map((w) => makeWeapon(weapon(w.id), w.lv, w.branch)),
     leveling: true,
   });
   if (carry) {
@@ -66,6 +98,11 @@ export function startStage(seed: number, characterId: string, stageId: string, c
     g.stats.xp = carry.xp;
     recomputeStats(g);
     g.player.hp = Math.min(g.player.maxHp, carry.hp);
+    g.player.gold = carry.gold;
+    g.player.purchases = carry.purchases;
+    g.player.revives = carry.revives;
+  } else {
+    g.player.revives = meta?.specials.revives ?? 0;
   }
   return g;
 }
@@ -77,15 +114,21 @@ export function carryOf(g: Game): Carry {
     hp: g.player.hp,
     passives: { ...g.player.passives },
     weapons: g.weapons.map((w) => ({ id: w.def.id, lv: w.level.lv, branch: w.level.branch })),
+    gold: g.player.gold,
+    purchases: g.player.purchases,
+    revives: g.player.revives,
   };
 }
 
 /** 봇으로 스테이지 1부터 10까지 이어서 돌린다. 죽으면 거기서 끝. */
-export function runCampaign(seed: number, characterId: string, stages: string[] = CAMPAIGN): CampaignReport {
+export function runCampaign(seed: number, characterId: string, stages: string[] = CAMPAIGN, opts: CampaignOptions = {}): CampaignReport {
   const out: StageResult[] = [];
   let carry: Carry | null = null;
+  const meta = opts.meta ? applyMeta(character(characterId), opts.meta) : null;
   for (const [i, id] of stages.entries()) {
-    const g = startStage(seed * 100 + i, characterId, id, carry);
+    const g = startStage(seed * 100 + i, characterId, id, carry, meta);
+    const goldStart = g.player.gold;
+    const revivesStart = g.player.revives;
     const hpStart = g.player.hp / g.player.maxHp;
     const levelStart = g.player.level;
     const xpStart = g.stats.xp;
@@ -111,12 +154,25 @@ export function runCampaign(seed: number, characterId: string, stages: string[] 
       alivePeak: s.alivePeak,
       weapons: g.weapons.map((w) => `${w.def.id}${w.level.lv}${w.level.branch ?? ""}`).join(" "),
       passives: Object.entries(g.player.passives).map(([k, v]) => `${k}${v}`).join(" "),
+      popped: s.poppedEnemies,
+      gold: g.player.gold,
+      goldEarned: g.player.gold - goldStart,
+      bought: [],
+      evolved: [],
+      revived: g.player.revives < revivesStart,
     });
     if (g.phase !== "cleared") break;
+    // 스테이지 사이: 최대 체력의 일부를 회복한 뒤 정비 상점
+    g.player.hp = Math.min(g.player.maxHp, g.player.hp + g.player.maxHp * RULES.stage.betweenHeal);
+    if (opts.shop !== false && i < stages.length - 1) {
+      const res = botShop(g, meta ? { extraSlots: meta.specials.shopSlots, freeRerolls: meta.specials.freeRerolls } : {});
+      const last = out[out.length - 1] as StageResult;
+      last.bought = res.bought;
+      last.evolved = res.evolved;
+    }
     carry = carryOf(g);
-    // 상점 자리: 지금은 스테이지 사이에 최대 체력의 일부를 회복한다.
-    carry.hp = Math.min(g.player.maxHp, carry.hp + g.player.maxHp * RULES.stage.betweenHeal);
   }
   const reached = out.filter((r) => r.cleared).length;
-  return { seed, character: characterId, reached, won: reached === stages.length, stages: out };
+  const coins = coinsForRun(reached, out.reduce((a, r) => a + r.popped, 0));
+  return { seed, character: characterId, reached, won: reached === stages.length, stages: out, coins };
 }

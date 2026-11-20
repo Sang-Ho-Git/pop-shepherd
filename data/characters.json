@@ -15,7 +15,8 @@
       "armor": 0,
       "regen": 0,
       "luck": 0,
-      "heal_find": 0
+      "heal_find": 0,
+      "gold_find": 0
     }
   },
   "cue": {
@@ -34,7 +35,8 @@
       "armor": 0,
       "regen": 0,
       "luck": 0,
-      "heal_find": 0
+      "heal_find": 0,
+      "gold_find": 0
     },
     "trait": "three_cushion"
   },
@@ -54,7 +56,8 @@
       "armor": 2,
       "regen": 0,
       "luck": 0,
-      "heal_find": 0
+      "heal_find": 0,
+      "gold_find": 0
     }
   },
   "pale": {
@@ -73,7 +76,8 @@
       "armor": 0,
       "regen": 0,
       "luck": 0,
-      "heal_find": 0
+      "heal_find": 0,
+      "gold_find": 0
     }
   }
 }
