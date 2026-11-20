@@ -10,6 +10,6 @@
     "params": { "frontHalfDeg": 60, "frontMul": 0.5 } },
   "wool_giant": { "id": "wool_giant", "name": "양털 거인", "rank": "boss", "ai": "wool_giant", "radius": 48, "mass": 12, "hp": 2400, "speed": 45, "contactDamage": 11, "xp": 200,
     "params": { "summonEvery": 6, "summonEvery2": 5, "summonCount": 6, "dashEvery": 8, "dashWindup": 1, "dashTime": 1.2, "dashMul": 3 } },
-  "rainbow_shepherd": { "id": "rainbow_shepherd", "name": "무지개 양치기", "rank": "boss", "ai": "rainbow", "radius": 44, "mass": 10, "hp": 5000, "speed": 55, "contactDamage": 14, "xp": 400,
+  "rainbow_shepherd": { "id": "rainbow_shepherd", "name": "무지개 양치기", "rank": "boss", "ai": "rainbow", "radius": 44, "mass": 10, "hp": 7000, "speed": 55, "contactDamage": 14, "xp": 400,
     "params": { "shiftEvery": 12, "shiftEvery2": 8, "summonEvery": 5, "summonEvery2": 4, "summonCount": 6, "blastEvery": 8, "blastRadius": 180 } }
 }

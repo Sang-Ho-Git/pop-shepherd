@@ -222,6 +222,8 @@ export interface StageDef {
    * "elites", "boss"는 엘리트·보스가 구현되면 쓴다.
    */
   clear?: "survive" | "elites" | "boss";
+  /** 무리 하나에 나오는 짝 수 [최소, 최대] (기본 RULES.spawn) */
+  pairs?: [number, number];
   /** 정해진 시각에 나오는 엘리트 (시각 순) */
   elites?: { at: number; kind: string }[];
   /** 보스 (처치형 스테이지) */

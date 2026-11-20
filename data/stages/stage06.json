@@ -9,7 +9,7 @@
     "green"
   ],
   "grayRatio": 0.07,
-  "maxAlive": 170,
+  "maxAlive": 200,
   "enemyHpMul": 1,
   "contactMul": 2.4,
   "spawn": [
@@ -74,5 +74,9 @@
       "at": 200,
       "kind": "armored"
     }
+  ],
+  "pairs": [
+    2,
+    4
   ]
 }

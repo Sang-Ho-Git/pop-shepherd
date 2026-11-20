@@ -330,6 +330,8 @@ function firePull(g: Game, w: WeaponInstance, buf: number[]): number {
 
 /** 페인트 총 사거리 (데이터에 없으면) */
 export const PAINT_RANGE = 380;
+/** 페인트 총 대상 고르기: 이 거리(px)마다 붙는 수 한 마리만큼 덜 친다 */
+export const PAINT_NEAR_WEIGHT = 250;
 
 /**
  * projectile (페인트 총): 사거리 안에서 색을 바꾸면 매치가 가장 크게 되는 적을 골라,
@@ -365,7 +367,10 @@ function fireProjectile(g: Game, w: WeaponInstance, buf: number[]): number {
     if (bestC) options.push({ e, ...bestC, d: Math.hypot(e.x - p.x, e.y - p.y) });
   }
   if (options.length === 0) return -1;
-  options.sort((a, b) => b.n - a.n || a.d - b.d || a.e.id - b.e.id);
+  // 칠해서 붙는 수가 많은 적, 그리고 가까운 적 우선 (250px 멀어질 때마다 한 마리 몫을 깎는다).
+  // 먼 적만 고르면 플레이어 곁의 위협이 남는다 (시뮬: 팔레가 스테이지 1~2부터 가장 많이 맞음).
+  const score = (o: { n: number; d: number }) => o.n - o.d / PAINT_NEAR_WEIGHT;
+  options.sort((a, b) => score(b) - score(a) || a.e.id - b.e.id);
   const prm = w.level.params;
   const targets = options.slice(0, shots);
   const knock = knockOf(g, w.level);

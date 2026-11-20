@@ -9,7 +9,7 @@
     "green"
   ],
   "grayRatio": 0.12,
-  "maxAlive": 210,
+  "maxAlive": 250,
   "enemyHpMul": 1,
   "contactMul": 3.52,
   "spawn": [
@@ -83,5 +83,9 @@
   "boss": {
     "at": 60,
     "kind": "rainbow_shepherd"
-  }
+  },
+  "pairs": [
+    3,
+    4
+  ]
 }

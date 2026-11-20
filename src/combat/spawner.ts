@@ -117,7 +117,8 @@ export function spawnGroup(g: Game, stage: StageDef): void {
   let alive = g.enemies.reduce((n, e) => n + (e.dead ? 0 : 1), 0);
   if (alive >= stage.maxAlive) return;
   const at = spawnPoint(g);
-  const pairs = g.rng.int(RULES.spawn.pairsMin, RULES.spawn.pairsMax);
+  const [lo, hi] = stage.pairs ?? [RULES.spawn.pairsMin, RULES.spawn.pairsMax];
+  const pairs = g.rng.int(lo, hi);
   const base = g.rng.range(0, Math.PI * 2);
   const colors = spawnColors(stage, g.time);
   let prev: MatchColor | null = null;

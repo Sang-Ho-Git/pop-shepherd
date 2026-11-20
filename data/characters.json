@@ -65,7 +65,7 @@
     "name": "팔레 (화가)",
     "startWeapon": "paint_gun",
     "stats": {
-      "max_hp": 90,
+      "max_hp": 100,
       "move_speed": 1,
       "knock_power": 1,
       "cooldown": 0.1,

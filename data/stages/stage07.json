@@ -9,7 +9,7 @@
     "green"
   ],
   "grayRatio": 0.08,
-  "maxAlive": 180,
+  "maxAlive": 220,
   "enemyHpMul": 1,
   "contactMul": 2.68,
   "spawn": [
@@ -74,5 +74,9 @@
       "at": 200,
       "kind": "chief_jelly"
     }
+  ],
+  "pairs": [
+    3,
+    4
   ]
 }
