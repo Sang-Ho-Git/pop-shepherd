@@ -27,6 +27,8 @@ export interface Balance {
   normalizer: number;
   tolerance: number;
   targetLp: Record<string, number>;
+  /** 스테이지 1~10 접촉 피해 배율 계획 */
+  stageContactMul: { values: number[] };
 }
 export const BALANCE = balanceJson as Balance;
 

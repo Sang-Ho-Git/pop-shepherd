@@ -3,6 +3,7 @@ import { RULES } from "../src/core/rules.ts";
 import { chainMultiplier, damage, popShockRadius } from "../src/combat/pops.ts";
 import { launch } from "../src/world/physics.ts";
 import { emptyGame, pops, put, run } from "./helpers.ts";
+import { BALANCE, stage } from "../src/data/index.ts";
 
 describe("1.5 매치 보상", () => {
   it("3매치: 경험치 3, 무리 중심에서 팝 충격파, 맞은 적은 연쇄 1단계로 날아간다, 폭탄 없음", () => {
@@ -194,6 +195,42 @@ describe("큐 · 쓰리쿠션", () => {
     expect(p).toHaveLength(1);
     expect(p[0]?.cushion).toBe(false);
     expect(p[0]?.xp).toBe(3);
+  });
+});
+
+describe("스테이지 접촉 피해 배율", () => {
+  function hitBy(count: number, mul: number, armor: number): number {
+    const g = emptyGame();
+    g.stage = { ...stage("stage01"), contactMul: mul, spawn: [{ from: 0, to: 9999, interval: 9999 }] };
+    g.spawnTimer = 9999;
+    g.player.stats = { ...g.player.stats, armor };
+    const { x, y } = g.player;
+    for (let i = 0; i < count; i++) {
+      const a = (i / count) * Math.PI * 2;
+      put(g, "red", x + Math.cos(a) * 30, y + Math.sin(a) * 30, { moving: true });
+    }
+    const hit = run(g, 1).find((e) => e.type === "player-hit");
+    return hit && hit.type === "player-hit" ? hit.damage : 0;
+  }
+
+  it("배율을 곱한 뒤 방어를 빼고, 닿은 적마다 더한다", () => {
+    expect(hitBy(1, 1, 0)).toBe(5);
+    expect(hitBy(1, 2, 0)).toBe(10);
+    expect(hitBy(1, 2, 2)).toBe(8);
+    expect(hitBy(3, 2, 2)).toBe(24);
+  });
+
+  it("배율이 오를수록 방어의 비중이 줄어든다 (방어 2: 배율 1에서 40%, 배율 2에서 20%)", () => {
+    expect(1 - hitBy(1, 1, 2) / hitBy(1, 1, 0)).toBeCloseTo(0.4);
+    expect(1 - hitBy(1, 2, 2) / hitBy(1, 2, 0)).toBeCloseTo(0.2);
+  });
+
+  it("스테이지 1~10 계획표는 1.0에서 시작해 줄지 않고 오른다", () => {
+    const v = BALANCE.stageContactMul.values;
+    expect(v).toHaveLength(10);
+    expect(v[0]).toBe(1);
+    for (let i = 1; i < v.length; i++) expect(v[i]!).toBeGreaterThanOrEqual(v[i - 1]!);
+    expect(stage("stage01").contactMul).toBe(v[0]);
   });
 });
 

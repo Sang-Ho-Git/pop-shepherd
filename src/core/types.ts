@@ -146,6 +146,8 @@ export interface StageDef {
   grayRatio: number;
   maxAlive: number;
   enemyHpMul: number;
+  /** 접촉 피해 배율 (기본 1). 방어는 배율을 곱한 뒤에 빼므로, 배율이 오를수록 방어의 비중이 줄어든다. */
+  contactMul?: number;
   spawn: SpawnPhase[];
 }
 

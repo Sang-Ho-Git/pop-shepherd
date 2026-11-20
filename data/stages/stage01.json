@@ -25,5 +25,6 @@
       "to": 180,
       "interval": 1.1
     }
-  ]
+  ],
+  "contactMul": 1.0
 }

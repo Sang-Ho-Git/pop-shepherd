@@ -153,6 +153,7 @@ function contactDamage(g: Game): void {
   if (p.iframes > 0 || p.dead) return;
   const buf: number[] = [];
   g.grid.query(p.x, p.y, p.radius + 40, buf);
+  const mul = g.stage?.contactMul ?? 1;
   let worst = 0;
   let sum = 0;
   for (const j of buf) {
@@ -162,8 +163,8 @@ function contactDamage(g: Game): void {
     const dx = e.x - p.x;
     const dy = e.y - p.y;
     if (dx * dx + dy * dy > reach * reach) continue;
-    worst = Math.max(worst, e.contactDamage);
-    sum += Math.max(1, e.contactDamage - p.stats.armor);
+    worst = Math.max(worst, e.contactDamage * mul);
+    sum += Math.max(1, e.contactDamage * mul - p.stats.armor);
   }
   if (worst <= 0) return;
   // "worst": 닿은 적 중 가장 센 한 마리 피해. "sum": 닿은 적마다 피해 (포위가 위험해진다).
