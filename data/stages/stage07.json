@@ -17,7 +17,7 @@
       "from": 0,
       "to": 60,
       "interval": 1.45,
-      "speedMul": 1.54,
+      "speedMul": 1.79,
       "colors": [
         "red",
         "blue",
@@ -28,7 +28,7 @@
       "from": 60,
       "to": 120,
       "interval": 1.2,
-      "speedMul": 1.66,
+      "speedMul": 1.91,
       "colors": [
         "red",
         "blue",
@@ -40,7 +40,7 @@
       "from": 120,
       "to": 180,
       "interval": 0.95,
-      "speedMul": 1.79,
+      "speedMul": 2.04,
       "colors": [
         "red",
         "blue",
@@ -52,7 +52,7 @@
       "from": 180,
       "to": 240,
       "interval": 0.7,
-      "speedMul": 1.91,
+      "speedMul": 2.16,
       "colors": [
         "red",
         "blue",
