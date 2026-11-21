@@ -65,5 +65,8 @@
   "boss": {
     "at": 60,
     "kind": "wool_giant"
+  },
+  "mix": {
+    "spiky": 0.15
   }
 }

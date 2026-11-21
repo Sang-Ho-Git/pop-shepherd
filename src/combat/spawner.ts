@@ -28,6 +28,7 @@ export function spawnEnemy(g: Game, kind: string, color: Color, x: number, y: nu
     fx: null,
     shot: false,
     rank: def.rank ?? "normal",
+    trait: def.trait ?? null,
     wetT: 0,
     maxHp: def.hp * hpMul,
     boss: def.ai
@@ -86,6 +87,11 @@ export function offScreen(g: Game, x: number, y: number, margin: number): boolea
  * 고리 위 점을 아레나 안으로 당기기만 하면 플레이어가 벽 근처일 때 화면 안(심하면 바로 옆)에 나타난다
  * (야간 점검: 소환의 20%가 화면 안). 고리에서 못 찾으면 아레나 안 화면 밖의 아무 곳.
  */
+/** 바위 안(여유 50px)인지 */
+function inRock(g: Game, x: number, y: number): boolean {
+  return (g.stage?.rocks ?? []).some((r) => Math.hypot(x - r.x, y - r.y) < r.r + 50);
+}
+
 export function spawnPoint(g: Game): { x: number; y: number } {
   const { ringMin, ringMax, edgeMargin, waveRadius } = RULES.spawn;
   const lo = edgeMargin;
@@ -102,7 +108,7 @@ export function spawnPoint(g: Game): { x: number; y: number } {
   for (let i = 0; i < 32; i++) {
     const x = g.rng.range(lo, hiX);
     const y = g.rng.range(lo, hiY);
-    if (offScreen(g, x, y, margin)) return { x, y };
+    if (offScreen(g, x, y, margin) && !inRock(g, x, y)) return { x, y };
   }
   // 아레나가 화면보다 작은 경우뿐이다: 플레이어에게서 가장 먼 모서리.
   return { x: g.player.x < g.arena.w / 2 ? hiX : lo, y: g.player.y < g.arena.h / 2 ? hiY : lo };
@@ -118,7 +124,7 @@ export function spawnGroup(g: Game, stage: StageDef): void {
   let alive = g.enemies.reduce((n, e) => n + (e.dead ? 0 : 1), 0);
   if (alive >= stage.maxAlive) return;
   const at = spawnPoint(g);
-  const [lo, hi] = stage.pairs ?? [RULES.spawn.pairsMin, RULES.spawn.pairsMax];
+  const [lo = RULES.spawn.pairsMin, hi = RULES.spawn.pairsMax] = stage.pairs ?? [];
   const pairs = g.rng.int(lo, hi);
   const base = g.rng.range(0, Math.PI * 2);
   const colors = spawnColors(stage, g.time);
@@ -136,12 +142,15 @@ export function spawnGroup(g: Game, stage: StageDef): void {
     const choices = colors.length > 1 ? colors.filter((c) => c !== prev) : colors;
     const color = g.rng.weighted(choices, colorWeights(choices, counts));
     prev = color;
+    // 짝의 종류: 젤리(가중치 1)와 스테이지 mix의 기믹 적. 짝 둘은 같은 종류다.
+    const kinds = ["jelly", ...Object.keys(stage.mix ?? {})];
+    const kind = kinds.length > 1 ? g.rng.weighted(kinds, kinds.map((k) => (k === "jelly" ? 1 : (stage.mix?.[k] ?? 0)))) : "jelly";
     // 짝은 서로 닿게 (중심 거리 28) 접선 방향으로 나란히
     const tx = -Math.sin(ang) * 14;
     const ty = Math.cos(ang) * 14;
     for (let m = 0; m < RULES.spawn.pairSize && alive < stage.maxAlive; m++) {
       const s = m === 0 ? -1 : 1;
-      spawnEnemy(g, "jelly", color, px + tx * s, py + ty * s);
+      spawnEnemy(g, kind, color, px + tx * s, py + ty * s);
       alive++;
     }
     // 무지개 잉크: 짝 옆에 어떤 색과도 이어지는 무지개 젤리 (짝과 닿지 않게 바깥쪽)

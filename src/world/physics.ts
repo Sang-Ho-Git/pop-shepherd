@@ -29,6 +29,8 @@ export function speedOf(e: { vx: number; vy: number }): number {
  * 이미 날아가는 중이어도 새 발사가 속도를 덮어쓴다.
  */
 export function launch(e: Enemy, dx: number, dy: number, knock: number, src: LaunchSource = PLAIN_LAUNCH): void {
+  // 가시 젤리: 플레이어 무기로는 밀리지 않는다 (팝 충격파·휘슬은 밀린다)
+  if (e.trait === "spiky" && src.weapon) return;
   let len = Math.hypot(dx, dy);
   let ux = 1;
   let uy = 0;
@@ -93,6 +95,39 @@ function home(g: Game, e: Enemy, turn: number): void {
   const step = Math.max(-turn * DT, Math.min(turn * DT, diff));
   e.vx = Math.cos(cur + step) * sp;
   e.vy = Math.sin(cur + step) * sp;
+}
+
+/**
+ * 맵 기믹 바위: 적과 플레이어를 밀어낸다. 날아가던 적은 울타리처럼 튕기고 쿠션 1회로 센다.
+ */
+export function collideRocks(g: Game): void {
+  const rocks = g.stage?.rocks;
+  if (!rocks || rocks.length === 0) return;
+  const wallE = RULES.physics.wallRestitution;
+  const push = (o: { x: number; y: number }, r: number, rk: { x: number; y: number; r: number }): { nx: number; ny: number } | null => {
+    const dx = o.x - rk.x;
+    const dy = o.y - rk.y;
+    const d = Math.hypot(dx, dy);
+    if (d >= rk.r + r || d < 1e-9) return null;
+    const nx = dx / d;
+    const ny = dy / d;
+    o.x = rk.x + nx * (rk.r + r);
+    o.y = rk.y + ny * (rk.r + r);
+    return { nx, ny };
+  };
+  for (const rk of rocks) {
+    push(g.player, g.player.radius, rk);
+    for (const e of g.enemies) {
+      if (e.dead) continue;
+      const n = push(e, e.radius, rk);
+      if (!n || e.state !== "launched") continue;
+      const vn = e.vx * n.nx + e.vy * n.ny;
+      if (vn >= 0) continue;
+      e.vx = (e.vx - 2 * vn * n.nx) * wallE;
+      e.vy = (e.vy - 2 * vn * n.ny) * wallE;
+      e.wallBounces++;
+    }
+  }
 }
 
 export function integrate(g: Game): void {

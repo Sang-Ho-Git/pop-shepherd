@@ -42,6 +42,8 @@ export interface EnemyDef {
   xp: number;
   /** 일반 / 엘리트 / 보스. 엘리트·보스는 매치로 터지지 않고 곁의 팝에 피해를 입는다 */
   rank?: EnemyRank;
+  /** 일반 적의 기믹: spiky(무기로 밀리지 않음), runner(가까이 오면 도망) */
+  trait?: string;
   /** 엘리트·보스의 행동 (summoner, chameleon, armored, wool_giant, rainbow) */
   ai?: string;
   params?: Record<string, number>;
@@ -91,6 +93,8 @@ export interface Enemy {
   /** 무기 갈래가 이번 발사에 붙인 효과. 착지·기절하면 사라진다. */
   fx: LaunchFx | null;
   rank: EnemyRank;
+  /** 일반 적의 기믹 (EnemyDef.trait) */
+  trait: string | null;
   maxHp: number;
   /** 칠한 물감이 마르는 남은 시간 (s). 0보다 크면 매치에 끼지 않는다 */
   wetT: number;
@@ -236,8 +240,12 @@ export interface StageDef {
   clear?: "survive" | "elites" | "boss";
   /** 엘리트 체력 배율 (기본 1). 후반 스테이지 엘리트가 바로 녹지 않게 */
   eliteHpMul?: number;
+  /** 짝으로 나오는 적 종류의 가중치 (젤리는 1). 예: { spiky: 0.15 } */
+  mix?: Record<string, number>;
+  /** 맵 기믹: 바위 (길을 막고, 날아간 적은 울타리처럼 튕긴다) */
+  rocks?: { x: number; y: number; r: number }[];
   /** 무리 하나에 나오는 짝 수 [최소, 최대] (기본 RULES.spawn) */
-  pairs?: [number, number];
+  pairs?: number[];
   /** 정해진 시각에 나오는 엘리트 (시각 순) */
   elites?: { at: number; kind: string }[];
   /** 보스 (처치형 스테이지) */

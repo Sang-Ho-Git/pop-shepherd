@@ -127,6 +127,8 @@ export const RULES = {
    * toBall: 색 공 규칙에서 옆 무리 색 대신 지금 든 공 색으로 칠한다
    */
   paint: { push: true, dry: 0, toBall: false },
+  /** 일반 적 기믹 */
+  traits: { runnerFlee: 220 },
   /** 색 공 던지기 (실험 규칙) */
   ball: {
     /** 날아가는 속도 (px/s), 공 반지름, 사거리 (px), 쿨다운 (s) */

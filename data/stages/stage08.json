@@ -91,5 +91,9 @@
     3,
     5
   ],
-  "eliteHpMul": 2.5
+  "eliteHpMul": 2.5,
+  "mix": {
+    "spiky": 0.18,
+    "runner": 0.15
+  }
 }

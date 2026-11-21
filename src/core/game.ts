@@ -2,7 +2,7 @@ import { DT, RULES } from "./rules.ts";
 import { Rng } from "./rng.ts";
 import type { CharacterDef, EnemyDef, Game, Input, StageDef, WeaponInstance } from "./types.ts";
 import { SpatialHash } from "../world/spatialHash.ts";
-import { integrate, MAX_ENEMY_RADIUS, separate } from "../world/physics.ts";
+import { collideRocks, integrate, MAX_ENEMY_RADIUS, separate } from "../world/physics.ts";
 import { resolveImpacts } from "../combat/impacts.ts";
 import { detonateBomb, shockwave } from "../combat/pops.ts";
 import { tickSpawner } from "../combat/spawner.ts";
@@ -160,8 +160,10 @@ function chase(g: Game): void {
     const dx = p.x - e.x;
     const dy = p.y - e.y;
     const d = Math.hypot(dx, dy);
-    e.vx = d < 1e-9 ? 0 : (dx / d) * e.speed;
-    e.vy = d < 1e-9 ? 0 : (dy / d) * e.speed;
+    // 겁쟁이 양: 가까우면 도망간다
+    const away = e.trait === "runner" && d < RULES.traits.runnerFlee ? -1 : 1;
+    e.vx = d < 1e-9 ? 0 : ((away * dx) / d) * e.speed;
+    e.vy = d < 1e-9 ? 0 : ((away * dy) / d) * e.speed;
     if (cs <= 0 || e.speed <= 0 || e.color === "gray" || e.rank !== "normal") continue;
     let sx = 0;
     let sy = 0;
@@ -391,6 +393,7 @@ export function step(g: Game, input: Input): void {
   tickTotems(g);
   integrate(g);
   tickWalls(g);
+  collideRocks(g);
   rebuildGrid(g);
   tickBalls(g);
   fireWeapons(g);

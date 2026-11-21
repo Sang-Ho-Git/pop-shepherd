@@ -164,6 +164,7 @@ function fireDirectional(g: Game, w: WeaponInstance, buf: number[]): number {
   const cone = Math.cos((param(w.level, "coneDeg", 40) * Math.PI) / 180);
   const maxTargets = param(w.level, "maxTargets", 1);
   const candidates = enemiesWithin(g, p.x, p.y, p.radius + range, buf)
+    .filter((e) => e.trait !== "spiky")
     .map((e) => {
       const dx = e.x - p.x;
       const dy = e.y - p.y;
@@ -286,8 +287,11 @@ function firePull(g: Game, w: WeaponInstance, buf: number[]): number {
   const range = param(w.level, "range");
   const maxTargets = param(w.level, "maxTargets", 1);
   const inRange = enemiesWithin(g, p.x, p.y, range, buf).filter((e) => e.state === "walk" && e.rank === "normal" && e.color !== "gray" && e.color !== "rainbow");
+  // 가시 젤리는 끌려오지 않지만 짝(목적지)은 될 수 있다
+  const movable = (e: Enemy): boolean => e.trait !== "spiky";
   let best: { t: Enemy; b: Enemy; cluster: number; d: number; bp: number } | null = null;
   for (const t of inRange) {
+    if (!movable(t)) continue;
     for (const b of inRange) {
       if (b === t || b.color !== t.color) continue;
       const d = Math.hypot(b.x - t.x, b.y - t.y) - t.radius - b.radius;
@@ -303,7 +307,7 @@ function firePull(g: Game, w: WeaponInstance, buf: number[]): number {
   if (!best) return -1;
   const { b } = best;
   const pulled = inRange
-    .filter((e) => e !== b && e.color === b.color && Math.hypot(b.x - e.x, b.y - e.y) - e.radius - b.radius >= TOUCH_SLACK)
+    .filter((e) => e !== b && movable(e) && e.color === b.color && Math.hypot(b.x - e.x, b.y - e.y) - e.radius - b.radius >= TOUCH_SLACK)
     .sort((x, y) => Math.hypot(b.x - x.x, b.y - x.y) - Math.hypot(b.x - y.x, b.y - y.y) || x.id - y.id);
   // 가장 좋은 대상은 꼭 넣고, 나머지는 짝에 가까운 순서
   const targets = [best.t, ...pulled.filter((e) => e !== best.t)].slice(0, maxTargets);
@@ -656,7 +660,7 @@ export function tickTotems(g: Game): void {
     t.t -= DT;
     const inRange = [];
     for (const e of g.enemies) {
-      if (e.dead || e.state !== "walk" || e.color !== t.color || e.rank !== "normal") continue;
+      if (e.dead || e.state !== "walk" || e.color !== t.color || e.rank !== "normal" || e.trait === "spiky") continue;
       const dx = t.x - e.x;
       const dy = t.y - e.y;
       const reach = t.radius + e.radius;

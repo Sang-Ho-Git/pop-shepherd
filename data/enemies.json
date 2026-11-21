@@ -2,6 +2,8 @@
   "jelly": { "id": "jelly", "name": "젤리", "radius": 14, "mass": 1, "hp": 20, "speed": 70, "contactDamage": 5, "xp": 1 },
   "gray": { "id": "gray", "name": "회색", "radius": 14, "mass": 1.2, "hp": 40, "speed": 60, "contactDamage": 5, "xp": 2 },
   "stone": { "id": "stone", "name": "돌덩이", "radius": 20, "mass": 3, "hp": 60, "speed": 45, "contactDamage": 8, "xp": 2 },
+  "spiky": { "id": "spiky", "name": "가시 젤리", "trait": "spiky", "radius": 15, "mass": 1, "hp": 30, "speed": 65, "contactDamage": 7, "xp": 2 },
+  "runner": { "id": "runner", "name": "겁쟁이 양", "trait": "runner", "radius": 13, "mass": 0.8, "hp": 15, "speed": 95, "contactDamage": 4, "xp": 2 },
   "chief_jelly": { "id": "chief_jelly", "name": "대장 젤리", "rank": "elite", "ai": "summoner", "radius": 26, "mass": 4, "hp": 240, "speed": 55, "contactDamage": 7, "xp": 30,
     "params": { "summonEvery": 8, "summonCount": 2 } },
   "chameleon": { "id": "chameleon", "name": "카멜레온", "rank": "elite", "ai": "chameleon", "radius": 24, "mass": 3, "hp": 200, "speed": 65, "contactDamage": 7, "xp": 30,
