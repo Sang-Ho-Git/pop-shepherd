@@ -127,6 +127,35 @@ function drawEnemy(ctx: CanvasRenderingContext2D, v: View, e: Enemy, time: numbe
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.stroke();
+  if (e.trait === "spiky") {
+    // 가시: 무기로 밀리지 않는다는 표시
+    ctx.fillStyle = INK;
+    for (let k = 0; k < 8; k++) {
+      const a = (k / 8) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(x + Math.cos(a - 0.2) * r, y + Math.sin(a - 0.2) * r);
+      ctx.lineTo(x + Math.cos(a) * r * 1.35, y + Math.sin(a) * r * 1.35);
+      ctx.lineTo(x + Math.cos(a + 0.2) * r, y + Math.sin(a + 0.2) * r);
+      ctx.fill();
+    }
+  } else if (e.trait === "runner") {
+    // 귀 두 개: 도망가는 양
+    ctx.fillStyle = PALETTE[e.color === "rainbow" ? "yellow" : e.color];
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(x + s * r * 0.55, y - r * 0.95, r * 0.22, r * 0.42, s * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+  }
+  if (e.wetT > 0) {
+    ctx.strokeStyle = "rgba(255,143,216,0.8)";
+    ctx.setLineDash([3 * v.scale, 3 * v.scale]);
+    ctx.beginPath();
+    ctx.arc(x, y, r + 4 * v.scale, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
   glyph(ctx, e.color, x, y + r * 0.1, r);
   if (e.state === "stunned") {
     ctx.fillStyle = "#fff6b0";
@@ -189,6 +218,23 @@ export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: F
   ctx.lineWidth = 8 * v.scale;
   ctx.strokeRect(ax, ay, bx - ax, by - ay);
 
+  // 바위 (맵 기믹)
+  for (const rk of g.stage?.rocks ?? []) {
+    const [x, y] = toScreen(v, rk.x, rk.y);
+    ctx.fillStyle = "#5b5f58";
+    ctx.beginPath();
+    ctx.arc(x, y, rk.r * v.scale, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#71766d";
+    ctx.beginPath();
+    ctx.arc(x - rk.r * 0.25 * v.scale, y - rk.r * 0.25 * v.scale, rk.r * 0.6 * v.scale, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#2c2f2a";
+    ctx.lineWidth = 4 * v.scale;
+    ctx.beginPath();
+    ctx.arc(x, y, rk.r * v.scale, 0, Math.PI * 2);
+    ctx.stroke();
+  }
   // 토템 범위
   for (const t of g.totems) {
     const [x, y] = toScreen(v, t.x, t.y);
