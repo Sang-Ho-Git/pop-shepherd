@@ -241,6 +241,21 @@ export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: F
   // 바위 (맵 기믹)
   for (const rk of g.stage?.rocks ?? []) {
     const [x, y] = toScreen(v, rk.x, rk.y);
+    if (rk.bumper) {
+      // 꽃 범퍼: 꽃잎 여섯 장
+      for (let k = 0; k < 6; k++) {
+        const a = (k / 6) * Math.PI * 2 + time * 0.6;
+        ctx.fillStyle = "#ff9fcf";
+        ctx.beginPath();
+        ctx.arc(x + Math.cos(a) * rk.r * 0.6 * v.scale, y + Math.sin(a) * rk.r * 0.6 * v.scale, rk.r * 0.45 * v.scale, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = "#ffd23f";
+      ctx.beginPath();
+      ctx.arc(x, y, rk.r * 0.45 * v.scale, 0, Math.PI * 2);
+      ctx.fill();
+      continue;
+    }
     ctx.fillStyle = "#5b5f58";
     ctx.beginPath();
     ctx.arc(x, y, rk.r * v.scale, 0, Math.PI * 2);

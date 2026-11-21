@@ -131,7 +131,7 @@ export const RULES = {
   /** 일반 적 기믹 */
   traits: { runnerFlee: 220 },
   /** 맵 기믹: 개울 안 걷는 속도 배율, 안개 시야 반경 (화면) */
-  terrain: { streamSlow: 0.6, fogRadius: 380, windWalk: 45, windLaunch: 650 },
+  terrain: { streamSlow: 0.6, fogRadius: 380, windWalk: 45, windLaunch: 650, bumperBoost: 1.3, bumperKick: 380, bumperMax: 950 },
   /** 색 공 던지기 (실험 규칙) */
   ball: {
     /** 날아가는 속도 (px/s), 공 반지름, 사거리 (px), 쿨다운 (s) */

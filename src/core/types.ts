@@ -251,7 +251,7 @@ export interface StageDef {
   /** 맵 기믹: 안개 (화면 전용. 플레이어 둘레만 보인다) */
   fog?: boolean;
   /** 맵 기믹: 바위 (길을 막고, 날아간 적은 울타리처럼 튕긴다) */
-  rocks?: { x: number; y: number; r: number }[];
+  rocks?: { x: number; y: number; r: number; bumper?: boolean }[];
   /** 무리 하나에 나오는 짝 수 [최소, 최대] (기본 RULES.spawn) */
   pairs?: number[];
   /** 정해진 시각에 나오는 엘리트 (시각 순) */

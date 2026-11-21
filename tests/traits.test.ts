@@ -91,3 +91,35 @@ describe("맵 기믹: 돌풍", () => {
     if (start && start.type === "wind-start" && Math.abs(start.dx) > 0.2) expect(Math.sign(e.vx - vx0)).toBe(Math.sign(start.dx));
   });
 });
+
+describe("맵 기믹: 꽃 범퍼", () => {
+  it("걸어서 닿은 적은 바깥으로 튕겨 나가고, 날아온 적은 더 빨라진다", () => {
+    const st = stage("stage06");
+    const bp = st.rocks!.find((r) => r.bumper)!;
+    const g = createGame({ seed: 1, character: character("shepherd"), enemyDefs: ENEMIES, stage: st });
+    g.spawnTimer = 9999;
+    g.player.hp = g.player.maxHp = 1e9;
+    const walker = put(g, "red", bp.x + bp.r + 13, bp.y);
+    run(g, 2);
+    expect(walker.state).toBe("launched");
+    expect(walker.vx).toBeGreaterThan(0);
+    const shot = put(g, "blue", bp.x - bp.r - 40, bp.y + 200);
+    shot.y = bp.y;
+    launch(shot, 1, 0, 500, WEAPON_LAUNCH);
+    run(g, 8);
+    expect(shot.vx).toBeLessThan(-500 * 0.9);
+  });
+
+  it("색 공은 바위에 맞으면 튕긴다 (쿠션 횟수를 쓴다)", () => {
+    const st = stage("stage07");
+    const rk = st.rocks![0]!;
+    const g = createGame({ seed: 1, character: character("shepherd"), enemyDefs: ENEMIES, stage: st, ballMode: true });
+    g.spawnTimer = 9999;
+    g.player.hp = g.player.maxHp = 1e9;
+    g.player.x = rk.x - rk.r - 120;
+    g.player.y = rk.y;
+    run(g, 1);
+    const events = run(g, 1, { moveX: 0, moveY: 0, whistle: false, aimX: rk.x, aimY: rk.y, throwBall: true }).concat(run(g, 30));
+    expect(events.some((e) => e.type === "ball-cushion")).toBe(true);
+  });
+});

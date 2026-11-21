@@ -115,16 +115,28 @@ export function collideRocks(g: Game): void {
     o.y = rk.y + ny * (rk.r + r);
     return { nx, ny };
   };
+  const T = RULES.terrain;
   for (const rk of rocks) {
     push(g.player, g.player.radius, rk);
     for (const e of g.enemies) {
       if (e.dead) continue;
       const n = push(e, e.radius, rk);
-      if (!n || e.state !== "launched") continue;
+      if (!n) continue;
+      if (e.state !== "launched") {
+        // 꽃 범퍼: 걸어서 닿은 적도 바깥으로 튕겨 낸다 (무기 발사가 아니다: 가시 젤리도 튕긴다)
+        if (rk.bumper && e.rank === "normal") launch(e, n.nx, n.ny, T.bumperKick * e.mass, PLAIN_LAUNCH);
+        continue;
+      }
       const vn = e.vx * n.nx + e.vy * n.ny;
       if (vn >= 0) continue;
-      e.vx = (e.vx - 2 * vn * n.nx) * wallE;
-      e.vy = (e.vy - 2 * vn * n.ny) * wallE;
+      const k = rk.bumper ? T.bumperBoost : wallE;
+      e.vx = (e.vx - 2 * vn * n.nx) * k;
+      e.vy = (e.vy - 2 * vn * n.ny) * k;
+      const sp = Math.hypot(e.vx, e.vy);
+      if (sp > T.bumperMax) {
+        e.vx *= T.bumperMax / sp;
+        e.vy *= T.bumperMax / sp;
+      }
       e.wallBounces++;
     }
   }

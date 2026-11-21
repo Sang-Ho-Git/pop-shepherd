@@ -112,6 +112,28 @@ export function tickBallThrow(g: Game, input: Input): void {
   g.events.push({ type: "ball-throw", color: g.balls[g.balls.length - 1]!.color });
 }
 
+/** 공이 바위에 닿았으면 바깥으로 밀어내고 반사한 뒤 true */
+function hitRock(g: Game, ball: { x: number; y: number; vx: number; vy: number }): boolean {
+  for (const rk of g.stage?.rocks ?? []) {
+    const dx = ball.x - rk.x;
+    const dy = ball.y - rk.y;
+    const d = Math.hypot(dx, dy);
+    const reach = rk.r + RULES.ball.radius;
+    if (d >= reach || d < 1e-9) continue;
+    const nx = dx / d;
+    const ny = dy / d;
+    const vn = ball.vx * nx + ball.vy * ny;
+    if (vn < 0) {
+      ball.vx -= 2 * vn * nx;
+      ball.vy -= 2 * vn * ny;
+    }
+    ball.x = rk.x + nx * reach;
+    ball.y = rk.y + ny * reach;
+    return true;
+  }
+  return false;
+}
+
 /** 날아가는 공: 이동, 울타리에서 사라짐, 적에 맞으면 판정 */
 export function tickBalls(g: Game): void {
   if (g.balls.length === 0) return;
@@ -130,6 +152,14 @@ export function tickBalls(g: Game): void {
       if (ball.y < r || ball.y > g.arena.h - r) ball.vy = -ball.vy;
       ball.x = Math.min(g.arena.w - r, Math.max(r, ball.x));
       ball.y = Math.min(g.arena.h - r, Math.max(r, ball.y));
+      ball.bounces++;
+      g.events.push({ type: "ball-cushion", x: ball.x, y: ball.y });
+    } else if (!out && hitRock(g, ball)) {
+      // 바위·범퍼: 울타리처럼 튕긴다 (쿠션 횟수를 쓴다). 다 썼으면 사라진다
+      if (ball.bounces >= maxCushion) {
+        g.events.push({ type: "ball-miss", x: ball.x, y: ball.y });
+        continue;
+      }
       ball.bounces++;
       g.events.push({ type: "ball-cushion", x: ball.x, y: ball.y });
     } else if (out || ball.travel > RULES.ball.range) {
