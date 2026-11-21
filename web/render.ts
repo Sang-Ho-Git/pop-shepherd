@@ -55,13 +55,18 @@ export interface View {
   camY: number;
 }
 
+/**
+ * 화면 배율: 기본은 1280×720 월드를 캔버스에 맞춘다. 세로 화면(휴대폰)에서는 그러면 너무 작아서,
+ * 짧은 변에 월드 620px이 들어오도록 키운다 (보이는 범위는 좁아진다).
+ */
 export function computeView(g: Game, cw: number, ch: number): View {
   const vw = RULES.view.w;
   const vh = RULES.view.h;
-  const scale = Math.min(cw / vw, ch / vh);
-  const camX = Math.min(g.arena.w - vw / 2, Math.max(vw / 2, g.player.x));
-  const camY = Math.min(g.arena.h - vh / 2, Math.max(vh / 2, g.player.y));
-  return { scale, ox: cw / 2, oy: ch / 2, camX, camY };
+  const scale = Math.max(Math.min(cw / vw, ch / vh), Math.min(cw, ch) / 620);
+  const hw = cw / scale / 2;
+  const hh = ch / scale / 2;
+  const clamp = (c: number, half: number, size: number): number => (half * 2 >= size ? size / 2 : Math.min(size - half, Math.max(half, c)));
+  return { scale, ox: cw / 2, oy: ch / 2, camX: clamp(g.player.x, hw, g.arena.w), camY: clamp(g.player.y, hh, g.arena.h) };
 }
 
 function toScreen(v: View, x: number, y: number): [number, number] {

@@ -486,6 +486,10 @@ const endTouch = (e: PointerEvent): void => {
 canvas.addEventListener("pointerup", endTouch);
 canvas.addEventListener("pointercancel", endTouch);
 let whistleTap = false;
+$("swap").addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  swapTap = true;
+});
 $("whistle").addEventListener("pointerdown", (e) => {
   e.preventDefault();
   whistleTap = true;
@@ -791,6 +795,7 @@ function frame(now: number): void {
   }
   hud.hidden = screen !== "play";
   $("whistle").hidden = screen !== "play";
+  $("swap").hidden = screen !== "play" || !g?.ball;
   requestAnimationFrame(frame);
 }
 

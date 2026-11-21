@@ -100,13 +100,19 @@
     width: 72px; height: 72px; border-radius: 50%; border: 3px solid var(--plank-edge); background: rgba(43,33,24,0.8);
     font-family: var(--display); font-size: 16px; color: var(--cream);
   }
-  @media (hover: hover) and (pointer: fine) { #whistle { display: none; } }
+  #swap {
+    position: fixed; right: max(18px, env(safe-area-inset-right, 0px)); bottom: calc(170px + env(safe-area-inset-bottom, 0px));
+    width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--plank-edge); background: rgba(43,33,24,0.8);
+    font-family: var(--display); font-size: 14px; color: var(--cream);
+  }
+  @media (hover: hover) and (pointer: fine) { #whistle, #swap { display: none; } }
   @media (prefers-reduced-motion: reduce) { .btn:active:not(:disabled) { transform: none; } }
 </style>
 
 <div id="stage"><canvas id="game" aria-label="팝 셰퍼드 게임 화면"></canvas></div>
 <div id="hud" hidden></div>
 <button id="whistle" type="button" hidden>휘슬</button>
+<button id="swap" type="button" hidden>바꾸기</button>
 <p id="hint" hidden></p>
 <div id="overlay" hidden></div>
 <!--BUNDLE-->
