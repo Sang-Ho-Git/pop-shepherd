@@ -120,6 +120,20 @@ export const RULES = {
     /** 처치형 스테이지의 안전 시간 제한 (시뮬이 끝나지 않는 것을 막는다) */
     hardLimit: 900,
   },
+  /** 색 공 던지기 (실험 규칙) */
+  ball: {
+    /** 날아가는 속도 (px/s), 공 반지름, 사거리 (px), 쿨다운 (s) */
+    speed: 900,
+    radius: 12,
+    range: 520,
+    cooldown: 0.6,
+    /** 다른 색에 맞았을 때 밀어내는 힘 */
+    knock: 420,
+    /** 공 색 고르기: 근처에 같은 색끼리 닿은 짝 하나당 가중치 */
+    pairWeight: 3,
+    /** 모자라서 붙은 공 젤리가 멈춰 있는 시간 (s) */
+    stickStun: 1.5,
+  },
   /** 드롭 (보물 상자, 골드 주머니) */
   drops: { pickupRange: 70, goldLifetime: 20, chestPicksElite: 1, chestPicksBoss: 3, chestHealFrac: 0.3 },
   stage: { wrapUpSeconds: 15, wrapUpXpBonus: 0.5, betweenHeal: 0 },

@@ -1,10 +1,95 @@
 {
-  "chain_amp": { "id": "chain_amp", "name": "연쇄 증폭기", "maxLevel": 5, "implemented": true, "perLevel": { "chain_radius": 0.1 }, "note": "팝 충격파 반경 +10% / 레벨 (진화: 충격파)" },
-  "prism_lens": { "id": "prism_lens", "name": "프리즘 렌즈", "maxLevel": 5, "implemented": true, "perLevel": { "area": 0.08 }, "note": "무기 범위 +8% / 레벨 (진화: 자석 토템)" },
-  "shepherd_bell": { "id": "shepherd_bell", "name": "목동의 종", "maxLevel": 5, "implemented": true, "perLevel": { "pickup": 0.2, "heal_find": 0.1 }, "note": "줍는 거리 +20%, 우유 드롭 +10% / 레벨 (진화: 올가미)" },
-  "centrifuge": { "id": "centrifuge", "name": "원심 장치", "maxLevel": 5, "implemented": true, "perLevel": { "knock_power": 0.08 }, "note": "날리는 힘 +8% / 레벨 (진화: 회오리)" },
-  "mirror_shard": { "id": "mirror_shard", "name": "거울 조각", "maxLevel": 5, "implemented": true, "perLevel": { "cooldown": 0.06 }, "note": "쿨다운 -6% / 레벨 (진화: 반사벽)" },
-  "thick_fleece": { "id": "thick_fleece", "name": "튼튼한 털옷", "maxLevel": 5, "implemented": true, "perLevel": { "max_hp": 15, "armor": 1 }, "note": "최대 체력 +15, 방어 +1 / 레벨" },
-  "elasticity": { "id": "elasticity", "name": "탄성", "maxLevel": 5, "implemented": true, "perLevel": { "bounce": 1 }, "note": "무기로 날린 적이 울타리에서 속도를 잃지 않고 튕기는 횟수 +1 / 레벨 (진화: 킥)" },
-  "rainbow_ink": { "id": "rainbow_ink", "name": "무지개 잉크", "maxLevel": 5, "implemented": true, "perLevel": { "rainbow": 0.05 }, "note": "짝마다 무지개 젤리가 함께 나올 확률 +5% / 레벨 (진화: 페인트 총)" }
+  "chain_amp": {
+    "id": "chain_amp",
+    "name": "연쇄 증폭기",
+    "maxLevel": 5,
+    "implemented": true,
+    "perLevel": {
+      "chain_radius": 0.1
+    },
+    "note": "팝 충격파 반경 +10% / 레벨 (진화: 충격파)"
+  },
+  "prism_lens": {
+    "id": "prism_lens",
+    "name": "프리즘 렌즈",
+    "maxLevel": 5,
+    "implemented": true,
+    "perLevel": {
+      "area": 0.08
+    },
+    "note": "무기 범위 +8% / 레벨 (진화: 자석 토템)"
+  },
+  "shepherd_bell": {
+    "id": "shepherd_bell",
+    "name": "목동의 종",
+    "maxLevel": 5,
+    "implemented": true,
+    "perLevel": {
+      "pickup": 0.2,
+      "heal_find": 0.1
+    },
+    "note": "줍는 거리 +20%, 우유 드롭 +10% / 레벨 (진화: 올가미)"
+  },
+  "centrifuge": {
+    "id": "centrifuge",
+    "name": "원심 장치",
+    "maxLevel": 5,
+    "implemented": true,
+    "perLevel": {
+      "knock_power": 0.08
+    },
+    "note": "날리는 힘 +8% / 레벨 (진화: 회오리)"
+  },
+  "mirror_shard": {
+    "id": "mirror_shard",
+    "name": "거울 조각",
+    "maxLevel": 5,
+    "implemented": true,
+    "perLevel": {
+      "cooldown": 0.06
+    },
+    "note": "쿨다운 -6% / 레벨 (진화: 반사벽)"
+  },
+  "thick_fleece": {
+    "id": "thick_fleece",
+    "name": "튼튼한 털옷",
+    "maxLevel": 5,
+    "implemented": true,
+    "perLevel": {
+      "max_hp": 15,
+      "armor": 1
+    },
+    "note": "최대 체력 +15, 방어 +1 / 레벨"
+  },
+  "elasticity": {
+    "id": "elasticity",
+    "name": "탄성",
+    "maxLevel": 5,
+    "implemented": true,
+    "perLevel": {
+      "bounce": 1
+    },
+    "note": "무기로 날린 적이 울타리에서 속도를 잃지 않고 튕기는 횟수 +1 / 레벨 (진화: 킥)"
+  },
+  "rainbow_ink": {
+    "id": "rainbow_ink",
+    "name": "무지개 잉크",
+    "maxLevel": 5,
+    "implemented": true,
+    "perLevel": {
+      "rainbow": 0.05
+    },
+    "note": "짝마다 무지개 젤리가 함께 나올 확률 +5% / 레벨 (진화: 페인트 총)"
+  },
+  "guiding_star": {
+    "id": "guiding_star",
+    "name": "길잡이 별",
+    "maxLevel": 5,
+    "implemented": true,
+    "ballOnly": true,
+    "perLevel": {
+      "aim_assist": 40
+    },
+    "note": "색 공이 조준 방향 둘레의 같은 색 무리 쪽으로 꺾인다 (레벨당 ±40°, 5레벨이면 완전 자동). 색 공 규칙 전용"
+  }
 }

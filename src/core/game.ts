@@ -9,6 +9,7 @@ import { tickSpawner } from "../combat/spawner.ts";
 import { fireWeapons, tickEffects, tickTotems, tickWalls } from "../weapons/weapons.ts";
 import { spawnScheduled, tickBosses } from "../combat/bosses.ts";
 import { openChest } from "../progression/chest.ts";
+import { initBall, tickBallThrow, tickBalls } from "../combat/ball.ts";
 import { checkLevelUp } from "../progression/levelup.ts";
 
 export interface GameConfig {
@@ -21,6 +22,8 @@ export interface GameConfig {
   arena?: { w: number; h: number };
   /** 레벨업 사용 (기본 false: 고정 구성 측정). 런 시뮬에서 켠다. */
   leveling?: boolean;
+  /** 색 공 규칙 (실험) */
+  ballMode?: boolean;
   /** 화면용: 레벨업·상자 선택을 사람에게 맡긴다 */
   manualChoices?: boolean;
 }
@@ -65,6 +68,9 @@ export function createGame(cfg: GameConfig): Game {
     effects: [],
     chests: [],
     walls: [],
+    ballMode: cfg.ballMode ?? false,
+    ball: null,
+    balls: [],
     golds: [],
     wrapUpAt: 0,
     stage: cfg.stage,
@@ -91,6 +97,8 @@ export function createGame(cfg: GameConfig): Game {
       bossKilled: 0,
       bossKilledAt: 0,
       chestsOpened: 0,
+      ballsThrown: 0,
+      ballPops: 0,
       damageTaken: 0,
       damageFromSpecial: 0,
       evolutions: 0,
@@ -372,6 +380,10 @@ export function step(g: Game, input: Input): void {
   if (g.choices.length > 0) return;
 
   movePlayer(g, input);
+  if (g.ballMode) {
+    if (!g.ball) initBall(g);
+    tickBallThrow(g, input);
+  }
   tickSpawner(g, DT);
   spawnScheduled(g);
   chase(g);
@@ -380,6 +392,7 @@ export function step(g: Game, input: Input): void {
   integrate(g);
   tickWalls(g);
   rebuildGrid(g);
+  tickBalls(g);
   fireWeapons(g);
   tickEffects(g);
   if (input.whistle) useWhistle(g);

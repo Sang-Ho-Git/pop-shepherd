@@ -58,7 +58,7 @@ export function candidates(g: Game): Record<"weaponUp" | "newWeapon" | "passiveU
     newPassive:
       Object.keys(p.passives).length < RULES.cards.passiveSlots
         ? Object.values(PASSIVES)
-            .filter((d) => d.implemented && p.passives[d.id] === undefined)
+            .filter((d) => d.implemented && (!d.ballOnly || g.ballMode) && p.passives[d.id] === undefined)
             .map((d) => ({ kind: "newPassive", id: d.id }) as Card)
         : [],
   };

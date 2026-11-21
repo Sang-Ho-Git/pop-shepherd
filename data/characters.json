@@ -18,7 +18,8 @@
       "heal_find": 0,
       "gold_find": 0,
       "bounce": 0,
-      "rainbow": 0
+      "rainbow": 0,
+      "aim_assist": 0
     }
   },
   "cue": {
@@ -40,7 +41,8 @@
       "heal_find": 0,
       "gold_find": 0,
       "bounce": 0,
-      "rainbow": 0
+      "rainbow": 0,
+      "aim_assist": 0
     },
     "trait": "three_cushion"
   },
@@ -63,7 +65,8 @@
       "heal_find": 0,
       "gold_find": 0,
       "bounce": 0,
-      "rainbow": 0
+      "rainbow": 0,
+      "aim_assist": 0
     }
   },
   "pale": {
@@ -85,7 +88,8 @@
       "heal_find": 0,
       "gold_find": 0,
       "bounce": 0,
-      "rainbow": 0
+      "rainbow": 0,
+      "aim_assist": 0
     }
   }
 }

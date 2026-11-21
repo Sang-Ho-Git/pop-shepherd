@@ -86,6 +86,10 @@
   .weapons { display: flex; flex-wrap: wrap; gap: 6px; }
   .weapons .w { font-size: 12px; background: rgba(0,0,0,0.5); border-radius: 6px; padding: 2px 8px; }
   .weapons .whistle-cd { color: var(--sky); }
+  .weapons .balls { display: inline-flex; align-items: center; gap: 6px; }
+  .weapons .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--c); border: 2px solid var(--cream); display: inline-block; }
+  .toggle { font-size: 16px !important; }
+  #game { cursor: crosshair; }
   #whistle {
     position: fixed; right: max(18px, env(safe-area-inset-right, 0px)); bottom: calc(86px + env(safe-area-inset-bottom, 0px));
     width: 72px; height: 72px; border-radius: 50%; border: 3px solid var(--plank-edge); background: rgba(43,33,24,0.8);

@@ -103,6 +103,8 @@ export function startStage(
   meta: { character: CharacterDef; specials: MetaSpecials } | null = null,
   /** 화면용: 레벨업·상자 선택을 사람에게 맡긴다 */
   manual = false,
+  /** 색 공 규칙 (실험) */
+  ballMode = false,
 ): Game {
   const startLv = meta?.specials.startWeaponLevel ?? 1;
   const g = createGame({
@@ -113,6 +115,7 @@ export function startStage(
     weapons: (carry?.weapons ?? [{ id: startWeapon(characterId), lv: startLv, branch: null }]).map((w) => makeWeapon(weapon(w.id), w.lv, w.branch)),
     leveling: true,
     manualChoices: manual,
+    ballMode,
   });
   if (carry) {
     g.player.level = carry.level;

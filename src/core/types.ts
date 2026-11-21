@@ -118,6 +118,8 @@ export interface CharacterStats {
   bounce: number;
   /** 짝마다 무지개 젤리가 함께 나올 확률 (패시브 무지개 잉크) */
   rainbow: number;
+  /** 색 공 조준 보정 각도 (도). 180 이상이면 완전 자동 (패시브 길잡이 별) */
+  aim_assist: number;
 }
 
 export interface PassiveDef {
@@ -125,6 +127,8 @@ export interface PassiveDef {
   name: string;
   maxLevel: number;
   implemented: boolean;
+  /** 색 공 규칙에서만 카드로 나온다 */
+  ballOnly?: boolean;
   /** 레벨마다 더해지는 능력치 */
   perLevel: Partial<CharacterStats>;
   note: string;
@@ -256,6 +260,11 @@ export interface Input {
   moveX: number;
   moveY: number;
   whistle: boolean;
+  /** 색 공 조준점 (월드 좌표). 없으면 바라보는 방향 */
+  aimX?: number;
+  aimY?: number;
+  /** 색 공 던지기 (색 공 규칙일 때만) */
+  throwBall?: boolean;
 }
 
 export const NO_INPUT: Input = { moveX: 0, moveY: 0, whistle: false };
@@ -344,6 +353,10 @@ export type GameEvent =
   | { type: "chest-drop"; kind: "elite" | "boss"; x: number; y: number }
   | { type: "chest-open"; kind: "elite" | "boss"; evolved: string[]; picked: string[] }
   | { type: "gold-pickup"; amount: number }
+  | { type: "ball-throw"; color: MatchColor }
+  | { type: "ball-miss"; x: number; y: number }
+  | { type: "ball-bounce"; id: number; x: number; y: number }
+  | { type: "ball-stick"; id: number; x: number; y: number }
   /** ids: 이번 발사로 맞힌(날리거나 끌어당긴) 적 */
   | { type: "fire"; weapon: string; hits: number; ids: number[] }
   | { type: "whistle"; hits: number }
@@ -389,6 +402,8 @@ export interface Stats {
   /** 보스를 쓰러뜨린 시각 (s). 없으면 0 */
   bossKilledAt: number;
   chestsOpened: number;
+  ballsThrown: number;
+  ballPops: number;
   /** 받은 접촉 피해 합계, 그중 엘리트·보스에게 받은 것 */
   damageTaken: number;
   damageFromSpecial: number;
@@ -438,6 +453,11 @@ export interface Game {
   milks: Milk[];
   /** 반사벽 */
   walls: Wall[];
+  /** 색 공 규칙 (실험). 켜져 있으면 ball이 있다 */
+  ballMode: boolean;
+  ball: { current: MatchColor; next: MatchColor; cd: number } | null;
+  /** 날아가는 색 공 */
+  balls: { x: number; y: number; vx: number; vy: number; color: MatchColor; travel: number }[];
   /** 엘리트·보스가 떨어뜨린 보물 상자 */
   chests: Chest[];
   /** 팝 자리에 떨어진 골드 주머니 */

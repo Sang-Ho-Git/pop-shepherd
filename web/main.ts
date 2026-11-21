@@ -15,7 +15,8 @@ import type { Carry } from "../src/sim/campaign.ts";
 import { weaponLevel, MAX_LEVEL } from "../src/weapons/weapons.ts";
 import type { CharacterDef } from "../src/core/types.ts";
 import { computeView, drawWorld, PALETTE } from "./render.ts";
-import type { Fx } from "./render.ts";
+import type { Aim, Fx, View } from "./render.ts";
+import { readyClusters } from "../src/combat/ball.ts";
 
 /* ───────────────────────── 기본 ───────────────────────── */
 
@@ -30,6 +31,24 @@ const overlay = $<HTMLDivElement>("overlay");
 const hud = $<HTMLDivElement>("hud");
 const store = browserStore("pop-shepherd-save-v1");
 let save: SaveData = loadSave(store);
+
+/** 색 공 규칙 (실험): 브라우저에 기억한다. 처음에는 켜져 있다. */
+const BALL_KEY = "pop-shepherd-ballmode";
+let ballMode = (() => {
+  try {
+    return localStorage.getItem(BALL_KEY) !== "off";
+  } catch {
+    return true;
+  }
+})();
+function setBallMode(on: boolean): void {
+  ballMode = on;
+  try {
+    localStorage.setItem(BALL_KEY, on ? "on" : "off");
+  } catch {
+    // 기억하지 못해도 이번 판에는 적용된다
+  }
+}
 
 const CHAR_ORDER = ["olly", "shepherd", "cue", "pale"];
 const CHAR_NAME: Record<string, string> = { shepherd: "양치기", cue: "큐", olly: "올리", pale: "팔레" };
@@ -130,6 +149,9 @@ let banner: { text: string; sub: string; t: number } | null = null;
 let shop: ShopState | null = null;
 let choiceShown = false;
 let hitFlash = 0;
+let shake = 0;
+let aimCache: Aim | null = null;
+let aimTick = 0;
 
 function startRun(characterId: string): void {
   const meta = applyMeta(CHARACTERS[characterId]!, save.meta);
@@ -140,7 +162,7 @@ function startRun(characterId: string): void {
 function beginStage(): void {
   if (!run) return;
   const id = CAMPAIGN[run.stageIndex] as string;
-  g = startStage(run.seed + run.stageIndex * 7919, run.character, id, run.carry, run.meta, true);
+  g = startStage(run.seed + run.stageIndex * 7919, run.character, id, run.carry, run.meta, true, ballMode);
   fx = [];
   paused = false;
   choiceShown = false;
@@ -204,8 +226,15 @@ function renderTitle(): void {
       el("h1", "logo", "팝 셰퍼드"),
       el("p", "lede", "같은 색 양을 셋 이상 부딪히면 터진다. 날리고, 몰고, 연쇄로 목장을 지켜라."),
       row([button("시작", () => renderSelect()), button("영구 강화", () => renderMeta(), "btn ghost")]),
+      row([
+        button(`색 공 던지기 규칙: ${ballMode ? "켜짐" : "꺼짐"}`, () => {
+          setBallMode(!ballMode);
+          renderTitle();
+        }, "btn ghost toggle"),
+      ]),
+      el("p", "small", ballMode ? "색 공 규칙: 마우스로 조준하고 클릭으로 던진다. 같은 색 무리에 맞혀 3마리를 채우면 터진다." : "기존 규칙: 날아간 적이 같은 색에 세게 부딪혀야 터진다."),
       el("p", "small", `기록: ${save.runs}런 · 완주 ${save.wins} · 최고 ${save.bestStage}스테이지 · 영구 강화 ${Math.round(treeProgress(save) * 100)}%`),
-      el("p", "small keys", "이동 WASD/방향키 · 휘슬 Space · 일시정지 Esc · 카드 1/2/3"),
+      el("p", "small keys", `이동 WASD/방향키 · ${ballMode ? "조준 마우스 · 던지기 클릭 · " : ""}휘슬 Space · 일시정지 Esc · 카드 1/2/3`),
     ],
     "panel title",
   );
@@ -361,11 +390,28 @@ addEventListener("keydown", (e) => {
 addEventListener("keyup", (e) => keys.delete(e.code));
 addEventListener("blur", () => keys.clear());
 
-// 터치: 화면 아무 데나 누르고 끌면 그 방향으로 이동, 휘슬 버튼
-let touch: { id: number; x0: number; y0: number; x: number; y: number } | null = null;
+// 마우스: 조준과 던지기 (누르고 있으면 쿨다운마다 계속 던진다)
+let mouse: { x: number; y: number } | null = null;
+let mouseDown = false;
+let tapThrow: { x: number; y: number } | null = null;
+canvas.addEventListener("pointermove", (e) => {
+  if (e.pointerType === "mouse") mouse = { x: e.clientX, y: e.clientY };
+});
+canvas.addEventListener("pointerdown", (e) => {
+  if (e.pointerType === "mouse") {
+    mouse = { x: e.clientX, y: e.clientY };
+    if (e.button === 0) mouseDown = true;
+  }
+});
+addEventListener("pointerup", (e) => {
+  if (e.pointerType === "mouse" && e.button === 0) mouseDown = false;
+});
+
+// 터치: 누르고 끌면 그 방향으로 이동, 짧게 톡 치면 그곳으로 던지기, 휘슬 버튼
+let touch: { id: number; x0: number; y0: number; x: number; y: number; t0: number } | null = null;
 canvas.addEventListener("pointerdown", (e) => {
   if (e.pointerType === "mouse") return;
-  touch = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY };
+  touch = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, t0: performance.now() };
   canvas.setPointerCapture(e.pointerId);
 });
 canvas.addEventListener("pointermove", (e) => {
@@ -375,7 +421,10 @@ canvas.addEventListener("pointermove", (e) => {
   }
 });
 const endTouch = (e: PointerEvent): void => {
-  if (touch && e.pointerId === touch.id) touch = null;
+  if (touch && e.pointerId === touch.id) {
+    if (Math.hypot(touch.x - touch.x0, touch.y - touch.y0) < 12 && performance.now() - touch.t0 < 250) tapThrow = { x: touch.x, y: touch.y };
+    touch = null;
+  }
 };
 canvas.addEventListener("pointerup", endTouch);
 canvas.addEventListener("pointercancel", endTouch);
@@ -384,6 +433,21 @@ $("whistle").addEventListener("pointerdown", (e) => {
   e.preventDefault();
   whistleTap = true;
 });
+
+/** 화면 좌표(CSS px) → 월드 좌표 */
+function screenToWorld(v: View, sx: number, sy: number): { x: number; y: number } {
+  const r = canvas.getBoundingClientRect();
+  const dpr = canvas.width / Math.max(1, r.width);
+  return { x: v.camX + ((sx - r.left) * dpr - v.ox) / v.scale, y: v.camY + ((sy - r.top) * dpr - v.oy) / v.scale };
+}
+
+let view: View | null = null;
+
+function aimPoint(): { x: number; y: number } | null {
+  if (!g || !view) return null;
+  if (mouse) return screenToWorld(view, mouse.x, mouse.y);
+  return { x: g.player.x + g.player.faceX * 200, y: g.player.y + g.player.faceY * 200 };
+}
 
 function readInput(): Input {
   let x = 0;
@@ -402,7 +466,14 @@ function readInput(): Input {
   }
   const whistle = keys.has("Space") || whistleTap;
   whistleTap = false;
-  return { moveX: x, moveY: y, whistle };
+  let aim = aimPoint();
+  let throwBall = mouseDown;
+  if (tapThrow && view) {
+    aim = screenToWorld(view, tapThrow.x, tapThrow.y);
+    throwBall = true;
+    tapThrow = null;
+  }
+  return { moveX: x, moveY: y, whistle, aimX: aim?.x, aimY: aim?.y, throwBall };
 }
 
 /* ───────────────────────── 효과 ───────────────────────── */
@@ -413,12 +484,46 @@ function handleEvents(game: Game): void {
       case "pop": {
         const color = PALETTE[e.color === "rainbow" ? "yellow" : e.color];
         fx.push({ kind: "ring", x: e.x, y: e.y, t: 0, life: 0.45, color, radius: 60 + e.size * 12 });
+        for (let k = 0; k < Math.min(24, e.size * 5); k++) {
+          const a = Math.random() * Math.PI * 2;
+          const sp = 120 + Math.random() * 260;
+          fx.push({ kind: "spark", x: e.x, y: e.y, t: 0, life: 0.5 + Math.random() * 0.3, color, radius: 3 + Math.random() * 3, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp });
+        }
+        shake = Math.min(14, shake + 3 + e.size * 1.5 + e.chainDepth * 2);
         if (e.chainDepth >= 1) fx.push({ kind: "text", x: e.x, y: e.y, t: 0, life: 0.9, color: "#fff3c4", text: `연쇄 ${e.chainDepth + 1}` });
         else if (e.cushion) fx.push({ kind: "text", x: e.x, y: e.y, t: 0, life: 0.9, color: "#9fe3ff", text: "쿠션!" });
         break;
       }
       case "player-hit":
         hitFlash = 0.25;
+        shake = Math.min(14, shake + 6);
+        break;
+      case "fire": {
+        // 무기 발사선: 올가미는 줄, 킥·페인트는 짧은 선, 충격파는 고리
+        const p = game.player;
+        const look: Record<string, { color: string; w: number }> = {
+          lasso: { color: "#e9c46a", w: 4 },
+          kick: { color: "#f4efe1", w: 6 },
+          paint_gun: { color: "#ff8fd8", w: 3 },
+        };
+        const st = look[e.weapon];
+        if (st) {
+          for (const id of e.ids) {
+            const t = game.enemies.find((x) => x.id === id);
+            if (t) fx.push({ kind: "line", x: p.x, y: p.y, x2: t.x, y2: t.y, t: 0, life: e.weapon === "lasso" ? 0.35 : 0.18, color: st.color, radius: st.w });
+          }
+        }
+        if (e.weapon === "shockwave") {
+          const w = game.weapons.find((x) => x.def.id === "shockwave");
+          fx.push({ kind: "ring", x: p.x, y: p.y, t: 0, life: 0.3, color: "#9fe3ff", radius: (w?.level.params.radius ?? 130) * p.stats.area * 1.4 });
+        }
+        break;
+      }
+      case "ball-miss":
+        fx.push({ kind: "ring", x: e.x, y: e.y, t: 0, life: 0.25, color: "rgba(244,239,225,0.6)", radius: 20 });
+        break;
+      case "ball-stick":
+        fx.push({ kind: "ring", x: e.x, y: e.y, t: 0, life: 0.3, color: "#fff3c4", radius: 30 });
         break;
       case "whistle":
         fx.push({ kind: "ring", x: game.player.x, y: game.player.y, t: 0, life: 0.5, color: "#f4efe1", radius: RULES.whistle.radius });
@@ -484,6 +589,16 @@ function renderHud(game: Game): void {
   const ws = el("div", "weapons");
   for (const w of game.weapons) ws.append(el("span", "w", `${w.def.name} ${w.level.lv === "evo" ? "진화" : `Lv${w.level.lv}${w.level.branch ?? ""}`}`));
   ws.append(el("span", "w whistle-cd", p.whistleCd > 0 ? `휘슬 ${Math.ceil(p.whistleCd)}초` : "휘슬 준비"));
+  if (game.ball) {
+    const ball = el("span", "w balls");
+    const dot = (c: string, label: string): HTMLElement => {
+      const s = el("span", "dot", label);
+      s.style.setProperty("--c", PALETTE[c as keyof typeof PALETTE]);
+      return s;
+    };
+    ball.append(el("span", "", "공"), dot(game.ball.current, ""), el("span", "", "다음"), dot(game.ball.next, ""));
+    ws.append(ball);
+  }
   bottom.append(ws);
   hud.replaceChildren(top, bottom);
 }
@@ -531,10 +646,28 @@ function frame(now: number): void {
   if (banner) banner.t -= dt;
   if (banner && banner.t <= 0) banner = null;
   hitFlash = Math.max(0, hitFlash - dt);
+  shake = Math.max(0, shake - dt * 40);
 
   if (g) {
     const v = computeView(g, canvas.width, canvas.height);
-    drawWorld(ctx, g, v, fx, clock);
+    view = v;
+    // 화면 흔들림: 팝·피격 때 잠깐 (줄인 움직임 설정이면 끈다)
+    const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const sv = calm || shake <= 0 ? v : { ...v, ox: v.ox + (Math.random() - 0.5) * shake * v.scale, oy: v.oy + (Math.random() - 0.5) * shake * v.scale };
+    if (g.ball && screen === "play") {
+      aimTick++;
+      if (!aimCache || aimTick % 6 === 0) {
+        const ready = new Set<number>();
+        for (const c of readyClusters(g, g.ball.current, 2)) for (const id of c.ids) ready.add(id);
+        aimCache = { x: 0, y: 0, ready };
+      }
+      const a = aimPoint();
+      if (a && aimCache) {
+        aimCache.x = a.x;
+        aimCache.y = a.y;
+      }
+    } else aimCache = null;
+    drawWorld(ctx, g, sv, fx, clock, aimCache);
     if (hitFlash > 0) {
       ctx.fillStyle = `rgba(255,60,60,${hitFlash})`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);

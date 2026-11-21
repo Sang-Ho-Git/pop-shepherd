@@ -23,7 +23,7 @@ const FENCE = "#c99a5b";
 const INK = "#0d1b17";
 
 export interface Fx {
-  kind: "ring" | "text";
+  kind: "ring" | "text" | "line" | "spark";
   x: number;
   y: number;
   t: number;
@@ -31,6 +31,20 @@ export interface Fx {
   color: string;
   radius?: number;
   text?: string;
+  /** line: 끝점 */
+  x2?: number;
+  y2?: number;
+  /** spark: 속도 */
+  vx?: number;
+  vy?: number;
+}
+
+/** 화면 모드의 추가 정보 (색 공 조준) */
+export interface Aim {
+  x: number;
+  y: number;
+  /** 지금 공과 같은 색으로 2마리 이상 닿은 무리 (반짝임) */
+  ready: Set<number>;
 }
 
 export interface View {
@@ -147,7 +161,7 @@ function drawEnemy(ctx: CanvasRenderingContext2D, v: View, e: Enemy, time: numbe
   }
 }
 
-export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: Fx[], time: number): void {
+export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: Fx[], time: number, aim: Aim | null = null): void {
   const cw = ctx.canvas.width;
   const ch = ctx.canvas.height;
   ctx.fillStyle = "#08110e";
@@ -250,6 +264,17 @@ export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: F
     ctx.strokeRect(x - s - 4 * v.scale, y - s * 0.7 - 4 * v.scale, s * 2 + 8 * v.scale, s * 1.4 + 8 * v.scale);
   }
 
+  // 지금 공으로 터뜨릴 수 있는 무리: 바닥에 빛
+  if (aim && aim.ready.size > 0) {
+    ctx.fillStyle = `rgba(255,243,196,${0.22 + 0.12 * Math.sin(time * 8)})`;
+    for (const e of g.enemies) {
+      if (!aim.ready.has(e.id)) continue;
+      const [x, y] = toScreen(v, e.x, e.y);
+      ctx.beginPath();
+      ctx.arc(x, y, (e.radius + 9) * v.scale, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
   // 적 (보스는 맨 위에)
   for (const e of g.enemies) if (e.rank === "normal") drawEnemy(ctx, v, e, time);
   for (const e of g.enemies) if (e.rank !== "normal") drawEnemy(ctx, v, e, time);
@@ -270,9 +295,46 @@ export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: F
     }
   }
 
+  // 날아가는 색 공
+  for (const b of g.balls) {
+    const [x, y] = toScreen(v, b.x, b.y);
+    ctx.fillStyle = PALETTE[b.color];
+    ctx.beginPath();
+    ctx.arc(x, y, RULES.ball.radius * v.scale, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2 * v.scale;
+    ctx.stroke();
+    glyph(ctx, b.color, x, y, RULES.ball.radius * v.scale);
+  }
+
   // 플레이어
   const [px, py] = toScreen(v, p.x, p.y);
   const pr = p.radius * v.scale;
+  // 조준선과 손에 든 공
+  if (aim && g.ball) {
+    const ang = Math.atan2(aim.y - p.y, aim.x - p.x);
+    const reach = RULES.ball.range * v.scale;
+    ctx.strokeStyle = g.ball.cd > 0 ? "rgba(244,239,225,0.18)" : "rgba(244,239,225,0.45)";
+    ctx.setLineDash([6 * v.scale, 8 * v.scale]);
+    ctx.lineWidth = 2 * v.scale;
+    ctx.beginPath();
+    ctx.moveTo(px, py);
+    ctx.lineTo(px + Math.cos(ang) * reach, py + Math.sin(ang) * reach);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    const hx = px + Math.cos(ang) * (pr + 12 * v.scale);
+    const hy = py + Math.sin(ang) * (pr + 12 * v.scale);
+    const hr = RULES.ball.radius * v.scale * (g.ball.cd > 0 ? 0.7 : 1);
+    ctx.fillStyle = PALETTE[g.ball.current];
+    ctx.beginPath();
+    ctx.arc(hx, hy, hr, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2 * v.scale;
+    ctx.stroke();
+    glyph(ctx, g.ball.current, hx, hy, hr);
+  }
   if (!(p.iframes > 0 && Math.floor(time * 20) % 2 === 0)) {
     ctx.fillStyle = "#f4efe1";
     ctx.beginPath();
@@ -299,6 +361,26 @@ export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: F
       ctx.beginPath();
       ctx.arc(x, y, (f.radius ?? 60) * v.scale * (0.3 + 0.7 * k), 0, Math.PI * 2);
       ctx.stroke();
+      ctx.globalAlpha = 1;
+    } else if (f.kind === "line") {
+      const [x2, y2] = toScreen(v, f.x2 ?? f.x, f.y2 ?? f.y);
+      ctx.strokeStyle = f.color;
+      ctx.globalAlpha = 1 - k;
+      ctx.lineWidth = (f.radius ?? 3) * v.scale;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    } else if (f.kind === "spark") {
+      const sx = x + (f.vx ?? 0) * f.t * v.scale;
+      const sy = y + (f.vy ?? 0) * f.t * v.scale;
+      ctx.fillStyle = f.color;
+      ctx.globalAlpha = 1 - k;
+      ctx.beginPath();
+      ctx.arc(sx, sy, (f.radius ?? 4) * v.scale * (1 - k * 0.6), 0, Math.PI * 2);
+      ctx.fill();
       ctx.globalAlpha = 1;
     } else if (f.text) {
       ctx.globalAlpha = 1 - k;
