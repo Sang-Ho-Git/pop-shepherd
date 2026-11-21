@@ -99,6 +99,7 @@ export function createGame(cfg: GameConfig): Game {
       chestsOpened: 0,
       ballsThrown: 0,
       ballPops: 0,
+      popsBy: {},
       damageTaken: 0,
       damageFromSpecial: 0,
       evolutions: 0,
@@ -191,6 +192,7 @@ function useWhistle(g: Game): void {
   const p = g.player;
   if (p.whistleCd > 0) return;
   const hits = shockwave(g, p.x, p.y, RULES.whistle.radius * p.stats.area, RULES.whistle.knock * p.stats.knock_power, {
+    by: "whistle",
     chainDepth: 0,
     chainT: 0,
   });

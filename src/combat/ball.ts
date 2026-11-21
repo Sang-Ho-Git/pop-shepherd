@@ -148,13 +148,14 @@ function resolveBallHit(g: Game, ball: { x: number; y: number; vx: number; vy: n
   if (!same) {
     // 다른 색: 공 방향으로 밀어낸다 (무기 발사로 친다: 당구·쿠션이 이어진다)
     launch(e, ball.vx, ball.vy, RULES.ball.knock, WEAPON_LAUNCH);
+    e.cause = "ball";
     g.events.push({ type: "ball-bounce", id: e.id, x: ball.x, y: ball.y });
     return;
   }
   const group = findCluster(g, hitIdx, hitIdx, ball.color).slice(1);
   if (group.length + 1 >= RULES.match.minSize) {
     g.stats.ballPops++;
-    popCluster(g, group, e, ball.color);
+    popCluster(g, group, e, ball.color, { by: "ball" });
     return;
   }
   // 모자람: 공이 그 자리에서 같은 색 젤리가 되어 붙는다 (맞은 적 쪽으로 반지름만큼 붙여 놓는다)

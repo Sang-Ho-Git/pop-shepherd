@@ -59,6 +59,8 @@ export interface SimReport {
   stalls: number;
   stallsPerMinute: number;
   xp: number;
+  /** 터진 적 수를 일으킨 쪽별로 */
+  popsBy: Record<string, number>;
   weapons: WeaponReport[];
 }
 
@@ -92,6 +94,7 @@ export function summarize(g: Game, opts: SimOptions, seconds: number): SimReport
     stalls: s.stalls,
     stallsPerMinute: survived > 0 ? s.stalls / (survived / 60) : 0,
     xp: s.xp,
+    popsBy: { ...s.popsBy },
     weapons: g.weapons.map((w) => {
       const avgHits = w.fires > 0 ? w.hits / w.fires : 0;
       return {

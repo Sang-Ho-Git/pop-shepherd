@@ -95,6 +95,8 @@ export interface Enemy {
   rank: EnemyRank;
   /** 일반 적의 기믹 (EnemyDef.trait) */
   trait: string | null;
+  /** 마지막으로 이 적을 움직이거나 칠한 것 (무기 id, ball, whistle, chain:무기 …). 팝을 누가 일으켰는지 세는 데 쓴다 */
+  cause: string | null;
   maxHp: number;
   /** 칠한 물감이 마르는 남은 시간 (s). 0보다 크면 매치에 끼지 않는다 */
   wetT: number;
@@ -414,6 +416,8 @@ export interface Stats {
   chestsOpened: number;
   ballsThrown: number;
   ballPops: number;
+  /** 터진 적 수를 일으킨 쪽별로 (연쇄는 처음 일으킨 쪽 몫) */
+  popsBy: Record<string, number>;
   /** 받은 접촉 피해 합계, 그중 엘리트·보스에게 받은 것 */
   damageTaken: number;
   damageFromSpecial: number;

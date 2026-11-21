@@ -69,7 +69,7 @@ function touchingGroup(list: Enemy[], seed: Enemy[], slack: number): Enemy[] {
 }
 
 /** 적 목록을 그 자리에서 바로 터뜨린다 (갈래 완성 효과: 즉시 팝). 2마리 이상이어야 한다. */
-function popNow(g: Game, group: Enemy[], trigger: Enemy, opts: { shock?: boolean } = {}): boolean {
+function popNow(g: Game, group: Enemy[], trigger: Enemy, opts: { shock?: boolean; by?: string } = {}): boolean {
   const live = group.filter((e) => !e.dead && e.rank === "normal");
   if (live.length < 2 || trigger.color === "gray" || trigger.color === "rainbow") return false;
   popCluster(g, live.map((e) => g.enemies.indexOf(e)), trigger, trigger.color as MatchColor, opts);
@@ -185,7 +185,7 @@ function fireDirectional(g: Game, w: WeaponInstance, buf: number[]): number {
   if (w.level.params.samePop) {
     for (const c of MATCH_COLORS) {
       const same = candidates.map((x) => x.e).filter((e) => e.color === c && !e.dead);
-      if (same.length >= 2) popNow(g, touchingGroup(g.enemies, same, RULES.physics.contactSlack), same[0] as Enemy);
+      if (same.length >= 2) popNow(g, touchingGroup(g.enemies, same, RULES.physics.contactSlack), same[0] as Enemy, { by: w.def.id });
     }
   }
   return candidates.length;
@@ -316,7 +316,7 @@ function firePull(g: Game, w: WeaponInstance, buf: number[]): number {
   // Lv7A 완성·진화: 끌어온 적과 짝 무리를 그 자리에서 바로 터뜨린다
   if (w.level.params.instantPop) {
     const group = touchingGroup(inRange, [b], TOUCH_SLACK);
-    if (popNow(g, [...group, ...targets.filter((e) => !group.includes(e))], targets[0] as Enemy)) return targets.length;
+    if (popNow(g, [...group, ...targets.filter((e) => !group.includes(e))], targets[0] as Enemy, { by: w.def.id })) return targets.length;
   }
   for (const e of targets) {
     if (e.dead) continue;
@@ -466,6 +466,7 @@ function tickOrbit(g: Game, w: WeaponInstance, buf: number[]): void {
       w.lastHit.set(e.id, g.time);
       const dir = lv.params.outward ? { x: Math.cos(a), y: Math.sin(a) } : { x: -Math.sin(a), y: Math.cos(a) };
       launch(e, dir.x, dir.y, knock, src(lv));
+      e.cause = w.def.id;
       damage(g, e, lv.damage);
       w.hits++;
     }
@@ -647,6 +648,7 @@ export function fireWeapons(g: Game): void {
     w.cd = cooldownOf(g, w.level);
     w.fires++;
     w.hits += hits;
+    for (const e of g.enemies) if (firedIds.includes(e.id)) e.cause = w.def.id;
     g.events.push({ type: "fire", weapon: w.def.id, hits, ids: firedIds });
   }
 }
@@ -683,6 +685,7 @@ export function tickTotems(g: Game): void {
       const dx = t.x - e.x;
       const dy = t.y - e.y;
       const d = Math.hypot(dx, dy);
+      if (t.weapon) e.cause = t.weapon.def.id;
       if (!t.pulled.has(e.id)) {
         t.pulled.add(e.id);
         if (t.weapon) t.weapon.hits++;
@@ -703,7 +706,7 @@ export function tickTotems(g: Game): void {
     const pulledHere = g.enemies.filter((e) => !e.dead && e.rank === "normal" && e.color === t.color && t.pulled.has(e.id));
     const pile = pileRadius(pulledHere.length) + MAX_ENEMY_RADIUS;
     const group = pulledHere.filter((e) => (t.x - e.x) ** 2 + (t.y - e.y) ** 2 <= pile * pile);
-    if (group.length >= RULES.match.minSize) popNow(g, group, group[0] as Enemy, { shock: t.popShock });
+    if (group.length >= RULES.match.minSize) popNow(g, group, group[0] as Enemy, { shock: t.popShock, by: t.weapon?.def.id ?? "magnet_totem" });
   }
   g.totems = g.totems.filter((t) => t.t > 0);
 }

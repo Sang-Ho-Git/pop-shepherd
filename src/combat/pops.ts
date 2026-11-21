@@ -43,10 +43,13 @@ export function popShockMul(g: Game): number {
 export interface PopOptions {
   /** 팝 충격파를 일으키는지 (기본 true). 토템 압축 팝은 완성 전까지 false */
   shock?: boolean;
+  /** 이 팝을 일으킨 쪽 (없으면 trigger.cause) */
+  by?: string;
 }
 
 export function popCluster(g: Game, indices: number[], trigger: Enemy, color: MatchColor, opts: PopOptions = {}): void {
   const depth = trigger.chainT > 0 ? trigger.chainDepth : 0;
+  const by = opts.by ?? trigger.cause ?? "none";
   let xp = 0;
   let cx = 0;
   let cy = 0;
@@ -69,13 +72,14 @@ export function popCluster(g: Game, indices: number[], trigger: Enemy, color: Ma
   g.stats.xp += xp;
   dropGold(g, cx, cy, n * SHOP.goldPerPop * (1 + g.player.stats.gold_find), n);
   recordPop(g, n, depth);
+  g.stats.popsBy[by] = (g.stats.popsBy[by] ?? 0) + n;
   g.events.push({ type: "pop", ids, size: n, color, chainDepth: depth, xp, cushion, x: cx, y: cy });
 
   const radius = popShockRadius(n) * g.player.stats.chain_radius * (master ? 1 + RULES.threeCushion.shockBonus : 1) * popShockMul(g);
   // 엘리트·보스는 곁의 팝에 피해를 입는다 (충격파가 없는 압축 팝도 같은 반경으로 친다)
   hitSpecials(g, cx, cy, radius, n, color, depth);
   if (n >= RULES.match.shockwaveMin && opts.shock !== false) {
-    shockwave(g, cx, cy, radius, RULES.match.shockKnock, { chainDepth: depth + 1, chainT: RULES.chain.window });
+    shockwave(g, cx, cy, radius, RULES.match.shockKnock, { chainDepth: depth + 1, chainT: RULES.chain.window, by });
   }
   if (depth >= RULES.heal.minChainDepth && g.rng.chance(RULES.heal.dropChance * (1 + g.player.stats.heal_find))) {
     g.milks.push({ x: cx, y: cy, t: RULES.heal.lifetime });
@@ -162,7 +166,7 @@ export function shockwave(
   y: number,
   radius: number,
   knock: number,
-  src: { chainDepth: number; chainT: number },
+  src: { chainDepth: number; chainT: number; by?: string },
 ): number {
   const buf: number[] = [];
   g.grid.query(x, y, radius + MAX_ENEMY_RADIUS, buf);
@@ -175,6 +179,7 @@ export function shockwave(
     const reach = radius + e.radius;
     if (dx * dx + dy * dy > reach * reach) continue;
     launch(e, dx, dy, knock, src);
+    if (src.by) e.cause = src.by;
     hits++;
   }
   return hits;
@@ -205,6 +210,7 @@ export function detonateBomb(g: Game, color: MatchColor, x = g.player.x, y = g.p
   g.stats.xp += xp;
   recordPop(g, count, 0);
   g.stats.bombPops++;
+  g.stats.popsBy.bomb = (g.stats.popsBy.bomb ?? 0) + count;
   g.events.push({ type: "pop", ids, size: count, color: color as Color, chainDepth: 0, xp, cushion: false, x: cx / count, y: cy / count });
   return count;
 }
