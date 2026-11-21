@@ -281,6 +281,8 @@ export interface Input {
   aimY?: number;
   /** 색 공 던지기 (색 공 규칙일 때만) */
   throwBall?: boolean;
+  /** 지금 공과 다음 공 바꾸기 (누르는 순간 한 번) */
+  swapBall?: boolean;
 }
 
 export const NO_INPUT: Input = { moveX: 0, moveY: 0, whistle: false };
@@ -372,6 +374,7 @@ export type GameEvent =
   | { type: "ball-throw"; color: MatchColor }
   | { type: "ball-miss"; x: number; y: number }
   | { type: "ball-cushion"; x: number; y: number }
+  | { type: "ball-swap" }
   | { type: "ball-bounce"; id: number; x: number; y: number }
   | { type: "ball-stick"; id: number; x: number; y: number }
   /** ids: 이번 발사로 맞힌(날리거나 끌어당긴) 적 */

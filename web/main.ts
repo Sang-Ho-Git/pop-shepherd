@@ -169,6 +169,7 @@ const HINTS_BALL: [number, string][] = [
   [1, "마우스로 조준하고 클릭하면 색 공을 던진다"],
   [7, "같은 색 무리에 맞혀 공까지 3마리가 되면 터진다. 바닥이 빛나는 무리가 지금 공으로 터뜨릴 수 있는 곳"],
   [15, "같은 색이 하나뿐이면 공이 그 옆에 붙는다. 다음 공으로 터뜨리면 된다"],
+  [18, "오른쪽 클릭이나 Q로 지금 공과 다음 공을 바꾼다"],
   [20, "공은 울타리에서 한 번 튕긴다. 튕겨서 맞히면 쿠션 팝 (큐는 두 번, 경험치 보너스)"],
   [28, "터질 때 나오는 충격파가 옆 무리를 날려 연쇄가 된다. Space는 휘슬 (주변을 밀어낸다)"],
 ];
@@ -278,7 +279,7 @@ function renderTitle(): void {
       ]),
       el("p", "small", ballMode ? "색 공 규칙: 마우스로 조준하고 클릭으로 던진다. 같은 색 무리에 맞혀 3마리를 채우면 터진다." : "기존 규칙: 날아간 적이 같은 색에 세게 부딪혀야 터진다."),
       el("p", "small", `기록: ${save.runs}런 · 완주 ${save.wins} · 최고 ${save.bestStage}스테이지 · 영구 강화 ${Math.round(treeProgress(save) * 100)}%`),
-      el("p", "small keys", `이동 WASD/방향키 · ${ballMode ? "조준 마우스 · 던지기 클릭 · " : ""}휘슬 Space · 일시정지 Esc · 카드 1/2/3`),
+      el("p", "small keys", `이동 WASD/방향키 · ${ballMode ? "조준 마우스 · 던지기 클릭 · 공 바꾸기 오른쪽 클릭/Q · " : ""}휘슬 Space · 일시정지 Esc · 카드 1/2/3`),
     ],
     "panel title",
   );
@@ -424,6 +425,7 @@ addEventListener("pointerdown", () => unlock(), { capture: true });
 addEventListener("keydown", (e) => {
   unlock();
   keys.add(e.code);
+  if (e.code === "KeyQ" && !e.repeat) swapTap = true;
   if (e.code === "KeyM") {
     setMuted(!isMuted());
     if (screen === "title") renderTitle();
@@ -445,6 +447,9 @@ addEventListener("blur", () => keys.clear());
 let mouse: { x: number; y: number } | null = null;
 let mouseDown = false;
 let tapThrow: { x: number; y: number } | null = null;
+/** 지금 공과 다음 공 바꾸기: 오른쪽 클릭 또는 Q */
+let swapTap = false;
+canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 canvas.addEventListener("pointermove", (e) => {
   if (e.pointerType === "mouse") mouse = { x: e.clientX, y: e.clientY };
 });
@@ -452,6 +457,7 @@ canvas.addEventListener("pointerdown", (e) => {
   if (e.pointerType === "mouse") {
     mouse = { x: e.clientX, y: e.clientY };
     if (e.button === 0) mouseDown = true;
+    if (e.button === 2) swapTap = true;
   }
 });
 addEventListener("pointerup", (e) => {
@@ -524,7 +530,9 @@ function readInput(): Input {
     throwBall = true;
     tapThrow = null;
   }
-  return { moveX: x, moveY: y, whistle, aimX: aim?.x, aimY: aim?.y, throwBall };
+  const swapBall = swapTap;
+  swapTap = false;
+  return { moveX: x, moveY: y, whistle, aimX: aim?.x, aimY: aim?.y, throwBall, swapBall };
 }
 
 /* ───────────────────────── 효과 ───────────────────────── */
@@ -581,6 +589,10 @@ function handleEvents(game: Game): void {
         break;
       case "stage-clear":
         sfx.clear();
+        break;
+      case "ball-swap":
+        sfx.stick();
+        aimCache = null;
         break;
       case "ball-cushion":
         sfx.stick();

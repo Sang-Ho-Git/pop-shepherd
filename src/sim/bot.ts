@@ -20,7 +20,7 @@ export function botInput(g: Game): Input {
  * 색 공 규칙의 봇 조준: 들고 있는 공과 같은 색으로 2마리 이상 닿은 무리 중 가장 가까운 곳(사거리 안).
  * 없으면 같은 색 1마리에 던져 짝을 만든다. 그것도 없으면 던지지 않는다 (쿨다운을 아낀다).
  */
-export function botBall(g: Game): Pick<Input, "aimX" | "aimY" | "throwBall"> {
+export function botBall(g: Game): Pick<Input, "aimX" | "aimY" | "throwBall" | "swapBall"> {
   const b = g.ball;
   if (!b || b.cd > 0) return { throwBall: false };
   const p = g.player;
@@ -37,8 +37,13 @@ export function botBall(g: Game): Pick<Input, "aimX" | "aimY" | "throwBall"> {
     }
     return best;
   };
-  const t = pick(2) ?? pick(1);
-  return t ? { aimX: t.x, aimY: t.y, throwBall: true } : { throwBall: false };
+  const t = pick(2);
+  if (t) return { aimX: t.x, aimY: t.y, throwBall: true };
+  // 지금 공으로 터뜨릴 무리가 없고 다음 공으로는 있으면 바꾼다 (다음 틱에 던진다)
+  const nextReady = readyClusters(g, b.next, 2).some((c) => Math.hypot(c.x - p.x, c.y - p.y) < range);
+  if (nextReady) return { throwBall: false, swapBall: true };
+  const one = pick(1);
+  return one ? { aimX: one.x, aimY: one.y, throwBall: true } : { throwBall: false };
 }
 
 function botMove(g: Game): Input {

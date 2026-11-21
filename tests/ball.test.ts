@@ -107,3 +107,13 @@ describe("색 공 울타리 쿠션", () => {
     expect(events.some((e) => e.type === "ball-miss")).toBe(true);
   });
 });
+
+describe("색 공 바꾸기", () => {
+  it("swapBall이면 지금 공과 다음 공이 바뀐다", () => {
+    const g = ballGame();
+    g.ball!.current = "red";
+    g.ball!.next = "blue";
+    step(g, { moveX: 0, moveY: 0, whistle: false, swapBall: true });
+    expect([g.ball!.current, g.ball!.next]).toEqual(["blue", "red"]);
+  });
+});

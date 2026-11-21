@@ -65,6 +65,10 @@ export function tickBallThrow(g: Game, input: Input): void {
   const b = g.ball;
   if (!b) return;
   b.cd = Math.max(0, b.cd - DT);
+  if (input.swapBall) {
+    [b.current, b.next] = [b.next, b.current];
+    g.events.push({ type: "ball-swap" });
+  }
   if (!input.throwBall || b.cd > 0) return;
   const p = g.player;
   let dx = (input.aimX ?? p.x + p.faceX) - p.x;
