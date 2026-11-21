@@ -18,6 +18,7 @@ function arg(name: string, fallback: string): string {
 const runs = Number(arg("runs", "20"));
 const chars = arg("character", "shepherd").split(",");
 const file = arg("save", "");
+const ballMode = process.argv.includes("--ball");
 const store: SaveStore = file
   ? { read: () => (existsSync(file) ? readFileSync(file, "utf8") : null), write: (t) => writeFileSync(file, t) }
   : memoryStore();
@@ -29,7 +30,7 @@ let save = loadSave(store, (text, error) => {
 console.log("런   캐릭터     도달  완주  받은코인  남은코인  트리");
 for (let i = 0; i < runs; i++) {
   const ch = chars[i % chars.length] as string;
-  const r = runCampaign(1000 + save.runs, ch, CAMPAIGN, { meta: save.meta });
+  const r = runCampaign(1000 + save.runs, ch, CAMPAIGN, { meta: save.meta, ballMode });
   save = botSpend(recordRun(save, r));
   writeSave(store, save);
   console.log(

@@ -6,6 +6,7 @@
 import { runCampaign } from "../src/sim/campaign.ts";
 import { CAMPAIGN } from "../src/data/index.ts";
 import { VARIANTS } from "./variants.ts";
+import { profileForCoins } from "../src/progression/meta.ts";
 
 function arg(name: string, fallback: string): string {
   const i = process.argv.indexOf(`--${name}`);
@@ -15,6 +16,7 @@ const variant = arg("variant", "base");
 const chars = arg("chars", "shepherd,cue,olly,pale").split(",");
 const seeds = Number(arg("seeds", "6"));
 const ballMode = process.argv.includes("--ball");
+const metaCoins = Number(arg("meta-coins", "0"));
 const apply = VARIANTS[variant];
 if (!apply) throw new Error(`알 수 없는 variant: ${variant} (${Object.keys(VARIANTS).join(", ")})`);
 apply();
@@ -27,7 +29,7 @@ let pops = 0;
 for (const ch of chars) {
   let w = 0;
   for (let s = 11; s < 11 + seeds; s++) {
-    const r = runCampaign(s, ch, CAMPAIGN, { ballMode });
+    const r = runCampaign(s, ch, CAMPAIGN, { ballMode, meta: metaCoins > 0 ? profileForCoins(metaCoins) : undefined });
     n++;
     if (r.won) {
       won++;
