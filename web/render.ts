@@ -416,6 +416,20 @@ export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: F
     ctx.fill();
   }
 
+  // 돌풍: 바람 방향 줄무늬
+  if (g.wind.t > 0) {
+    ctx.strokeStyle = "rgba(230,240,235,0.25)";
+    ctx.lineWidth = 2 * v.scale;
+    const len = 60 * v.scale;
+    for (let k = 0; k < 40; k++) {
+      const sx = ((k * 211 + time * 600 * g.wind.dx) % cw + cw) % cw;
+      const sy = ((k * 137 + time * 600 * g.wind.dy) % ch + ch) % ch;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(sx + g.wind.dx * len, sy + g.wind.dy * len);
+      ctx.stroke();
+    }
+  }
   // 안개 (맵 기믹, 화면 전용): 플레이어 둘레만 밝다
   if (g.stage?.fog) {
     const fr = RULES.terrain.fogRadius * v.scale;

@@ -68,6 +68,7 @@ export function createGame(cfg: GameConfig): Game {
     effects: [],
     chests: [],
     walls: [],
+    wind: { dx: 0, dy: 0, t: 0, cd: cfg.stage?.wind?.every ?? 0 },
     ballMode: cfg.ballMode ?? false,
     ball: null,
     balls: [],
@@ -136,6 +137,46 @@ export function rebuildGrid(g: Game): void {
 export function inStream(g: Game, y: number): boolean {
   const st = g.stage?.streams;
   return !!st && st.some((s) => y >= s.y && y <= s.y + s.h);
+}
+
+/**
+ * 맵 기믹 돌풍: 걷는 적과 플레이어는 windWalk(px/s)만큼 밀리고, 날아가는 적과 색 공은 windLaunch(px/s²)로 휜다.
+ * 추적 뒤, 적분 전에 돈다 (추적이 정한 속도에 더한다).
+ */
+function tickWind(g: Game): void {
+  const w = g.stage?.wind;
+  if (!w) return;
+  const s = g.wind;
+  if (s.t > 0) {
+    s.t -= DT;
+    for (const e of g.enemies) {
+      if (e.dead) continue;
+      if (e.state === "walk") {
+        e.vx += s.dx * RULES.terrain.windWalk;
+        e.vy += s.dy * RULES.terrain.windWalk;
+      } else if (e.state === "launched") {
+        e.vx += s.dx * RULES.terrain.windLaunch * DT;
+        e.vy += s.dy * RULES.terrain.windLaunch * DT;
+      }
+    }
+    for (const b of g.balls) {
+      b.vx += s.dx * RULES.terrain.windLaunch * DT;
+      b.vy += s.dy * RULES.terrain.windLaunch * DT;
+    }
+    const p = g.player;
+    p.x = Math.min(g.arena.w - p.radius, Math.max(p.radius, p.x + s.dx * RULES.terrain.windWalk * DT));
+    p.y = Math.min(g.arena.h - p.radius, Math.max(p.radius, p.y + s.dy * RULES.terrain.windWalk * DT));
+    return;
+  }
+  s.cd -= DT;
+  if (s.cd <= 0) {
+    const a = g.rng.next() * Math.PI * 2;
+    s.dx = Math.cos(a);
+    s.dy = Math.sin(a);
+    s.t = w.duration;
+    s.cd = w.every;
+    g.events.push({ type: "wind-start", dx: s.dx, dy: s.dy });
+  }
 }
 
 function movePlayer(g: Game, input: Input): void {
@@ -400,6 +441,7 @@ export function step(g: Game, input: Input): void {
   spawnScheduled(g);
   chase(g);
   tickBosses(g);
+  tickWind(g);
   tickTotems(g);
   integrate(g);
   tickWalls(g);

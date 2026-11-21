@@ -16,6 +16,10 @@ export const VARIANTS: Record<string, () => void> = {
     paint.push = true;
     paint.toBall = false;
   },
+  /** 돌풍을 뺀다 */
+  noWind: () => {
+    for (const st of Object.values(STAGES)) delete st.wind;
+  },
   /** 기믹 적(가시·겁쟁이)과 바위를 뺀다 */
   noTraits: () => {
     for (const st of Object.values(STAGES)) {

@@ -95,5 +95,9 @@
   "mix": {
     "spiky": 0.18,
     "runner": 0.15
+  },
+  "wind": {
+    "every": 12,
+    "duration": 4
   }
 }

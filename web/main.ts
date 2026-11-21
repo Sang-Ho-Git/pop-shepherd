@@ -594,6 +594,11 @@ function handleEvents(game: Game): void {
       case "stage-clear":
         sfx.clear();
         break;
+      case "wind-start": {
+        const dir = Math.abs(e.dx) > Math.abs(e.dy) ? (e.dx > 0 ? "→" : "←") : e.dy > 0 ? "↓" : "↑";
+        banner = { text: `돌풍 ${dir}`, sub: "날아가는 공과 양이 바람에 휜다", t: 1.6 };
+        break;
+      }
       case "ball-swap":
         sfx.stick();
         aimCache = null;

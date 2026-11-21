@@ -74,3 +74,20 @@ describe("맵 기믹: 개울", () => {
     expect(inside).toBeCloseTo((g.player.x - x1) * RULES.terrain.streamSlow, 0);
   });
 });
+
+describe("맵 기믹: 돌풍", () => {
+  it("정해진 간격으로 불고, 부는 동안 날아가는 적이 바람 쪽으로 휜다", () => {
+    const st = { ...stage("stage08"), wind: { every: 1, duration: 2 } };
+    const g = createGame({ seed: 4, character: character("shepherd"), enemyDefs: ENEMIES, stage: st });
+    g.spawnTimer = 9999;
+    g.player.hp = g.player.maxHp = 1e9;
+    const events = run(g, 70);
+    const start = events.find((e) => e.type === "wind-start");
+    expect(start).toBeDefined();
+    const e = put(g, "red", 1280, 400);
+    launch(e, 0, 1, 900, WEAPON_LAUNCH);
+    const vx0 = e.vx;
+    run(g, 20);
+    if (start && start.type === "wind-start" && Math.abs(start.dx) > 0.2) expect(Math.sign(e.vx - vx0)).toBe(Math.sign(start.dx));
+  });
+});

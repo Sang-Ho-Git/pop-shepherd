@@ -246,6 +246,8 @@ export interface StageDef {
   mix?: Record<string, number>;
   /** 맵 기믹: 개울 (가로 띠, y부터 h 높이). 안에서는 걷는 속도가 느려진다 */
   streams?: { y: number; h: number }[];
+  /** 맵 기믹: 돌풍. every초마다 duration초 동안 한 방향으로 분다 */
+  wind?: { every: number; duration: number };
   /** 맵 기믹: 안개 (화면 전용. 플레이어 둘레만 보인다) */
   fog?: boolean;
   /** 맵 기믹: 바위 (길을 막고, 날아간 적은 울타리처럼 튕긴다) */
@@ -375,6 +377,7 @@ export type GameEvent =
   | { type: "ball-miss"; x: number; y: number }
   | { type: "ball-cushion"; x: number; y: number }
   | { type: "ball-swap" }
+  | { type: "wind-start"; dx: number; dy: number }
   | { type: "ball-bounce"; id: number; x: number; y: number }
   | { type: "ball-stick"; id: number; x: number; y: number }
   /** ids: 이번 발사로 맞힌(날리거나 끌어당긴) 적 */
@@ -475,6 +478,8 @@ export interface Game {
   milks: Milk[];
   /** 반사벽 */
   walls: Wall[];
+  /** 돌풍 상태: 지금 부는 방향(단위 벡터), 남은 시간, 다음 돌풍까지 */
+  wind: { dx: number; dy: number; t: number; cd: number };
   /** 색 공 규칙 (실험). 켜져 있으면 ball이 있다 */
   ballMode: boolean;
   ball: { current: MatchColor; next: MatchColor; cd: number } | null;
