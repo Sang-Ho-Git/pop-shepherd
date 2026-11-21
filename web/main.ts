@@ -162,6 +162,29 @@ function startRun(characterId: string): void {
   beginStage();
 }
 
+/** 처음 하는 사람을 위한 안내 (스테이지 1, 처음 세 판). 시각(초)에 맞춰 하나씩 띄운다 */
+const HINTS_BALL: [number, string][] = [
+  [1, "마우스로 조준하고 클릭하면 색 공을 던진다"],
+  [7, "같은 색 무리에 맞혀 공까지 3마리가 되면 터진다. 바닥이 빛나는 무리가 지금 공으로 터뜨릴 수 있는 곳"],
+  [15, "같은 색이 하나뿐이면 공이 그 옆에 붙는다. 다음 공으로 터뜨리면 된다"],
+  [24, "터질 때 나오는 충격파가 옆 무리를 날려 연쇄가 된다. Space는 휘슬 (주변을 밀어낸다)"],
+];
+const HINTS_OLD: [number, string][] = [
+  [1, "무기가 자동으로 적을 날린다. 날아간 적이 같은 색에 세게 부딪혀 3마리가 되면 터진다"],
+  [9, "천천히 닿거나 걸어와 붙은 무리는 터지지 않는다. 다음 한 방을 기다리는 짝이다"],
+  [18, "Space는 휘슬: 주변을 한 번에 밀어낸다 (재사용 60초)"],
+];
+const HINT_KEY = "pop-shepherd-hints-seen";
+function hintsLeft(): number {
+  try {
+    return 3 - Number(localStorage.getItem(HINT_KEY) ?? "0");
+  } catch {
+    return 3;
+  }
+}
+let hintQueue: [number, string][] = [];
+let hint: { text: string; t: number } | null = null;
+
 function beginStage(): void {
   if (!run) return;
   const id = CAMPAIGN[run.stageIndex] as string;
@@ -174,6 +197,15 @@ function beginStage(): void {
   const st = stage(id);
   const goal = st.clear === "boss" ? "보스를 쓰러뜨려라" : st.clear === "elites" ? `엘리트 ${st.elites?.length ?? 0}마리를 쓰러뜨려라` : `${Math.round(st.duration / 60)}분 ${st.duration % 60 ? `${st.duration % 60}초 ` : ""}버텨라`;
   banner = { text: `스테이지 ${run.stageIndex + 1} · ${st.name}`, sub: goal, t: 3 };
+  hint = null;
+  hintQueue = run.stageIndex === 0 && hintsLeft() > 0 ? [...(ballMode ? HINTS_BALL : HINTS_OLD)] : [];
+  if (hintQueue.length > 0) {
+    try {
+      localStorage.setItem(HINT_KEY, String(4 - hintsLeft()));
+    } catch {
+      // 기억하지 못하면 다음에도 보인다
+    }
+  }
 }
 
 function endStage(): void {
@@ -674,6 +706,14 @@ function frame(now: number): void {
   for (const f of fx) f.t += dt;
   fx = fx.filter((f) => f.t < f.life);
   if (banner) banner.t -= dt;
+  if (g && screen === "play" && hintQueue.length > 0 && g.time >= hintQueue[0]![0]) hint = { text: hintQueue.shift()![1], t: 7 };
+  if (hint) {
+    hint.t -= dt;
+    if (hint.t <= 0) hint = null;
+  }
+  const hintEl = $("hint");
+  hintEl.hidden = !(hint && screen === "play");
+  if (hint && hintEl.textContent !== hint.text) hintEl.textContent = hint.text;
   if (banner && banner.t <= 0) banner = null;
   hitFlash = Math.max(0, hitFlash - dt);
   shake = Math.max(0, shake - dt * 40);

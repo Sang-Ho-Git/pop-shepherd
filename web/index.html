@@ -90,6 +90,11 @@
   .weapons .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--c); border: 2px solid var(--cream); display: inline-block; }
   .toggle { font-size: 16px !important; }
   #game { cursor: crosshair; }
+  #hint {
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+    width: min(calc(100% - 32px), 640px); margin: 0; padding: 10px 16px; text-align: center; pointer-events: none;
+    background: rgba(43,33,24,0.88); border: 2px solid var(--plank-edge); border-radius: 10px; font-size: 16px; line-height: 1.5;
+  }
   #whistle {
     position: fixed; right: max(18px, env(safe-area-inset-right, 0px)); bottom: calc(86px + env(safe-area-inset-bottom, 0px));
     width: 72px; height: 72px; border-radius: 50%; border: 3px solid var(--plank-edge); background: rgba(43,33,24,0.8);
@@ -102,5 +107,6 @@
 <div id="stage"><canvas id="game" aria-label="팝 셰퍼드 게임 화면"></canvas></div>
 <div id="hud" hidden></div>
 <button id="whistle" type="button" hidden>휘슬</button>
+<p id="hint" hidden></p>
 <div id="overlay" hidden></div>
 <!--BUNDLE-->
