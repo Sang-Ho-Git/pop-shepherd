@@ -16,6 +16,10 @@ export const VARIANTS: Record<string, () => void> = {
     paint.push = true;
     paint.toBall = false;
   },
+  /** 꽃 범퍼를 뺀다 (바위는 남긴다) */
+  noBumper: () => {
+    for (const st of Object.values(STAGES)) if (st.rocks) st.rocks = st.rocks.filter((r) => !r.bumper);
+  },
   /** 돌풍을 뺀다 */
   noWind: () => {
     for (const st of Object.values(STAGES)) delete st.wind;
