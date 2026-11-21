@@ -80,3 +80,30 @@ describe("색 공 던지기 (실험 규칙)", () => {
     expect(candidates(ballGame()).newPassive.some((c) => c.kind === "newPassive" && c.id === "guiding_star")).toBe(true);
   });
 });
+
+describe("색 공 울타리 쿠션", () => {
+  it("공은 울타리에서 한 번 튕기고, 튕긴 뒤 터뜨리면 쿠션 팝", () => {
+    const g = ballGame();
+    g.player.x = 200;
+    g.player.y = 700;
+    g.ball!.current = "red";
+    // 왼쪽 울타리로 던지면 튕겨 돌아와 오른쪽 무리에 맞는다
+    put(g, "red", 330, 700);
+    put(g, "red", 358, 700);
+    step(g, throwAt(0, 700));
+    const events = run(g, 60);
+    expect(events.some((e) => e.type === "ball-cushion")).toBe(true);
+    expect(pops(events)[0]).toMatchObject({ cushion: true });
+  });
+
+  it("두 번째 울타리에서는 사라진다 (큐는 한 번 더)", () => {
+    const g = ballGame();
+    g.player.x = 60;
+    g.player.y = 60;
+    g.ball!.current = "blue";
+    step(g, throwAt(0, 0));
+    const events = run(g, 60);
+    expect(events.filter((e) => e.type === "ball-cushion")).toHaveLength(1);
+    expect(events.some((e) => e.type === "ball-miss")).toBe(true);
+  });
+});

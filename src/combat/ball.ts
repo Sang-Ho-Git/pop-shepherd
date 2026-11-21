@@ -99,6 +99,7 @@ export function tickBallThrow(g: Game, input: Input): void {
     vy: Math.sin(ang) * RULES.ball.speed,
     color: b.current,
     travel: 0,
+    bounces: 0,
   });
   b.current = b.next;
   b.next = rollBallColor(g);
@@ -117,7 +118,17 @@ export function tickBalls(g: Game): void {
     ball.x += ball.vx * DT;
     ball.y += ball.vy * DT;
     ball.travel += RULES.ball.speed * DT;
-    if (ball.x < r || ball.y < r || ball.x > g.arena.w - r || ball.y > g.arena.h - r || ball.travel > RULES.ball.range) {
+    // 울타리 쿠션: 정해진 횟수까지는 튕기고 (사거리는 이어진다), 그 뒤에는 사라진다
+    const out = ball.x < r || ball.y < r || ball.x > g.arena.w - r || ball.y > g.arena.h - r;
+    const maxCushion = RULES.ball.cushions + (g.player.trait === "three_cushion" ? 1 : 0);
+    if (out && ball.bounces < maxCushion && ball.travel <= RULES.ball.range) {
+      if (ball.x < r || ball.x > g.arena.w - r) ball.vx = -ball.vx;
+      if (ball.y < r || ball.y > g.arena.h - r) ball.vy = -ball.vy;
+      ball.x = Math.min(g.arena.w - r, Math.max(r, ball.x));
+      ball.y = Math.min(g.arena.h - r, Math.max(r, ball.y));
+      ball.bounces++;
+      g.events.push({ type: "ball-cushion", x: ball.x, y: ball.y });
+    } else if (out || ball.travel > RULES.ball.range) {
       g.events.push({ type: "ball-miss", x: ball.x, y: ball.y });
       continue;
     }
@@ -142,7 +153,7 @@ export function tickBalls(g: Game): void {
   g.balls = keep;
 }
 
-function resolveBallHit(g: Game, ball: { x: number; y: number; vx: number; vy: number; color: MatchColor }, hitIdx: number): void {
+function resolveBallHit(g: Game, ball: { x: number; y: number; vx: number; vy: number; color: MatchColor; bounces: number }, hitIdx: number): void {
   const e = g.enemies[hitIdx] as Enemy;
   const same = e.rank === "normal" && (e.color === ball.color || e.color === "rainbow");
   if (!same) {
@@ -155,7 +166,7 @@ function resolveBallHit(g: Game, ball: { x: number; y: number; vx: number; vy: n
   const group = findCluster(g, hitIdx, hitIdx, ball.color).slice(1);
   if (group.length + 1 >= RULES.match.minSize) {
     g.stats.ballPops++;
-    popCluster(g, group, e, ball.color, { by: "ball" });
+    popCluster(g, group, e, ball.color, { by: "ball", cushion: ball.bounces > 0 });
     return;
   }
   // 모자람: 공이 그 자리에서 같은 색 젤리가 되어 붙는다 (맞은 적 쪽으로 반지름만큼 붙여 놓는다)

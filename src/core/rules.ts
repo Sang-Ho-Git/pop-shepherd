@@ -143,6 +143,8 @@ export const RULES = {
     pairWeight: 3,
     /** 모자라서 붙은 공 젤리가 멈춰 있는 시간 (s) */
     stickStun: 1.5,
+    /** 울타리에서 튕기는 횟수 (큐는 쓰리쿠션으로 +1). 튕긴 뒤 터뜨리면 쿠션 팝 */
+    cushions: 1,
   },
   /** 드롭 (보물 상자, 골드 주머니) */
   drops: { pickupRange: 70, goldLifetime: 20, chestPicksElite: 1, chestPicksBoss: 3, chestHealFrac: 0.3 },

@@ -45,6 +45,8 @@ export interface PopOptions {
   shock?: boolean;
   /** 이 팝을 일으킨 쪽 (없으면 trigger.cause) */
   by?: string;
+  /** 쿠션을 거친 팝으로 친다 (울타리에서 튕긴 색 공) */
+  cushion?: boolean;
 }
 
 export function popCluster(g: Game, indices: number[], trigger: Enemy, color: MatchColor, opts: PopOptions = {}): void {
@@ -66,7 +68,7 @@ export function popCluster(g: Game, indices: number[], trigger: Enemy, color: Ma
   cx /= n;
   cy /= n;
   xp *= chainMultiplier(depth) * phaseXpMul(g);
-  const cushion = trigger.wallBounces > 0;
+  const cushion = trigger.wallBounces > 0 || opts.cushion === true;
   const master = cushion && g.player.trait === "three_cushion";
   if (master) xp *= 1 + RULES.threeCushion.xpBonus;
   g.stats.xp += xp;

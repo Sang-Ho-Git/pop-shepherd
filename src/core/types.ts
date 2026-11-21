@@ -367,6 +367,7 @@ export type GameEvent =
   | { type: "gold-pickup"; amount: number }
   | { type: "ball-throw"; color: MatchColor }
   | { type: "ball-miss"; x: number; y: number }
+  | { type: "ball-cushion"; x: number; y: number }
   | { type: "ball-bounce"; id: number; x: number; y: number }
   | { type: "ball-stick"; id: number; x: number; y: number }
   /** ids: 이번 발사로 맞힌(날리거나 끌어당긴) 적 */
@@ -471,7 +472,7 @@ export interface Game {
   ballMode: boolean;
   ball: { current: MatchColor; next: MatchColor; cd: number } | null;
   /** 날아가는 색 공 */
-  balls: { x: number; y: number; vx: number; vy: number; color: MatchColor; travel: number }[];
+  balls: { x: number; y: number; vx: number; vy: number; color: MatchColor; travel: number; bounces: number }[];
   /** 엘리트·보스가 떨어뜨린 보물 상자 */
   chests: Chest[];
   /** 팝 자리에 떨어진 골드 주머니 */

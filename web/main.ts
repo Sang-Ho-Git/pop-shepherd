@@ -167,7 +167,8 @@ const HINTS_BALL: [number, string][] = [
   [1, "마우스로 조준하고 클릭하면 색 공을 던진다"],
   [7, "같은 색 무리에 맞혀 공까지 3마리가 되면 터진다. 바닥이 빛나는 무리가 지금 공으로 터뜨릴 수 있는 곳"],
   [15, "같은 색이 하나뿐이면 공이 그 옆에 붙는다. 다음 공으로 터뜨리면 된다"],
-  [24, "터질 때 나오는 충격파가 옆 무리를 날려 연쇄가 된다. Space는 휘슬 (주변을 밀어낸다)"],
+  [20, "공은 울타리에서 한 번 튕긴다. 튕겨서 맞히면 쿠션 팝 (큐는 두 번, 경험치 보너스)"],
+  [28, "터질 때 나오는 충격파가 옆 무리를 날려 연쇄가 된다. Space는 휘슬 (주변을 밀어낸다)"],
 ];
 const HINTS_OLD: [number, string][] = [
   [1, "무기가 자동으로 적을 날린다. 날아간 적이 같은 색에 세게 부딪혀 3마리가 되면 터진다"],
@@ -576,6 +577,10 @@ function handleEvents(game: Game): void {
         break;
       case "stage-clear":
         sfx.clear();
+        break;
+      case "ball-cushion":
+        sfx.stick();
+        fx.push({ kind: "ring", x: e.x, y: e.y, t: 0, life: 0.25, color: "#9fe3ff", radius: 26 });
         break;
       case "ball-miss":
         fx.push({ kind: "ring", x: e.x, y: e.y, t: 0, life: 0.25, color: "rgba(244,239,225,0.6)", radius: 20 });
