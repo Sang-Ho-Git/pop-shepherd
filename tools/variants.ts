@@ -1,6 +1,6 @@
 /** 실험 조건: 데이터·규칙을 메모리에서만 바꾼다 (tools/probe.ts에서 쓴다) */
 import { RULES } from "../src/core/rules.ts";
-import { WEAPONS } from "../src/data/index.ts";
+import { STAGES, WEAPONS } from "../src/data/index.ts";
 
 const paint = RULES.paint as { push: boolean; dry: number; toBall: boolean };
 
@@ -11,6 +11,18 @@ function paintCooldown(mul: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 예전 페인트 총 (칠하고 밀어 넣음) */
+  oldPaint: () => {
+    paint.push = true;
+    paint.toBall = false;
+  },
+  /** 기믹 적(가시·겁쟁이)과 바위를 뺀다 */
+  noTraits: () => {
+    for (const st of Object.values(STAGES)) {
+      delete st.mix;
+      delete st.rocks;
+    }
+  },
   /** 페인트 총을 카드에서 뺀다 (팔레는 킥으로 시작) */
   noPaint: () => {
     WEAPONS.paint_gun!.implemented = false;

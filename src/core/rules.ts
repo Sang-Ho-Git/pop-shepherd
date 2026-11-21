@@ -121,12 +121,13 @@ export const RULES = {
     hardLimit: 900,
   },
   /**
-   * 페인트 총 조정 (실험). 기본값이 지금 동작이다.
+   * 페인트 총 조정. 11/21 시뮬: 칠하고 밀어 넣으면 페인트 혼자 팝의 56~62%를 일으켜 플레이어 몫이 없었다.
+   * 그래서 밀지 않고(push false), 색 공 규칙에서는 지금 든 공 색으로 칠한다(toBall). 판을 깔고 마무리는 플레이어가 한다.
    * push: 칠한 적을 옆 무리 쪽으로 밀어 부딪히게 하는지
    * dry: 칠한 적이 매치에 끼지 못하는 시간 (s, 물감이 마르는 중)
    * toBall: 색 공 규칙에서 옆 무리 색 대신 지금 든 공 색으로 칠한다
    */
-  paint: { push: true, dry: 0, toBall: false },
+  paint: { push: false, dry: 0, toBall: true },
   /** 일반 적 기믹 */
   traits: { runnerFlee: 220 },
   /** 색 공 던지기 (실험 규칙) */

@@ -146,7 +146,7 @@ describe("무기 동작 모듈 (M1 3종)", () => {
     expect(w.hits).toBe(2);
   });
 
-  it("페인트 총(projectile): 옆 무리의 색으로 칠하고 밀어 붙여 터뜨린다", () => {
+  it("페인트 총(projectile): 옆 무리의 색으로 칠하기만 하고 밀지 않는다 (마무리는 다른 무기·공)", () => {
     const w = makeWeapon(weapon("paint_gun"), 1);
     const g = emptyGame({ weapons: [w] });
     const { x, y } = g.player;
@@ -155,8 +155,24 @@ describe("무기 동작 모듈 (M1 3종)", () => {
     const odd = put(g, "yellow", x + 172, y + 4);
     const events = run(g, 60);
     expect(w.fires).toBe(1);
-    expect(odd.dead).toBe(true);
-    expect(pops(events)[0]).toMatchObject({ size: 3, color: "green" });
+    expect(odd.color).toBe("green");
+    expect(odd.state).not.toBe("launched");
+    expect(pops(events)).toHaveLength(0);
+  });
+
+  it("페인트 총, 색 공 규칙: 지금 든 공 색으로 칠한다", async () => {
+    const { createGame } = await import("../src/core/game.ts");
+    const { character, ENEMIES } = await import("../src/data/index.ts");
+    const g = createGame({ seed: 1, character: character("shepherd"), enemyDefs: ENEMIES, stage: null, weapons: [makeWeapon(weapon("paint_gun"), 1)], ballMode: true });
+    run(g, 1);
+    g.ball!.current = "blue";
+    const { x, y } = g.player;
+    put(g, "blue", x + 200, y);
+    put(g, "green", x + 200, y + 60);
+    put(g, "green", x + 228, y + 60);
+    const odd = put(g, "yellow", x + 172, y + 4);
+    run(g, 5);
+    expect(odd.color).toBe("blue");
   });
 
   it("페인트 총: 칠해서 짝이 생기는 적이 없으면 쏘지 않는다", () => {
