@@ -132,14 +132,21 @@ export function rebuildGrid(g: Game): void {
 }
 
 /** 1.1 이동: 8방향 입력을 정규화. 움직이면 바라보는 방향이 바뀐다. */
+/** 맵 기믹 개울 안인지 (y만 본다: 가로 띠) */
+export function inStream(g: Game, y: number): boolean {
+  const st = g.stage?.streams;
+  return !!st && st.some((s) => y >= s.y && y <= s.y + s.h);
+}
+
 function movePlayer(g: Game, input: Input): void {
   const p = g.player;
   const len = Math.hypot(input.moveX, input.moveY);
   if (len > 1e-9) {
     const ux = input.moveX / len;
     const uy = input.moveY / len;
-    p.x += ux * p.speed * DT;
-    p.y += uy * p.speed * DT;
+    const slow = inStream(g, p.y) ? RULES.terrain.streamSlow : 1;
+    p.x += ux * p.speed * slow * DT;
+    p.y += uy * p.speed * slow * DT;
     p.faceX = ux;
     p.faceY = uy;
   }
@@ -163,8 +170,9 @@ function chase(g: Game): void {
     const d = Math.hypot(dx, dy);
     // 겁쟁이 양: 가까우면 도망간다
     const away = e.trait === "runner" && d < RULES.traits.runnerFlee ? -1 : 1;
-    e.vx = d < 1e-9 ? 0 : ((away * dx) / d) * e.speed;
-    e.vy = d < 1e-9 ? 0 : ((away * dy) / d) * e.speed;
+    const sp = e.speed * (inStream(g, e.y) ? RULES.terrain.streamSlow : 1);
+    e.vx = d < 1e-9 ? 0 : ((away * dx) / d) * sp;
+    e.vy = d < 1e-9 ? 0 : ((away * dy) / d) * sp;
     if (cs <= 0 || e.speed <= 0 || e.color === "gray" || e.rank !== "normal") continue;
     let sx = 0;
     let sy = 0;

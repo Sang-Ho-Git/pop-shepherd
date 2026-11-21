@@ -57,3 +57,20 @@ describe("기믹 적과 바위 (트리 3.2, 3.3)", () => {
     for (const x of g.enemies) for (const r of st.rocks!) expect(Math.hypot(x.x - r.x, x.y - r.y)).toBeGreaterThanOrEqual(r.r + x.radius - 0.5);
   });
 });
+
+describe("맵 기믹: 개울", () => {
+  it("개울 안에서는 플레이어와 적이 느려진다", () => {
+    const st = stage("stage02");
+    const s = st.streams![0]!;
+    const g = createGame({ seed: 1, character: character("shepherd"), enemyDefs: ENEMIES, stage: st });
+    g.spawnTimer = 9999;
+    g.player.y = s.y + s.h / 2;
+    const x0 = g.player.x;
+    run(g, 60, { moveX: 1, moveY: 0, whistle: false });
+    const inside = g.player.x - x0;
+    g.player.y = s.y - 200;
+    const x1 = g.player.x;
+    run(g, 60, { moveX: 1, moveY: 0, whistle: false });
+    expect(inside).toBeCloseTo((g.player.x - x1) * RULES.terrain.streamSlow, 0);
+  });
+});

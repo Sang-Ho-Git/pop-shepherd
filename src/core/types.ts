@@ -244,6 +244,10 @@ export interface StageDef {
   eliteHpMul?: number;
   /** 짝으로 나오는 적 종류의 가중치 (젤리는 1). 예: { spiky: 0.15 } */
   mix?: Record<string, number>;
+  /** 맵 기믹: 개울 (가로 띠, y부터 h 높이). 안에서는 걷는 속도가 느려진다 */
+  streams?: { y: number; h: number }[];
+  /** 맵 기믹: 안개 (화면 전용. 플레이어 둘레만 보인다) */
+  fog?: boolean;
   /** 맵 기믹: 바위 (길을 막고, 날아간 적은 울타리처럼 튕긴다) */
   rocks?: { x: number; y: number; r: number }[];
   /** 무리 하나에 나오는 짝 수 [최소, 최대] (기본 RULES.spawn) */

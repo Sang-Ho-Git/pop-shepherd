@@ -218,6 +218,21 @@ export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: F
   ctx.lineWidth = 8 * v.scale;
   ctx.strokeRect(ax, ay, bx - ax, by - ay);
 
+  // 개울 (맵 기믹)
+  for (const st of g.stage?.streams ?? []) {
+    const [sx0, sy0] = toScreen(v, 0, st.y);
+    const [sx1, sy1] = toScreen(v, g.arena.w, st.y + st.h);
+    ctx.fillStyle = "rgba(61,139,255,0.22)";
+    ctx.fillRect(sx0, sy0, sx1 - sx0, sy1 - sy0);
+    ctx.strokeStyle = "rgba(159,227,255,0.35)";
+    ctx.lineWidth = 2 * v.scale;
+    for (let k = 0; k < 4; k++) {
+      const yy = sy0 + ((k + 0.5) / 4) * (sy1 - sy0);
+      ctx.beginPath();
+      for (let x = sx0; x <= sx1; x += 24 * v.scale) ctx.lineTo(x, yy + Math.sin(x / (40 * v.scale) + time * 2 + k) * 4 * v.scale);
+      ctx.stroke();
+    }
+  }
   // 바위 (맵 기믹)
   for (const rk of g.stage?.rocks ?? []) {
     const [x, y] = toScreen(v, rk.x, rk.y);
@@ -394,6 +409,16 @@ export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: F
     ctx.beginPath();
     ctx.arc(px + p.faceX * pr * 0.55, py + p.faceY * pr * 0.55, pr * 0.22, 0, Math.PI * 2);
     ctx.fill();
+  }
+
+  // 안개 (맵 기믹, 화면 전용): 플레이어 둘레만 밝다
+  if (g.stage?.fog) {
+    const fr = RULES.terrain.fogRadius * v.scale;
+    const grad = ctx.createRadialGradient(px, py, fr * 0.55, px, py, fr);
+    grad.addColorStop(0, "rgba(8,17,14,0)");
+    grad.addColorStop(1, "rgba(8,17,14,0.88)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, cw, ch);
   }
 
   // 효과
