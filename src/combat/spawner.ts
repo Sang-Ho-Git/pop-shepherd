@@ -80,7 +80,7 @@ export function spawnColors(stage: StageDef, time: number): MatchColor[] {
 
 /** (x, y)가 플레이어 화면 밖인지 (화면 가장자리에서 margin만큼 더 바깥) */
 export function offScreen(g: Game, x: number, y: number, margin: number): boolean {
-  return Math.abs(x - g.player.x) > RULES.view.w / 2 + margin || Math.abs(y - g.player.y) > RULES.view.h / 2 + margin;
+  return Math.abs(x - g.player.x) > g.view.w / 2 + margin || Math.abs(y - g.player.y) > g.view.h / 2 + margin;
 }
 
 /**

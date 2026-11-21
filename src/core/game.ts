@@ -68,6 +68,7 @@ export function createGame(cfg: GameConfig): Game {
     effects: [],
     chests: [],
     walls: [],
+    view: { w: RULES.view.w, h: RULES.view.h },
     wind: { dx: 0, dy: 0, t: 0, cd: cfg.stage?.wind?.every ?? 0 },
     ballMode: cfg.ballMode ?? false,
     ball: null,
@@ -361,8 +362,8 @@ function pickupGolds(g: Game): void {
 
 /** 플레이어 화면(1280×720) 안에 있는 적 수 */
 export function onScreenCount(g: Game): number {
-  const hw = RULES.view.w / 2;
-  const hh = RULES.view.h / 2;
+  const hw = g.view.w / 2;
+  const hh = g.view.h / 2;
   let n = 0;
   for (const e of g.enemies) if (!e.dead && Math.abs(e.x - g.player.x) <= hw && Math.abs(e.y - g.player.y) <= hh) n++;
   return n;

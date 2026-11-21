@@ -478,6 +478,8 @@ export interface Game {
   milks: Milk[];
   /** 반사벽 */
   walls: Wall[];
+  /** 화면에 보이는 월드 크기. 화면판이 매 프레임 넣는다 (세로 화면 등). 시뮬은 RULES.view 그대로 */
+  view: { w: number; h: number };
   /** 돌풍 상태: 지금 부는 방향(단위 벡터), 남은 시간, 다음 돌풍까지 */
   wind: { dx: number; dy: number; t: number; cd: number };
   /** 색 공 규칙 (실험). 켜져 있으면 ball이 있다 */

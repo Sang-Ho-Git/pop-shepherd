@@ -189,8 +189,8 @@ export function shockwave(
 
 /** 색 폭탄: 주운 자리 기준 화면(1280×720) 안의 그 색 적을 전부 터뜨린다. 한 번의 팝으로 세고, 충격파와 새 폭탄은 없다. */
 export function detonateBomb(g: Game, color: MatchColor, x = g.player.x, y = g.player.y): number {
-  const hw = RULES.view.w / 2;
-  const hh = RULES.view.h / 2;
+  const hw = g.view.w / 2;
+  const hh = g.view.h / 2;
   let xp = 0;
   let count = 0;
   const ids: number[] = [];

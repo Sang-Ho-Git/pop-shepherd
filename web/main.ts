@@ -751,6 +751,8 @@ function frame(now: number): void {
   if (g) {
     const v = computeView(g, canvas.width, canvas.height);
     view = v;
+    // 보이는 월드 크기를 시뮬에 알려 준다: 적이 화면 밖에서 나타나고, 폭탄은 보이는 범위를 지운다
+    g.view = { w: Math.max(RULES.view.w * 0.5, canvas.width / v.scale), h: Math.max(RULES.view.h * 0.5, canvas.height / v.scale) };
     // 화면 흔들림: 팝·피격 때 잠깐 (줄인 움직임 설정이면 끈다)
     const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
     const sv = calm || shake <= 0 ? v : { ...v, ox: v.ox + (Math.random() - 0.5) * shake * v.scale, oy: v.oy + (Math.random() - 0.5) * shake * v.scale };
