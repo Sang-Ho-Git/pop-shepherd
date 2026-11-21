@@ -141,6 +141,8 @@ interface Run {
   meta: { character: CharacterDef; specials: MetaSpecials };
   popped: number;
   seed: number;
+  /** 시험 진입로(#stageN)로 시작한 판: 기록·코인에 넣지 않는다 */
+  dev?: boolean;
 }
 let run: Run | null = null;
 let g: Game | null = null;
@@ -231,15 +233,17 @@ function finishRun(won: boolean): void {
   if (!won) run.popped += g.stats.poppedEnemies;
   const reached = run.stageIndex + (won ? 1 : 0);
   const coins = coinsForRun(reached, run.popped);
-  save = recordRun(save, { character: run.character, reached, won, coins });
-  writeSave(store, save);
+  if (!run.dev) {
+    save = recordRun(save, { character: run.character, reached, won, coins });
+    writeSave(store, save);
+  }
   screen = "result";
   const name = CHAR_NAME[run.character] ?? run.character;
   show([
     el("p", "eyebrow", won ? "런 완주" : `스테이지 ${run.stageIndex + 1}에서 쓰러짐`),
     el("h1", "", won ? "목장을 지켰다" : "양 떼에 묻혔다"),
     el("p", "lede", `${name} · Lv${g.player.level} · 클리어 ${reached}/10 · 터뜨린 적 ${run.popped}`),
-    el("p", "coins", `코인 +${coins}  (보유 ${save.coins})`),
+    el("p", "coins", run.dev ? "시험 판이라 기록과 코인에 넣지 않았다" : `코인 +${coins}  (보유 ${save.coins})`),
     row([button("영구 강화", () => renderMeta()), button("다시 하기", () => renderSelect(), "btn ghost")]),
   ]);
   run = null;
@@ -778,5 +782,38 @@ function frame(now: number): void {
   requestAnimationFrame(frame);
 }
 
-renderTitle();
+/**
+ * 시험 진입로: 주소 끝이 #stage1 ~ #stage10이면 올리로 그 스테이지에서 바로 시작한다.
+ * 뒤 스테이지라면 그만큼 레벨·무기를 미리 채운다 (봇의 평균 빌드를 흉내 낸 대략값).
+ */
+function devStart(): boolean {
+  const m = /^#stage(\d{1,2})$/.exec(location.hash);
+  if (!m) return false;
+  const n = Math.min(10, Math.max(1, Number(m[1])));
+  startRun("olly");
+  if (run) run.dev = true;
+  if (!run || n === 1) return true;
+  run.stageIndex = n - 1;
+  const lv = Math.min(7, 1 + n);
+  run.carry = {
+    level: 1 + (n - 1) * 4,
+    xp: xpTotalFor(1 + (n - 1) * 4),
+    hp: CHARACTERS.olly!.stats.max_hp,
+    passives: n >= 4 ? { thick_fleece: Math.min(5, n - 2), shepherd_bell: Math.min(5, n - 3) } : {},
+    weapons: [
+      { id: "lasso", lv: lv >= 4 ? lv : lv, branch: lv >= 4 ? "A" : null },
+      ...(n >= 3 ? [{ id: "shockwave", lv: Math.min(7, n - 1), branch: n - 1 >= 4 ? "A" : null }] : []),
+    ],
+    gold: 0,
+    purchases: 0,
+    revives: 0,
+  };
+  beginStage();
+  return true;
+}
+addEventListener("hashchange", () => {
+  if (devStart()) return;
+});
+
+if (!devStart()) renderTitle();
 requestAnimationFrame(frame);
