@@ -86,6 +86,8 @@ export interface CampaignOptions {
   meta?: MetaProfile;
   /** 정비 상점을 쓰는지 (기본 true) */
   shop?: boolean;
+  /** 색 공 규칙 (실험) */
+  ballMode?: boolean;
 }
 
 /** 캐릭터의 시작 무기. 동작이 아직 없는 무기(올가미·물감총)는 킥으로 대신한다. */
@@ -151,7 +153,7 @@ export function runCampaign(seed: number, characterId: string, stages: string[] 
   let carry: Carry | null = null;
   const meta = opts.meta ? applyMeta(character(characterId), opts.meta) : null;
   for (const [i, id] of stages.entries()) {
-    const g = startStage(seed * 100 + i, characterId, id, carry, meta);
+    const g = startStage(seed * 100 + i, characterId, id, carry, meta, false, opts.ballMode ?? false);
     const goldStart = g.player.gold;
     const revivesStart = g.player.revives;
     const hpStart = g.player.hp / g.player.maxHp;

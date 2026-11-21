@@ -13,6 +13,8 @@ export interface SimOptions {
   weapons: { id: string; lv: number | "evo"; branch?: string | null }[];
   /** 기본값: 스테이지 길이 */
   seconds?: number;
+  /** 색 공 규칙 (실험) */
+  ballMode?: boolean;
 }
 
 export interface WeaponReport {
@@ -115,6 +117,7 @@ export function runSim(opts: SimOptions): SimReport {
     enemyDefs: ENEMIES,
     stage: st,
     weapons: opts.weapons.map((w) => makeWeapon(weapon(w.id), w.lv, w.branch ?? null)),
+    ballMode: opts.ballMode ?? false,
   });
   const seconds = opts.seconds ?? st.duration + RULES.stage.wrapUpSeconds;
   const ticks = Math.round(seconds * RULES.tickHz);

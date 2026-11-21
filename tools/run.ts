@@ -19,12 +19,13 @@ const detail = process.argv.includes("--detail");
 const metaCoins = Number(arg("meta-coins", "0"));
 const meta = metaCoins > 0 ? profileForCoins(metaCoins) : undefined;
 const shop = !process.argv.includes("--no-shop");
+const ballMode = process.argv.includes("--ball");
 if (meta) console.log(`영구 강화 (코인 ${metaCoins}): ${Object.entries(meta).map(([k, v]) => `${k}${v}`).join(" ")}`);
 const pct = (n: number): string => `${Math.round(n * 100)}%`.padStart(4);
 
 for (const ch of chars) {
   const reps: CampaignReport[] = [];
-  for (let i = 0; i < seeds; i++) reps.push(runCampaign(seedStart + i, ch, CAMPAIGN, { meta, shop }));
+  for (let i = 0; i < seeds; i++) reps.push(runCampaign(seedStart + i, ch, CAMPAIGN, { meta, shop, ballMode }));
   const buys = reps.reduce((a, r) => a + r.stages.reduce((x, st) => x + st.bought.length, 0), 0) / seeds;
   const evos = reps.reduce((a, r) => a + r.stages.reduce((x, st) => x + st.evolutions, 0), 0) / seeds;
   const coins = reps.reduce((a, r) => a + r.coins, 0) / seeds;

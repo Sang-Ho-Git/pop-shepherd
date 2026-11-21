@@ -51,7 +51,7 @@ export function resolveImpacts(g: Game): void {
 
     const b = enemies[best] as Enemy;
     // 엘리트·보스는 매치 무리에 끼지 않는다: 늘 당구처럼 튕긴다
-    const res = a.rank !== "normal" || b.rank !== "normal" ? ({ kind: "bounce" } as const) : resolveMatchColor(a.color, b.color);
+    const res = a.rank !== "normal" || b.rank !== "normal" || a.wetT > 0 || b.wetT > 0 ? ({ kind: "bounce" } as const) : resolveMatchColor(a.color, b.color);
     if (res.kind === "match") {
       const cluster = findCluster(g, best, i, res.color);
       if (cluster.length >= RULES.match.minSize) {

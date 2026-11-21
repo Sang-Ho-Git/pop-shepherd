@@ -348,7 +348,9 @@ function fireProjectile(g: Game, w: WeaponInstance, buf: number[]): number {
   for (const e of inRange) {
     if (e.color === "rainbow") continue;
     let bestC: { color: MatchColor; n: number; cx: number; cy: number } | null = null;
-    for (const c of MATCH_COLORS) {
+    // 색 공 규칙 + toBall: 지금 든 공 색으로만 칠한다 (공으로 마무리할 판을 깔아 준다)
+    const paintColors: readonly MatchColor[] = RULES.paint.toBall && g.ball ? [g.ball.current] : MATCH_COLORS;
+    for (const c of paintColors) {
       if (c === e.color) continue;
       let n = 0;
       let cx = 0;
@@ -379,7 +381,8 @@ function fireProjectile(g: Game, w: WeaponInstance, buf: number[]): number {
   for (const o of targets) {
     if (hit.has(o.e)) continue;
     o.e.color = o.color;
-    launch(o.e, o.cx - o.e.x, o.cy - o.e.y, knock, WEAPON_LAUNCH);
+    o.e.wetT = RULES.paint.dry;
+    if (RULES.paint.push) launch(o.e, o.cx - o.e.x, o.cy - o.e.y, knock, WEAPON_LAUNCH);
     damage(g, o.e, w.level.damage);
     hit.add(o.e);
     // Lv7A 웅덩이 / 진화 스플래시: 맞은 자리 주변을 같은 색으로
@@ -388,6 +391,7 @@ function fireProjectile(g: Game, w: WeaponInstance, buf: number[]): number {
       for (const e of inRange) {
         if (hit.has(e) || e.color === "rainbow" || Math.hypot(e.x - o.e.x, e.y - o.e.y) > splash + e.radius) continue;
         e.color = o.color;
+        e.wetT = RULES.paint.dry;
         hit.add(e);
       }
     }

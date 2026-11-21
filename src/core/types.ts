@@ -92,6 +92,8 @@ export interface Enemy {
   fx: LaunchFx | null;
   rank: EnemyRank;
   maxHp: number;
+  /** 칠한 물감이 마르는 남은 시간 (s). 0보다 크면 매치에 끼지 않는다 */
+  wetT: number;
   boss: BossState | null;
   dead: boolean;
 }

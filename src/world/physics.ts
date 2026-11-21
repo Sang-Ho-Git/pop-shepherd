@@ -102,6 +102,7 @@ export function integrate(g: Game): void {
   const bounce = g.player.stats.bounce;
   for (const e of g.enemies) {
     if (e.dead) continue;
+    if (e.wetT > 0) e.wetT = Math.max(0, e.wetT - DT);
     if (e.state !== "walk") {
       const k = e.fx?.dampMul !== undefined ? Math.pow(DAMP_PER_TICK, e.fx.dampMul) : DAMP_PER_TICK;
       e.vx *= k;

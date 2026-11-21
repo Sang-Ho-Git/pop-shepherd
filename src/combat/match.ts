@@ -31,7 +31,7 @@ export function touching(a: Enemy, b: Enemy): boolean {
 }
 
 function joins(e: Enemy, color: MatchColor): boolean {
-  return !e.dead && e.rank === "normal" && (e.color === color || e.color === "rainbow");
+  return !e.dead && e.rank === "normal" && e.wetT <= 0 && (e.color === color || e.color === "rainbow");
 }
 
 /**

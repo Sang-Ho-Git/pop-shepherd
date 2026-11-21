@@ -28,6 +28,7 @@ export function spawnEnemy(g: Game, kind: string, color: Color, x: number, y: nu
     fx: null,
     shot: false,
     rank: def.rank ?? "normal",
+    wetT: 0,
     maxHp: def.hp * hpMul,
     boss: def.ai
       ? { ai: def.ai, params: def.params ?? {}, phase: 1, summonT: 0, shiftT: 0, dashCd: def.params?.dashEvery ?? 0, windup: 0, dashT: 0, dashX: 0, dashY: 0, blastT: 0 }

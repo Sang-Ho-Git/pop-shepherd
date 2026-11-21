@@ -1,4 +1,6 @@
 import type { Enemy, Game, Input } from "../core/types.ts";
+import { RULES } from "../core/rules.ts";
+import { readyClusters } from "../combat/ball.ts";
 
 /**
  * 자동 플레이 봇. 사람보다 서툴지만 매번 같은 방식으로 움직여서 수치 비교의 기준선이 된다.
@@ -10,6 +12,36 @@ import type { Enemy, Game, Input } from "../core/types.ts";
  * 봇은 난수를 쓰지 않는다. 공간 해시는 지난 틱 기준이라 적 목록을 직접 훑는다.
  */
 export function botInput(g: Game): Input {
+  const move = botMove(g);
+  return g.ballMode ? { ...move, ...botBall(g) } : move;
+}
+
+/**
+ * 색 공 규칙의 봇 조준: 들고 있는 공과 같은 색으로 2마리 이상 닿은 무리 중 가장 가까운 곳(사거리 안).
+ * 없으면 같은 색 1마리에 던져 짝을 만든다. 그것도 없으면 던지지 않는다 (쿨다운을 아낀다).
+ */
+export function botBall(g: Game): Pick<Input, "aimX" | "aimY" | "throwBall"> {
+  const b = g.ball;
+  if (!b || b.cd > 0) return { throwBall: false };
+  const p = g.player;
+  const range = RULES.ball.range * 0.9;
+  const pick = (minSize: number): { x: number; y: number } | null => {
+    let best: { x: number; y: number } | null = null;
+    let bestD = range;
+    for (const c of readyClusters(g, b.current, minSize)) {
+      const d = Math.hypot(c.x - p.x, c.y - p.y);
+      if (d < bestD) {
+        best = c;
+        bestD = d;
+      }
+    }
+    return best;
+  };
+  const t = pick(2) ?? pick(1);
+  return t ? { aimX: t.x, aimY: t.y, throwBall: true } : { throwBall: false };
+}
+
+function botMove(g: Game): Input {
   const p = g.player;
   let ax = 0;
   let ay = 0;
