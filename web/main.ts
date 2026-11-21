@@ -17,6 +17,7 @@ import type { CharacterDef } from "../src/core/types.ts";
 import { computeView, drawWorld, PALETTE } from "./render.ts";
 import type { Aim, Fx, View } from "./render.ts";
 import { readyClusters } from "../src/combat/ball.ts";
+import { isMuted, setMuted, sfx, unlock } from "./audio.ts";
 
 /* ───────────────────────── 기본 ───────────────────────── */
 
@@ -150,6 +151,8 @@ let shop: ShopState | null = null;
 let choiceShown = false;
 let hitFlash = 0;
 let shake = 0;
+/** 히트스톱: 큰 팝·연쇄 때 아주 잠깐 시뮬을 멈춘다 (화면은 계속 그린다) */
+let hitStop = 0;
 let aimCache: Aim | null = null;
 let aimTick = 0;
 
@@ -229,6 +232,10 @@ function renderTitle(): void {
       row([
         button(`색 공 던지기 규칙: ${ballMode ? "켜짐" : "꺼짐"}`, () => {
           setBallMode(!ballMode);
+          renderTitle();
+        }, "btn ghost toggle"),
+        button(`소리: ${isMuted() ? "꺼짐" : "켜짐"} (M)`, () => {
+          setMuted(!isMuted());
           renderTitle();
         }, "btn ghost toggle"),
       ]),
@@ -321,6 +328,7 @@ function renderChoice(): void {
   const ch = g.choices[0];
   if (!ch) return;
   choiceShown = true;
+  sfx.levelUp();
   const pick = (i: number): void => {
     const c = ch.cards[i]!;
     if (needsBranch(g!, c)) return renderBranch(i);
@@ -375,8 +383,14 @@ function resume(): void {
 /* ───────────────────────── 입력 ───────────────────────── */
 
 const keys = new Set<string>();
+addEventListener("pointerdown", () => unlock(), { capture: true });
 addEventListener("keydown", (e) => {
+  unlock();
   keys.add(e.code);
+  if (e.code === "KeyM") {
+    setMuted(!isMuted());
+    if (screen === "title") renderTitle();
+  }
   if (e.code === "Escape" && screen === "play") {
     if (paused) resume();
     else if (!choiceShown) renderPause();
@@ -490,6 +504,8 @@ function handleEvents(game: Game): void {
           fx.push({ kind: "spark", x: e.x, y: e.y, t: 0, life: 0.5 + Math.random() * 0.3, color, radius: 3 + Math.random() * 3, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp });
         }
         shake = Math.min(14, shake + 3 + e.size * 1.5 + e.chainDepth * 2);
+        sfx.pop(e.size, e.chainDepth);
+        if (e.chainDepth >= 1 || e.size >= 5) hitStop = Math.max(hitStop, Math.min(0.09, 0.04 + e.chainDepth * 0.015 + Math.max(0, e.size - 4) * 0.01));
         if (e.chainDepth >= 1) fx.push({ kind: "text", x: e.x, y: e.y, t: 0, life: 0.9, color: "#fff3c4", text: `연쇄 ${e.chainDepth + 1}` });
         else if (e.cushion) fx.push({ kind: "text", x: e.x, y: e.y, t: 0, life: 0.9, color: "#9fe3ff", text: "쿠션!" });
         break;
@@ -497,6 +513,7 @@ function handleEvents(game: Game): void {
       case "player-hit":
         hitFlash = 0.25;
         shake = Math.min(14, shake + 6);
+        sfx.hit();
         break;
       case "fire": {
         // 무기 발사선: 올가미는 줄, 킥·페인트는 짧은 선, 충격파는 고리
@@ -519,16 +536,28 @@ function handleEvents(game: Game): void {
         }
         break;
       }
+      case "ball-throw":
+        sfx.throwBall();
+        break;
+      case "chest-open":
+        sfx.chest();
+        break;
+      case "stage-clear":
+        sfx.clear();
+        break;
       case "ball-miss":
         fx.push({ kind: "ring", x: e.x, y: e.y, t: 0, life: 0.25, color: "rgba(244,239,225,0.6)", radius: 20 });
         break;
       case "ball-stick":
+        sfx.stick();
         fx.push({ kind: "ring", x: e.x, y: e.y, t: 0, life: 0.3, color: "#fff3c4", radius: 30 });
         break;
       case "whistle":
+        sfx.whistle();
         fx.push({ kind: "ring", x: game.player.x, y: game.player.y, t: 0, life: 0.5, color: "#f4efe1", radius: RULES.whistle.radius });
         break;
       case "boss-spawn":
+        sfx.boss();
         banner = { text: game.enemies.find((x) => x.id === e.id)?.kind === "wool_giant" ? "양털 거인" : "무지개 양치기", sub: "곁에서 터뜨려야 상처를 입는다", t: 3 };
         break;
       case "elite-spawn":
@@ -623,7 +652,8 @@ function frame(now: number): void {
   last = now;
   clock += dt;
   if (g && screen === "play") {
-    if (!paused && g.choices.length === 0) {
+    if (hitStop > 0) hitStop = Math.max(0, hitStop - dt);
+    else if (!paused && g.choices.length === 0) {
       acc += dt;
       let n = 0;
       while (acc >= DT && n < 5) {
