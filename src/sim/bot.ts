@@ -1,4 +1,4 @@
-import type { Enemy, Game, Input } from "../core/types.ts";
+import type { Enemy, Game, Input, MatchColor } from "../core/types.ts";
 import { RULES } from "../core/rules.ts";
 import { readyClusters } from "../combat/ball.ts";
 
@@ -39,11 +39,37 @@ export function botBall(g: Game): Pick<Input, "aimX" | "aimY" | "throwBall" | "s
   };
   const t = pick(2);
   if (t) return { aimX: t.x, aimY: t.y, throwBall: true };
+  // 울타리 쿠션: 무리를 울타리에 비친 자리로 노린다 (한 번 튕겨 맞힌다). 반사한 거리가 사거리 안일 때만.
+  const bank = bankShot(g, b.current, RULES.ball.range * 0.95);
+  if (bank) return { aimX: bank.x, aimY: bank.y, throwBall: true };
   // 지금 공으로 터뜨릴 무리가 없고 다음 공으로는 있으면 바꾼다 (다음 틱에 던진다)
   const nextReady = readyClusters(g, b.next, 2).some((c) => Math.hypot(c.x - p.x, c.y - p.y) < range);
   if (nextReady) return { throwBall: false, swapBall: true };
   const one = pick(1);
   return one ? { aimX: one.x, aimY: one.y, throwBall: true } : { throwBall: false };
+}
+
+/** 울타리 쿠션 조준점: 같은 색 무리(2마리 이상)를 네 울타리에 비친 위치 중 가장 가까운 곳 */
+export function bankShot(g: Game, color: MatchColor, range: number): { x: number; y: number } | null {
+  const p = g.player;
+  let best: { x: number; y: number } | null = null;
+  let bestD = range;
+  for (const c of readyClusters(g, color, 2)) {
+    const mirrors = [
+      { x: -c.x, y: c.y },
+      { x: 2 * g.arena.w - c.x, y: c.y },
+      { x: c.x, y: -c.y },
+      { x: c.x, y: 2 * g.arena.h - c.y },
+    ];
+    for (const m of mirrors) {
+      const d = Math.hypot(m.x - p.x, m.y - p.y);
+      if (d < bestD) {
+        bestD = d;
+        best = m;
+      }
+    }
+  }
+  return best;
 }
 
 function botMove(g: Game): Input {
