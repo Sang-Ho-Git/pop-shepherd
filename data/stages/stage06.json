@@ -1,7 +1,7 @@
 {
   "id": "stage06",
   "name": "꽃가루 들판",
-  "duration": 130,
+  "duration": 110,
   "colors": [
     "red",
     "blue",
@@ -11,11 +11,11 @@
   "grayRatio": 0.07,
   "maxAlive": 200,
   "enemyHpMul": 1,
-  "contactMul": 2.4,
+  "contactMul": 1.9,
   "spawn": [
     {
       "from": 0.0,
-      "to": 32.5,
+      "to": 27.5,
       "interval": 1.53,
       "speedMul": 1.45,
       "colors": [
@@ -25,8 +25,8 @@
       ]
     },
     {
-      "from": 32.5,
-      "to": 65.0,
+      "from": 27.5,
+      "to": 55.0,
       "interval": 1.27,
       "speedMul": 1.57,
       "colors": [
@@ -37,8 +37,8 @@
       ]
     },
     {
-      "from": 65.0,
-      "to": 97.5,
+      "from": 55.0,
+      "to": 82.5,
       "interval": 1.01,
       "speedMul": 1.68,
       "colors": [
@@ -49,8 +49,8 @@
       ]
     },
     {
-      "from": 97.5,
-      "to": 130,
+      "from": 82.5,
+      "to": 110,
       "interval": 0.75,
       "speedMul": 1.8,
       "colors": [
@@ -63,16 +63,12 @@
   ],
   "elites": [
     {
-      "at": 32,
+      "at": 30,
       "kind": "chief_jelly"
     },
     {
       "at": 70,
       "kind": "chameleon"
-    },
-    {
-      "at": 108,
-      "kind": "armored"
     }
   ],
   "pairs": [

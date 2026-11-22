@@ -1,7 +1,7 @@
 {
   "id": "stage04",
   "name": "안개 골짜기",
-  "duration": 120,
+  "duration": 105,
   "colors": [
     "red",
     "blue",
@@ -11,11 +11,11 @@
   "grayRatio": 0.05,
   "maxAlive": 150,
   "enemyHpMul": 1,
-  "contactMul": 1.84,
+  "contactMul": 1.54,
   "spawn": [
     {
       "from": 0.0,
-      "to": 40.0,
+      "to": 35.0,
       "interval": 1.67,
       "speedMul": 1.27,
       "colors": [
@@ -25,8 +25,8 @@
       ]
     },
     {
-      "from": 40.0,
-      "to": 80.0,
+      "from": 35.0,
+      "to": 70.0,
       "interval": 1.26,
       "speedMul": 1.43,
       "colors": [
@@ -36,8 +36,8 @@
       ]
     },
     {
-      "from": 80.0,
-      "to": 120,
+      "from": 70.0,
+      "to": 105,
       "interval": 0.85,
       "speedMul": 1.58,
       "colors": [
@@ -50,11 +50,11 @@
   ],
   "elites": [
     {
-      "at": 51,
+      "at": 45,
       "kind": "chief_jelly"
     },
     {
-      "at": 97,
+      "at": 85,
       "kind": "chameleon"
     }
   ],

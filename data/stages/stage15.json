@@ -1,0 +1,118 @@
+{
+  "id": "stage15",
+  "name": "무지개 목장",
+  "duration": 160,
+  "colors": [
+    "red",
+    "blue",
+    "yellow",
+    "green"
+  ],
+  "grayRatio": 0.12,
+  "maxAlive": 250,
+  "enemyHpMul": 1,
+  "contactMul": 3.52,
+  "spawn": [
+    {
+      "from": 0.0,
+      "to": 32.0,
+      "interval": 1.13,
+      "speedMul": 2.16,
+      "colors": [
+        "red",
+        "blue",
+        "yellow"
+      ]
+    },
+    {
+      "from": 32.0,
+      "to": 64.0,
+      "interval": 0.98,
+      "speedMul": 2.27,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 64.0,
+      "to": 96.0,
+      "interval": 0.82,
+      "speedMul": 2.38,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 96.0,
+      "to": 128.0,
+      "interval": 0.66,
+      "speedMul": 2.48,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 128.0,
+      "to": 160,
+      "interval": 0.51,
+      "speedMul": 2.59,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    }
+  ],
+  "clear": "boss",
+  "elites": [
+    {
+      "at": 15,
+      "kind": "armored"
+    }
+  ],
+  "boss": {
+    "at": 35,
+    "kind": "rainbow_shepherd"
+  },
+  "pairs": [
+    3,
+    4
+  ],
+  "eliteHpMul": 3,
+  "mix": {
+    "spiky": 0.18,
+    "runner": 0.18
+  },
+  "rocks": [
+    {
+      "x": 700,
+      "y": 450,
+      "r": 60
+    },
+    {
+      "x": 1860,
+      "y": 450,
+      "r": 60
+    },
+    {
+      "x": 700,
+      "y": 990,
+      "r": 60
+    },
+    {
+      "x": 1860,
+      "y": 990,
+      "r": 60
+    }
+  ]
+}

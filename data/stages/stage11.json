@@ -1,0 +1,103 @@
+{
+  "id": "stage11",
+  "name": "안개 개울",
+  "duration": 125,
+  "colors": [
+    "red",
+    "blue",
+    "yellow",
+    "green"
+  ],
+  "grayRatio": 0.1,
+  "maxAlive": 250,
+  "enemyHpMul": 1,
+  "contactMul": 2.8,
+  "spawn": [
+    {
+      "from": 0.0,
+      "to": 25.0,
+      "interval": 1.26,
+      "speedMul": 2.02,
+      "colors": [
+        "red",
+        "blue",
+        "yellow"
+      ]
+    },
+    {
+      "from": 25.0,
+      "to": 50.0,
+      "interval": 1.09,
+      "speedMul": 2.12,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 50.0,
+      "to": 75.0,
+      "interval": 0.92,
+      "speedMul": 2.22,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 75.0,
+      "to": 100.0,
+      "interval": 0.75,
+      "speedMul": 2.33,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 100.0,
+      "to": 125,
+      "interval": 0.58,
+      "speedMul": 2.43,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    }
+  ],
+  "clear": "survive",
+  "elites": [
+    {
+      "at": 40,
+      "kind": "armored"
+    },
+    {
+      "at": 90,
+      "kind": "chameleon"
+    }
+  ],
+  "pairs": [
+    3,
+    5
+  ],
+  "eliteHpMul": 3,
+  "mix": {
+    "spiky": 0.18,
+    "runner": 0.18
+  },
+  "fog": true,
+  "streams": [
+    {
+      "y": 620,
+      "h": 200
+    }
+  ]
+}

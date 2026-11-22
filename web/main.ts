@@ -244,7 +244,7 @@ function finishRun(won: boolean): void {
   show([
     el("p", "eyebrow", won ? "런 완주" : `스테이지 ${run.stageIndex + 1}에서 쓰러짐`),
     el("h1", "", won ? "목장을 지켰다" : "양 떼에 묻혔다"),
-    el("p", "lede", `${name} · Lv${g.player.level} · 클리어 ${reached}/10 · 터뜨린 적 ${run.popped}`),
+    el("p", "lede", `${name} · Lv${g.player.level} · 클리어 ${reached}/${CAMPAIGN.length} · 터뜨린 적 ${run.popped}`),
     el("p", "coins", run.dev ? "시험 판이라 기록과 코인에 넣지 않았다" : `코인 +${coins}  (보유 ${save.coins})`),
     row([button("영구 강화", () => renderMeta()), button("다시 하기", () => renderSelect(), "btn ghost")]),
   ]);
@@ -811,13 +811,13 @@ function frame(now: number): void {
 }
 
 /**
- * 시험 진입로: 주소 끝이 #stage1 ~ #stage10이면 올리로 그 스테이지에서 바로 시작한다.
+ * 시험 진입로: 주소 끝이 #stage1 ~ #stage15이면 올리로 그 스테이지에서 바로 시작한다.
  * 뒤 스테이지라면 그만큼 레벨·무기를 미리 채운다 (봇의 평균 빌드를 흉내 낸 대략값).
  */
 function devStart(): boolean {
   const m = /^#stage(\d{1,2})$/.exec(location.hash);
   if (!m) return false;
-  const n = Math.min(10, Math.max(1, Number(m[1])));
+  const n = Math.min(CAMPAIGN.length, Math.max(1, Number(m[1])));
   startRun("olly");
   if (run) run.dev = true;
   if (!run || n === 1) return true;

@@ -1,0 +1,133 @@
+{
+  "id": "stage14",
+  "name": "꽃안개",
+  "duration": 130,
+  "colors": [
+    "red",
+    "blue",
+    "yellow",
+    "green"
+  ],
+  "grayRatio": 0.1,
+  "maxAlive": 250,
+  "enemyHpMul": 1,
+  "contactMul": 3.34,
+  "spawn": [
+    {
+      "from": 0.0,
+      "to": 26.0,
+      "interval": 1.17,
+      "speedMul": 2.17,
+      "colors": [
+        "red",
+        "blue",
+        "yellow"
+      ]
+    },
+    {
+      "from": 26.0,
+      "to": 52.0,
+      "interval": 1.01,
+      "speedMul": 2.27,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 52.0,
+      "to": 78.0,
+      "interval": 0.85,
+      "speedMul": 2.37,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 78.0,
+      "to": 104.0,
+      "interval": 0.69,
+      "speedMul": 2.48,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 104.0,
+      "to": 130,
+      "interval": 0.54,
+      "speedMul": 2.58,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    }
+  ],
+  "clear": "survive",
+  "elites": [
+    {
+      "at": 30,
+      "kind": "armored"
+    },
+    {
+      "at": 70,
+      "kind": "chief_jelly"
+    },
+    {
+      "at": 110,
+      "kind": "chameleon"
+    }
+  ],
+  "pairs": [
+    3,
+    5
+  ],
+  "eliteHpMul": 3,
+  "mix": {
+    "spiky": 0.18,
+    "runner": 0.18
+  },
+  "fog": true,
+  "rocks": [
+    {
+      "x": 640,
+      "y": 360,
+      "r": 34,
+      "bumper": true
+    },
+    {
+      "x": 1920,
+      "y": 360,
+      "r": 34,
+      "bumper": true
+    },
+    {
+      "x": 1280,
+      "y": 720,
+      "r": 40,
+      "bumper": true
+    },
+    {
+      "x": 640,
+      "y": 1080,
+      "r": 34,
+      "bumper": true
+    },
+    {
+      "x": 1920,
+      "y": 1080,
+      "r": 34,
+      "bumper": true
+    }
+  ]
+}

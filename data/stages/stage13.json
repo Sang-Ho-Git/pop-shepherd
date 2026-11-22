@@ -1,0 +1,136 @@
+{
+  "id": "stage13",
+  "name": "바위 폭풍",
+  "duration": 130,
+  "colors": [
+    "red",
+    "blue",
+    "yellow",
+    "green"
+  ],
+  "grayRatio": 0.1,
+  "maxAlive": 250,
+  "enemyHpMul": 1,
+  "contactMul": 3.16,
+  "spawn": [
+    {
+      "from": 0.0,
+      "to": 26.0,
+      "interval": 1.2,
+      "speedMul": 2.12,
+      "colors": [
+        "red",
+        "blue",
+        "yellow"
+      ]
+    },
+    {
+      "from": 26.0,
+      "to": 52.0,
+      "interval": 1.03,
+      "speedMul": 2.22,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 52.0,
+      "to": 78.0,
+      "interval": 0.87,
+      "speedMul": 2.32,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 78.0,
+      "to": 104.0,
+      "interval": 0.71,
+      "speedMul": 2.43,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 104.0,
+      "to": 130,
+      "interval": 0.55,
+      "speedMul": 2.53,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    }
+  ],
+  "clear": "survive",
+  "elites": [
+    {
+      "at": 30,
+      "kind": "chameleon"
+    },
+    {
+      "at": 70,
+      "kind": "armored"
+    },
+    {
+      "at": 110,
+      "kind": "chief_jelly"
+    }
+  ],
+  "pairs": [
+    3,
+    5
+  ],
+  "eliteHpMul": 3,
+  "mix": {
+    "spiky": 0.18,
+    "runner": 0.18
+  },
+  "rocks": [
+    {
+      "x": 700,
+      "y": 420,
+      "r": 70
+    },
+    {
+      "x": 1860,
+      "y": 420,
+      "r": 70
+    },
+    {
+      "x": 700,
+      "y": 1020,
+      "r": 70
+    },
+    {
+      "x": 1860,
+      "y": 1020,
+      "r": 70
+    },
+    {
+      "x": 1280,
+      "y": 300,
+      "r": 55
+    },
+    {
+      "x": 1280,
+      "y": 1140,
+      "r": 55
+    }
+  ],
+  "wind": {
+    "every": 12,
+    "duration": 4
+  }
+}

@@ -14,6 +14,11 @@ import stage07 from "../../data/stages/stage07.json" with { type: "json" };
 import stage08 from "../../data/stages/stage08.json" with { type: "json" };
 import stage09 from "../../data/stages/stage09.json" with { type: "json" };
 import stage10 from "../../data/stages/stage10.json" with { type: "json" };
+import stage11 from "../../data/stages/stage11.json" with { type: "json" };
+import stage12 from "../../data/stages/stage12.json" with { type: "json" };
+import stage13 from "../../data/stages/stage13.json" with { type: "json" };
+import stage14 from "../../data/stages/stage14.json" with { type: "json" };
+import stage15 from "../../data/stages/stage15.json" with { type: "json" };
 import m1Proving from "../../data/stages/m1_proving.json" with { type: "json" };
 import shockwave from "../../data/weapons/shockwave.json" with { type: "json" };
 import kick from "../../data/weapons/kick.json" with { type: "json" };
@@ -29,7 +34,7 @@ export const ENEMIES = enemiesJson as Record<string, EnemyDef>;
 export const CHARACTERS = charactersJson as Record<string, CharacterDef>;
 export const PASSIVES = passivesJson as Record<string, PassiveDef>;
 /** 캠페인 순서 */
-export const CAMPAIGN = Array.from({ length: 10 }, (_, i) => `stage${String(i + 1).padStart(2, "0")}`);
+export const CAMPAIGN = Array.from({ length: 15 }, (_, i) => `stage${String(i + 1).padStart(2, "0")}`);
 export const STAGES: Record<string, StageDef> = {
   stage01: stage01 as StageDef,
   stage02: stage02 as StageDef,
@@ -41,6 +46,11 @@ export const STAGES: Record<string, StageDef> = {
   stage08: stage08 as StageDef,
   stage09: stage09 as StageDef,
   stage10: stage10 as StageDef,
+  stage11: stage11 as StageDef,
+  stage12: stage12 as StageDef,
+  stage13: stage13 as StageDef,
+  stage14: stage14 as StageDef,
+  stage15: stage15 as StageDef,
   m1_proving: m1Proving as StageDef,
 };
 export const WEAPONS: Record<string, WeaponDef> = Object.fromEntries(
@@ -51,7 +61,7 @@ export interface Balance {
   normalizer: number;
   tolerance: number;
   targetLp: Record<string, number>;
-  /** 스테이지 1~10 접촉 피해 배율 계획 */
+  /** 스테이지별 접촉 피해 배율 계획 (CAMPAIGN 순서) */
   stageContactMul: { values: number[] };
 }
 export const BALANCE = balanceJson as Balance;

@@ -1,4 +1,4 @@
-import { META } from "../data/index.ts";
+import { CAMPAIGN, META } from "../data/index.ts";
 import { buyNode, canBuyNode, isUnlocked, nextCost } from "./meta.ts";
 import type { MetaProfile } from "./meta.ts";
 
@@ -144,7 +144,7 @@ export function parseSave(text: string): ParseResult {
   if (o.characters && typeof o.characters === "object") {
     for (const [id, c] of Object.entries(o.characters as Record<string, unknown>)) {
       const r = (c ?? {}) as Record<string, unknown>;
-      characters[id] = { runs: count(r.runs), wins: count(r.wins), bestStage: Math.min(10, count(r.bestStage)) };
+      characters[id] = { runs: count(r.runs), wins: count(r.wins), bestStage: Math.min(CAMPAIGN.length, count(r.bestStage)) };
     }
   }
   return {
@@ -156,7 +156,7 @@ export function parseSave(text: string): ParseResult {
       meta,
       runs: count(o.runs),
       wins: count(o.wins),
-      bestStage: Math.min(10, count(o.bestStage)),
+      bestStage: Math.min(CAMPAIGN.length, count(o.bestStage)),
       characters,
     },
   };

@@ -5,13 +5,13 @@ import { BALANCE, CAMPAIGN, stage } from "../src/data/index.ts";
 import { carryOf, runCampaign, startStage, startWeapon } from "../src/sim/campaign.ts";
 import { botInput } from "../src/sim/bot.ts";
 
-describe("캠페인 (스테이지 1~10)", () => {
+describe("캠페인 (스테이지 1~15)", () => {
   it("스테이지 10개가 순서대로 있고, 접촉 피해 배율이 계획표와 같다", () => {
-    expect(CAMPAIGN).toHaveLength(10);
+    expect(CAMPAIGN).toHaveLength(15);
     CAMPAIGN.forEach((id, i) => {
       const st = stage(id);
       expect(st.contactMul ?? 1).toBe(BALANCE.stageContactMul.values[i]);
-      expect(st.clear ?? "survive").toBe(["stage05", "stage10"].includes(id) ? "boss" : id === "stage09" ? "elites" : "survive");
+      expect(st.clear ?? "survive").toBe(["stage05", "stage15"].includes(id) ? "boss" : id === "stage10" ? "elites" : "survive");
       expect(st.spawn.at(-1)?.to).toBe(st.duration);
     });
   });

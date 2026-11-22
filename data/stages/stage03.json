@@ -1,7 +1,7 @@
 {
   "id": "stage03",
   "name": "바람 언덕",
-  "duration": 110,
+  "duration": 100,
   "colors": [
     "red",
     "blue",
@@ -10,11 +10,11 @@
   "grayRatio": 0.04,
   "maxAlive": 140,
   "enemyHpMul": 1,
-  "contactMul": 1.56,
+  "contactMul": 1.36,
   "spawn": [
     {
       "from": 0.0,
-      "to": 36.7,
+      "to": 33.4,
       "interval": 1.75,
       "speedMul": 1.18,
       "colors": [
@@ -24,8 +24,8 @@
       ]
     },
     {
-      "from": 36.7,
-      "to": 73.3,
+      "from": 33.4,
+      "to": 66.6,
       "interval": 1.33,
       "speedMul": 1.33,
       "colors": [
@@ -35,8 +35,8 @@
       ]
     },
     {
-      "from": 73.3,
-      "to": 110,
+      "from": 66.6,
+      "to": 100,
       "interval": 0.9,
       "speedMul": 1.47,
       "colors": [
@@ -48,7 +48,7 @@
   ],
   "elites": [
     {
-      "at": 63,
+      "at": 60,
       "kind": "chief_jelly"
     }
   ],

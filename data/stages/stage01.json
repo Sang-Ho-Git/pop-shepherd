@@ -13,17 +13,20 @@
     {
       "from": 0.0,
       "to": 30.0,
-      "interval": 2.0
+      "interval": 2.0,
+      "speedMul": 1
     },
     {
       "from": 30.0,
       "to": 60.0,
-      "interval": 1.5
+      "interval": 1.5,
+      "speedMul": 1
     },
     {
       "from": 60.0,
       "to": 90,
-      "interval": 1.1
+      "interval": 1.1,
+      "speedMul": 1
     }
   ],
   "contactMul": 1.0,

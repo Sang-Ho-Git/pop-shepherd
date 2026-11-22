@@ -3,7 +3,7 @@ import { RULES } from "../src/core/rules.ts";
 import { chainMultiplier, damage, popShockRadius } from "../src/combat/pops.ts";
 import { launch } from "../src/world/physics.ts";
 import { emptyGame, pops, put, run } from "./helpers.ts";
-import { BALANCE, stage } from "../src/data/index.ts";
+import { BALANCE, CAMPAIGN, stage } from "../src/data/index.ts";
 
 describe("1.5 매치 보상", () => {
   it("3매치: 경험치 3, 무리 중심에서 팝 충격파, 맞은 적은 연쇄 1단계로 날아간다, 폭탄 없음", () => {
@@ -225,9 +225,9 @@ describe("스테이지 접촉 피해 배율", () => {
     expect(1 - hitBy(1, 2, 2) / hitBy(1, 2, 0)).toBeCloseTo(0.2);
   });
 
-  it("스테이지 1~10 계획표는 1.0에서 시작해 줄지 않고 오른다", () => {
+  it("스테이지별 계획표는 1.0에서 시작해 줄지 않고 오른다", () => {
     const v = BALANCE.stageContactMul.values;
-    expect(v).toHaveLength(10);
+    expect(v).toHaveLength(CAMPAIGN.length);
     expect(v[0]).toBe(1);
     for (let i = 1; i < v.length; i++) expect(v[i]!).toBeGreaterThanOrEqual(v[i - 1]!);
     expect(stage("stage01").contactMul).toBe(v[0]);

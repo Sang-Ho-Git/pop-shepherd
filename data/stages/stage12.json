@@ -1,0 +1,132 @@
+{
+  "id": "stage12",
+  "name": "범퍼 숲",
+  "duration": 125,
+  "colors": [
+    "red",
+    "blue",
+    "yellow",
+    "green"
+  ],
+  "grayRatio": 0.1,
+  "maxAlive": 250,
+  "enemyHpMul": 1,
+  "contactMul": 2.98,
+  "spawn": [
+    {
+      "from": 0.0,
+      "to": 25.0,
+      "interval": 1.23,
+      "speedMul": 2.07,
+      "colors": [
+        "red",
+        "blue",
+        "yellow"
+      ]
+    },
+    {
+      "from": 25.0,
+      "to": 50.0,
+      "interval": 1.06,
+      "speedMul": 2.17,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 50.0,
+      "to": 75.0,
+      "interval": 0.9,
+      "speedMul": 2.27,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 75.0,
+      "to": 100.0,
+      "interval": 0.73,
+      "speedMul": 2.38,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    },
+    {
+      "from": 100.0,
+      "to": 125,
+      "interval": 0.57,
+      "speedMul": 2.48,
+      "colors": [
+        "red",
+        "blue",
+        "yellow",
+        "green"
+      ]
+    }
+  ],
+  "clear": "survive",
+  "elites": [
+    {
+      "at": 40,
+      "kind": "chief_jelly"
+    },
+    {
+      "at": 90,
+      "kind": "armored"
+    }
+  ],
+  "pairs": [
+    3,
+    5
+  ],
+  "eliteHpMul": 3,
+  "mix": {
+    "spiky": 0.18,
+    "runner": 0.18
+  },
+  "rocks": [
+    {
+      "x": 640,
+      "y": 360,
+      "r": 34,
+      "bumper": true
+    },
+    {
+      "x": 1920,
+      "y": 360,
+      "r": 34,
+      "bumper": true
+    },
+    {
+      "x": 1280,
+      "y": 720,
+      "r": 40,
+      "bumper": true
+    },
+    {
+      "x": 640,
+      "y": 1080,
+      "r": 34,
+      "bumper": true
+    },
+    {
+      "x": 1920,
+      "y": 1080,
+      "r": 34,
+      "bumper": true
+    }
+  ],
+  "wind": {
+    "every": 14,
+    "duration": 4
+  }
+}

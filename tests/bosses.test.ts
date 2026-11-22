@@ -151,7 +151,7 @@ describe("처치형 스테이지", () => {
   });
 
   it("엘리트형은 나온 엘리트를 다 쓰러뜨리면 마무리 시간", () => {
-    const st: StageDef = { ...stage("stage09"), spawn: [{ from: 0, to: 270, interval: 9999 }], elites: [{ at: 0, kind: "chief_jelly" }, { at: 0, kind: "chameleon" }] };
+    const st: StageDef = { ...stage("stage10"), spawn: [{ from: 0, to: 270, interval: 9999 }], elites: [{ at: 0, kind: "chief_jelly" }, { at: 0, kind: "chameleon" }] };
     const g = createGame({ seed: 1, character: character("shepherd"), enemyDefs: ENEMIES, stage: st });
     g.spawnTimer = 9999;
     run(g, 2);
