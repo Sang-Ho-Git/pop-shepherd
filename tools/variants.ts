@@ -83,4 +83,13 @@ export const VARIANTS: Record<string, () => void> = {
   shepHp120: () => {
     CHARACTERS.shepherd!.stats.max_hp = 120;
   },
+  /** 큐 체력 80 → 90, 방어 0 → 1 */
+  cueHp90Armor1: () => {
+    CHARACTERS.cue!.stats.max_hp = 90;
+    CHARACTERS.cue!.stats.armor = 1;
+  },
+  /** 양치기 방어 0 → 1 */
+  shepArmor1: () => {
+    CHARACTERS.shepherd!.stats.armor = 1;
+  },
 };
