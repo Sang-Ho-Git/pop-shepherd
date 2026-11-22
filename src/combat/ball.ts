@@ -1,7 +1,7 @@
 import { DT, RULES } from "../core/rules.ts";
 import { MATCH_COLORS } from "../core/types.ts";
 import type { Enemy, Game, Input, MatchColor } from "../core/types.ts";
-import { launch, MAX_ENEMY_RADIUS, WEAPON_LAUNCH } from "../world/physics.ts";
+import { MAX_ENEMY_RADIUS } from "../world/physics.ts";
 import { spawnEnemy } from "./spawner.ts";
 import { findCluster, touching } from "./match.ts";
 import { popCluster } from "./pops.ts";
@@ -190,10 +190,17 @@ export function tickBalls(g: Game): void {
 function resolveBallHit(g: Game, ball: { x: number; y: number; vx: number; vy: number; color: MatchColor; bounces: number }, hitIdx: number): void {
   const e = g.enemies[hitIdx] as Enemy;
   const same = e.rank === "normal" && (e.color === ball.color || e.color === "rainbow");
+  if (e.color === "gray" && e.rank === "normal") {
+    // 회색: 공 색으로 물든다 (매치가 안 되던 회색이 쓸모가 생긴다). 공은 사라진다
+    e.color = ball.color;
+    g.events.push({ type: "ball-stick", id: e.id, x: e.x, y: e.y });
+    return;
+  }
   if (!same) {
-    // 다른 색: 공 방향으로 밀어낸다 (무기 발사로 친다: 당구·쿠션이 이어진다)
-    launch(e, ball.vx, ball.vy, RULES.ball.knock, WEAPON_LAUNCH);
-    e.cause = "ball";
+    // 다른 색: 살짝 밀기만 한다 (날리지 않는다: 날아간 적이 뒤의 같은 색에 부딪혀 터지는 일이 없게)
+    const sp = Math.max(1e-6, Math.hypot(ball.vx, ball.vy));
+    e.x += (ball.vx / sp) * RULES.ball.nudge;
+    e.y += (ball.vy / sp) * RULES.ball.nudge;
     g.events.push({ type: "ball-bounce", id: e.id, x: ball.x, y: ball.y });
     return;
   }

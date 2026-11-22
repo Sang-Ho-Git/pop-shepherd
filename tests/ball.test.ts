@@ -39,15 +39,47 @@ describe("색 공 던지기 (실험 규칙)", () => {
     expect(g.enemies.filter((e) => e.color === "blue")).toHaveLength(2);
   });
 
-  it("다른 색에 맞으면 밀어내고 공은 사라진다", () => {
+  it("다른 색에 맞으면 살짝 밀기만 하고(날리지 않음) 공은 사라진다", () => {
     const g = ballGame();
     g.ball!.current = "green";
     const { x, y } = g.player;
     const e = put(g, "yellow", x + 200, y);
     step(g, throwAt(x + 200, y));
     run(g, 20);
-    expect(e.x).toBeGreaterThan(x + 210);
+    expect(e.x).toBeGreaterThan(x + 205);
+    expect(e.state).toBe("walk");
     expect(g.balls).toHaveLength(0);
+  });
+
+  it("섞인 무리에서 다른 색을 맞혀도 뒤의 같은 색이 반동으로 터지지 않는다 (버그 수정)", () => {
+    const g = ballGame();
+    g.ball!.current = "green";
+    const { x, y } = g.player;
+    put(g, "yellow", x + 200, y);
+    put(g, "yellow", x + 230, y);
+    put(g, "green", x + 228, y + 26);
+    step(g, throwAt(x + 200, y));
+    expect(pops(run(g, 60))).toHaveLength(0);
+  });
+
+  it("회색에 맞으면 회색이 공 색으로 물든다", () => {
+    const g = ballGame();
+    g.ball!.current = "blue";
+    const { x, y } = g.player;
+    const gr = put(g, "gray", x + 200, y);
+    step(g, throwAt(x + 200, y));
+    run(g, 20);
+    expect(gr.color).toBe("blue");
+  });
+
+  it("색 공 규칙에서는 무기로 날린 적이 같은 색에 부딪혀도 터지지 않고 붙는다 (터뜨리는 것은 공)", async () => {
+    const { launch, WEAPON_LAUNCH } = await import("../src/world/physics.ts");
+    const g = ballGame();
+    const a = put(g, "red", 440, 400);
+    put(g, "red", 500, 400);
+    put(g, "red", 528, 400);
+    launch(a, 1, 0, 600, WEAPON_LAUNCH);
+    expect(pops(run(g, 20))).toHaveLength(0);
   });
 
   it("던지면 다음 공이 손에 오고, 쿨다운 동안은 못 던진다", () => {

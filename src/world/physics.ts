@@ -12,6 +12,8 @@ export interface LaunchSource {
   weapon?: boolean;
   /** 무기 갈래 효과 */
   fx?: LaunchFx | null;
+  /** 이 발사를 일으킨 쪽 (색 공 규칙에서 팝 자격을 가린다). 없으면 지운다 */
+  by?: string;
 }
 
 /** 휘슬 등: 연쇄 단계 0 */
@@ -48,6 +50,7 @@ export function launch(e: Enemy, dx: number, dy: number, knock: number, src: Lau
   e.wallBounces = 0;
   e.shot = src.weapon === true;
   e.fx = src.fx ?? null;
+  e.cause = src.by ?? null;
 }
 
 /** 발사 상태를 끝내고 평소 상태로 */

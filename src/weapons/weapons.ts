@@ -70,6 +70,8 @@ function touchingGroup(list: Enemy[], seed: Enemy[], slack: number): Enemy[] {
 
 /** 적 목록을 그 자리에서 바로 터뜨린다 (갈래 완성 효과: 즉시 팝). 2마리 이상이어야 한다. */
 function popNow(g: Game, group: Enemy[], trigger: Enemy, opts: { shock?: boolean; by?: string } = {}): boolean {
+  // 색 공 규칙: 무기 갈래의 즉시 팝·압축 팝은 쓰지 않는다 (터뜨리는 것은 플레이어의 공)
+  if (g.ballMode) return false;
   const live = group.filter((e) => !e.dead && e.rank === "normal");
   if (live.length < 2 || trigger.color === "gray" || trigger.color === "rainbow") return false;
   popCluster(g, live.map((e) => g.enemies.indexOf(e)), trigger, trigger.color as MatchColor, opts);
