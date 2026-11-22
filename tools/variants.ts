@@ -1,6 +1,6 @@
 /** 실험 조건: 데이터·규칙을 메모리에서만 바꾼다 (tools/probe.ts에서 쓴다) */
 import { RULES } from "../src/core/rules.ts";
-import { STAGES, WEAPONS } from "../src/data/index.ts";
+import { SHOP, STAGES, WEAPONS } from "../src/data/index.ts";
 
 const paint = RULES.paint as { push: boolean; dry: number; toBall: boolean };
 
@@ -11,6 +11,22 @@ function paintCooldown(mul: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 경험치 곡선 절반 (레벨업 2배 빠르게) */
+  xp2: () => {
+    const xp = RULES.xp as { base: number; growth: number };
+    xp.base = 80;
+    xp.growth = 4;
+  },
+  /** xp2 + 색 공 쿨다운 0.45초 */
+  xp2fast: () => {
+    VARIANTS.xp2!();
+    (RULES.ball as { cooldown: number }).cooldown = 0.45;
+  },
+  /** xp2fast + 골드 1.5배 */
+  xp2fastGold: () => {
+    VARIANTS.xp2fast!();
+    SHOP.goldPerPop = 0.27;
+  },
   /** 예전 페인트 총 (칠하고 밀어 넣음) */
   oldPaint: () => {
     paint.push = true;
