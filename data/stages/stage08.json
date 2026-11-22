@@ -1,7 +1,7 @@
 {
   "id": "stage08",
   "name": "폭풍 초원",
-  "duration": 270,
+  "duration": 150,
   "colors": [
     "red",
     "blue",
@@ -14,8 +14,8 @@
   "contactMul": 2.96,
   "spawn": [
     {
-      "from": 0,
-      "to": 54,
+      "from": 0.0,
+      "to": 30.0,
       "interval": 1.38,
       "speedMul": 1.88,
       "colors": [
@@ -25,8 +25,8 @@
       ]
     },
     {
-      "from": 54,
-      "to": 108,
+      "from": 30.0,
+      "to": 60.0,
       "interval": 1.19,
       "speedMul": 1.98,
       "colors": [
@@ -37,8 +37,8 @@
       ]
     },
     {
-      "from": 108,
-      "to": 162,
+      "from": 60.0,
+      "to": 90.0,
       "interval": 1.01,
       "speedMul": 2.08,
       "colors": [
@@ -49,8 +49,8 @@
       ]
     },
     {
-      "from": 162,
-      "to": 216,
+      "from": 90.0,
+      "to": 120.0,
       "interval": 0.83,
       "speedMul": 2.17,
       "colors": [
@@ -61,8 +61,8 @@
       ]
     },
     {
-      "from": 216,
-      "to": 270,
+      "from": 120.0,
+      "to": 150,
       "interval": 0.65,
       "speedMul": 2.27,
       "colors": [
@@ -75,15 +75,15 @@
   ],
   "elites": [
     {
-      "at": 60,
+      "at": 33,
       "kind": "armored"
     },
     {
-      "at": 140,
+      "at": 78,
       "kind": "chief_jelly"
     },
     {
-      "at": 220,
+      "at": 122,
       "kind": "chameleon"
     }
   ],

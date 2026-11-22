@@ -157,6 +157,7 @@ let shake = 0;
 let hitStop = 0;
 let aimCache: Aim | null = null;
 let aimTick = 0;
+const AIM_GUIDE_SECONDS = 25;
 
 function startRun(characterId: string): void {
   const meta = applyMeta(CHARACTERS[characterId]!, save.meta);
@@ -761,12 +762,15 @@ function frame(now: number): void {
       if (!aimCache || aimTick % 6 === 0) {
         const ready = new Set<number>();
         for (const c of readyClusters(g, g.ball.current, 2)) for (const id of c.ids) ready.add(id);
-        aimCache = { x: 0, y: 0, ready };
+        aimCache = { x: 0, y: 0, ready, line: true };
       }
       const a = aimPoint();
       if (a && aimCache) {
         aimCache.x = a.x;
         aimCache.y = a.y;
+        // 조준 가이드: 스테이지 1은 끝까지, 2~3은 처음 25초만, 그 뒤로는 손에 든 공만 보인다
+        const si = run?.stageIndex ?? 0;
+        aimCache.line = si === 0 || (si <= 2 && g.time < AIM_GUIDE_SECONDS);
       }
     } else aimCache = null;
     drawWorld(ctx, g, sv, fx, clock, aimCache);

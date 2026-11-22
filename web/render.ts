@@ -43,6 +43,8 @@ export interface Fx {
 export interface Aim {
   x: number;
   y: number;
+  /** 조준선을 그리는지 (스테이지 1은 늘, 2~3은 처음 25초, 그 뒤로는 없음) */
+  line: boolean;
   /** 지금 공과 같은 색으로 2마리 이상 닿은 무리 (반짝임) */
   ready: Set<number>;
 }
@@ -395,15 +397,17 @@ export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: F
   // 조준선과 손에 든 공
   if (aim && g.ball) {
     const ang = Math.atan2(aim.y - p.y, aim.x - p.x);
-    const reach = RULES.ball.range * v.scale;
-    ctx.strokeStyle = g.ball.cd > 0 ? "rgba(244,239,225,0.18)" : "rgba(244,239,225,0.45)";
-    ctx.setLineDash([6 * v.scale, 8 * v.scale]);
-    ctx.lineWidth = 2 * v.scale;
-    ctx.beginPath();
-    ctx.moveTo(px, py);
-    ctx.lineTo(px + Math.cos(ang) * reach, py + Math.sin(ang) * reach);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    if (aim.line) {
+      const reach = RULES.ball.range * v.scale;
+      ctx.strokeStyle = g.ball.cd > 0 ? "rgba(244,239,225,0.18)" : "rgba(244,239,225,0.45)";
+      ctx.setLineDash([6 * v.scale, 8 * v.scale]);
+      ctx.lineWidth = 2 * v.scale;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(px + Math.cos(ang) * reach, py + Math.sin(ang) * reach);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
     const hx = px + Math.cos(ang) * (pr + 12 * v.scale);
     const hy = py + Math.sin(ang) * (pr + 12 * v.scale);
     const hr = RULES.ball.radius * v.scale * (g.ball.cd > 0 ? 0.7 : 1);

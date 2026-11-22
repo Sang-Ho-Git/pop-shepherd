@@ -1,7 +1,7 @@
 {
   "id": "stage07",
   "name": "돌무지 고개",
-  "duration": 240,
+  "duration": 140,
   "colors": [
     "red",
     "blue",
@@ -14,8 +14,8 @@
   "contactMul": 2.68,
   "spawn": [
     {
-      "from": 0,
-      "to": 60,
+      "from": 0.0,
+      "to": 35.0,
       "interval": 1.45,
       "speedMul": 1.79,
       "colors": [
@@ -25,8 +25,8 @@
       ]
     },
     {
-      "from": 60,
-      "to": 120,
+      "from": 35.0,
+      "to": 70.0,
       "interval": 1.2,
       "speedMul": 1.91,
       "colors": [
@@ -37,8 +37,8 @@
       ]
     },
     {
-      "from": 120,
-      "to": 180,
+      "from": 70.0,
+      "to": 105.0,
       "interval": 0.95,
       "speedMul": 2.04,
       "colors": [
@@ -49,8 +49,8 @@
       ]
     },
     {
-      "from": 180,
-      "to": 240,
+      "from": 105.0,
+      "to": 140,
       "interval": 0.7,
       "speedMul": 2.16,
       "colors": [
@@ -63,15 +63,15 @@
   ],
   "elites": [
     {
-      "at": 60,
+      "at": 35,
       "kind": "chameleon"
     },
     {
-      "at": 130,
+      "at": 76,
       "kind": "armored"
     },
     {
-      "at": 200,
+      "at": 117,
       "kind": "chief_jelly"
     }
   ],

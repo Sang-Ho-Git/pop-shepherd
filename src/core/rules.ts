@@ -150,7 +150,7 @@ export const RULES = {
   },
   /** 드롭 (보물 상자, 골드 주머니) */
   drops: { pickupRange: 70, goldLifetime: 20, chestPicksElite: 1, chestPicksBoss: 3, chestHealFrac: 0.3 },
-  stage: { wrapUpSeconds: 15, wrapUpXpBonus: 0.5, betweenHeal: 0 },
+  stage: { wrapUpSeconds: 10, wrapUpXpBonus: 0.5, betweenHeal: 0 },
 
   /**
    * 2.1 런 안 성장. 레벨 L에서 L+1까지 필요한 경험치 = base + growth × (L - 1).

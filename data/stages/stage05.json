@@ -1,7 +1,7 @@
 {
   "id": "stage05",
   "name": "양치기 오두막",
-  "duration": 240,
+  "duration": 120,
   "colors": [
     "red",
     "blue",
@@ -14,8 +14,8 @@
   "contactMul": 2.12,
   "spawn": [
     {
-      "from": 0,
-      "to": 60,
+      "from": 0.0,
+      "to": 30.0,
       "interval": 1.6,
       "speedMul": 1.36,
       "colors": [
@@ -25,8 +25,8 @@
       ]
     },
     {
-      "from": 60,
-      "to": 120,
+      "from": 30.0,
+      "to": 60.0,
       "interval": 1.33,
       "speedMul": 1.47,
       "colors": [
@@ -37,8 +37,8 @@
       ]
     },
     {
-      "from": 120,
-      "to": 180,
+      "from": 60.0,
+      "to": 90.0,
       "interval": 1.07,
       "speedMul": 1.58,
       "colors": [
@@ -49,8 +49,8 @@
       ]
     },
     {
-      "from": 180,
-      "to": 240,
+      "from": 90.0,
+      "to": 120,
       "interval": 0.8,
       "speedMul": 1.69,
       "colors": [
@@ -63,10 +63,32 @@
   ],
   "clear": "boss",
   "boss": {
-    "at": 60,
+    "at": 35,
     "kind": "wool_giant"
   },
   "mix": {
     "spiky": 0.15
-  }
+  },
+  "rocks": [
+    {
+      "x": 700,
+      "y": 450,
+      "r": 60
+    },
+    {
+      "x": 1860,
+      "y": 450,
+      "r": 60
+    },
+    {
+      "x": 700,
+      "y": 990,
+      "r": 60
+    },
+    {
+      "x": 1860,
+      "y": 990,
+      "r": 60
+    }
+  ]
 }

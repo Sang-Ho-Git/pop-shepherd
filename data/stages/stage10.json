@@ -1,7 +1,7 @@
 {
   "id": "stage10",
   "name": "무지개 목장",
-  "duration": 300,
+  "duration": 160,
   "colors": [
     "red",
     "blue",
@@ -14,8 +14,8 @@
   "contactMul": 3.52,
   "spawn": [
     {
-      "from": 0,
-      "to": 60,
+      "from": 0.0,
+      "to": 32.0,
       "interval": 1.23,
       "speedMul": 1.96,
       "colors": [
@@ -25,8 +25,8 @@
       ]
     },
     {
-      "from": 60,
-      "to": 120,
+      "from": 32.0,
+      "to": 64.0,
       "interval": 1.06,
       "speedMul": 2.07,
       "colors": [
@@ -37,8 +37,8 @@
       ]
     },
     {
-      "from": 120,
-      "to": 180,
+      "from": 64.0,
+      "to": 96.0,
       "interval": 0.89,
       "speedMul": 2.18,
       "colors": [
@@ -49,8 +49,8 @@
       ]
     },
     {
-      "from": 180,
-      "to": 240,
+      "from": 96.0,
+      "to": 128.0,
       "interval": 0.72,
       "speedMul": 2.28,
       "colors": [
@@ -61,8 +61,8 @@
       ]
     },
     {
-      "from": 240,
-      "to": 300,
+      "from": 128.0,
+      "to": 160,
       "interval": 0.55,
       "speedMul": 2.39,
       "colors": [
@@ -76,12 +76,12 @@
   "clear": "boss",
   "elites": [
     {
-      "at": 30,
+      "at": 15,
       "kind": "armored"
     }
   ],
   "boss": {
-    "at": 60,
+    "at": 35,
     "kind": "rainbow_shepherd"
   },
   "pairs": [
