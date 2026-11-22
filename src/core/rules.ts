@@ -117,6 +117,8 @@ export const RULES = {
     spawnSlowdown: 2,
     /** 소환한 졸개가 서는 거리 (보스 반지름 바깥) */
     summonGap: 30,
+    /** 엘리트가 받는 출현 구간 속도 배율의 상한 (보스는 받지 않는다) */
+    eliteSpeedCap: 1.3,
     /** 처치형 스테이지의 안전 시간 제한 (시뮬이 끝나지 않는 것을 막는다) */
     hardLimit: 900,
   },

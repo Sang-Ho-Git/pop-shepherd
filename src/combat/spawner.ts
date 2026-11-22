@@ -2,6 +2,16 @@ import { RULES } from "../core/rules.ts";
 import type { Color, Enemy, Game, MatchColor, SpawnPhase, StageDef } from "../core/types.ts";
 
 /** 적 하나를 만든다. 스테이지 체력 배율을 적용한다. */
+/**
+ * 출현 구간의 속도 배율을 적 등급에 맞게 깎는다.
+ * 보스는 받지 않고, 엘리트는 최대 1.3배. (스테이지 15에서 보스가 55 → 143px/s가 되어 올리(144)를 따라잡던 것)
+ */
+function specialSpeedMul(rank: string, mul: number): number {
+  if (rank === "boss") return 1;
+  if (rank === "elite") return Math.min(mul, RULES.boss.eliteSpeedCap);
+  return mul;
+}
+
 export function spawnEnemy(g: Game, kind: string, color: Color, x: number, y: number): Enemy {
   const def = g.enemyDefs[kind];
   if (!def) throw new Error(`알 수 없는 적: ${kind}`);
@@ -17,7 +27,7 @@ export function spawnEnemy(g: Game, kind: string, color: Color, x: number, y: nu
     radius: def.radius,
     mass: def.mass,
     hp: def.hp * hpMul,
-    speed: def.speed * (g.stage ? spawnPhase(g.stage, g.time).speedMul ?? 1 : 1),
+    speed: def.speed * specialSpeedMul(def.rank ?? "normal", g.stage ? spawnPhase(g.stage, g.time).speedMul ?? 1 : 1),
     contactDamage: def.contactDamage,
     xp: def.xp,
     state: "walk",
