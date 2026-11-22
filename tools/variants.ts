@@ -1,6 +1,6 @@
 /** 실험 조건: 데이터·규칙을 메모리에서만 바꾼다 (tools/probe.ts에서 쓴다) */
 import { RULES } from "../src/core/rules.ts";
-import { SHOP, STAGES, WEAPONS } from "../src/data/index.ts";
+import { CHARACTERS, SHOP, STAGES, WEAPONS } from "../src/data/index.ts";
 
 const paint = RULES.paint as { push: boolean; dry: number; toBall: boolean };
 
@@ -71,4 +71,16 @@ export const VARIANTS: Record<string, () => void> = {
   },
   /** 쿨다운 1.6배 */
   slow: () => paintCooldown(1.6),
+  /** 큐 체력 80 → 100 */
+  cueHp100: () => {
+    CHARACTERS.cue!.stats.max_hp = 100;
+  },
+  /** 쓰리쿠션 경험치 +50% → +100% */
+  cushionXp100: () => {
+    (RULES.threeCushion as { xpBonus: number }).xpBonus = 1;
+  },
+  /** 양치기 체력 100 → 120 */
+  shepHp120: () => {
+    CHARACTERS.shepherd!.stats.max_hp = 120;
+  },
 };
