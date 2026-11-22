@@ -29,7 +29,9 @@ for (const ch of chars) {
   const buys = reps.reduce((a, r) => a + r.stages.reduce((x, st) => x + st.bought.length, 0), 0) / seeds;
   const evos = reps.reduce((a, r) => a + r.stages.reduce((x, st) => x + st.evolutions, 0), 0) / seeds;
   const coins = reps.reduce((a, r) => a + r.coins, 0) / seeds;
-  console.log(`\n캐릭터 ${ch} · ${seeds}판 · 완주 ${reps.filter((r) => r.won).length}/${seeds} · 상점 구매 ${buys.toFixed(1)}회 · 진화 ${evos.toFixed(1)}개 · 코인 ${coins.toFixed(0)}`);
+  const wins = reps.filter((r) => r.won);
+  const runMin = wins.length ? wins.reduce((a, r) => a + r.stages.reduce((x, st) => x + st.survived, 0), 0) / wins.length / 60 : 0;
+  console.log(`\n캐릭터 ${ch} · ${seeds}판 · 완주 ${wins.length}/${seeds} · 상점 구매 ${buys.toFixed(1)}회 · 진화 ${evos.toFixed(1)}개 · 코인 ${coins.toFixed(0)}${wins.length ? ` · 완주 런 길이 ${runMin.toFixed(1)}분` : ""}`);
   console.log("스테이지   도달  클리어  시작HP  최저HP  끝HP  레벨(끝)  연쇄  최대생존적  번골드  엘리트  보스(초)  골드줍기  시간초과");
   for (const [i, id] of CAMPAIGN.entries()) {
     const rs = reps.map((r) => r.stages[i]).filter((x) => x !== undefined);
