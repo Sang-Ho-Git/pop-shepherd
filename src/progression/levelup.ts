@@ -193,6 +193,42 @@ export function resolveChoice(g: Game, index: number, branch?: "A" | "B"): void 
   if (ch.kind === "levelup") g.events.push({ type: "level-up", level: ch.level ?? g.player.level, picked: cardLabel(c) });
 }
 
+/**
+ * 화면 모드: 맨 앞 선택지를 보여 주기 전에 카드가 아직 유효한지 확인한다.
+ * 보스 상자는 3장짜리 선택을 한꺼번에 쌓아 두므로, 앞에서 같은 무기를 올리면 뒤 카드가 Lv7을 넘는 등 무효가 된다
+ * (11/23 밤 점검: magnet_totem Lv8 오류). 무효인 카드가 있으면 그 선택지를 지금 상태로 다시 뽑는다.
+ * 다시 뽑을 것이 없는 상자 선택지는 체력 회복으로 바꾸고 넘긴다.
+ */
+export function validateFrontChoice(g: Game): void {
+  for (;;) {
+    const ch = g.choices[0];
+    if (!ch) return;
+    const pool = candidates(g);
+    const valid = (c: Card): boolean => {
+      if (c.kind === "heal" || c.kind === "gold") return true;
+      if (c.kind === "evolve") return true;
+      return pool[c.kind].some((x) => "id" in x && x.id === c.id);
+    };
+    if (ch.cards.every(valid)) return;
+    if (ch.kind === "chest") {
+      const owned: Card[] = [...pool.weaponUp, ...pool.passiveUp];
+      const cards: Card[] = [];
+      while (cards.length < RULES.cards.count && owned.length > 0) {
+        const i = Math.floor(g.rng.next() * owned.length);
+        cards.push(owned[i] as Card);
+        owned.splice(i, 1);
+      }
+      if (cards.length === 0) {
+        g.player.hp = Math.min(g.player.maxHp, g.player.hp + g.player.maxHp * RULES.drops.chestHealFrac);
+        g.choices.shift();
+        continue;
+      }
+      ch.cards = cards;
+    } else ch.cards = drawCards(g);
+    return;
+  }
+}
+
 /** 이 카드를 고르면 갈래 선택 창이 떠야 하는지 (Lv3 → Lv4) */
 export function needsBranch(g: Game, c: Card): boolean {
   if (c.kind !== "weaponUp" || c.branch) return false;

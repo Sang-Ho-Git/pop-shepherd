@@ -28,6 +28,20 @@ function scaleArena(f: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 스테이지 11~15 접촉 피해 배율 ×0.9 (2.7~3.1 → 2.43~2.79) */
+  lateContact90: () => {
+    for (const k of ["stage11", "stage12", "stage13", "stage14", "stage15"]) STAGES[k]!.contactMul = Math.round(STAGES[k]!.contactMul! * 0.9 * 100) / 100;
+  },
+  /** 스테이지 4~15 접촉 피해 배율 ×0.9 */
+  allContact90: () => {
+    for (const [k, st] of Object.entries(STAGES)) if (/^stage(0[4-9]|1\d)$/.test(k)) st.contactMul = Math.round((st.contactMul ?? 1) * 0.9 * 100) / 100;
+  },
+  /** 브라우저 1280×720 화면에서 실제로 보이는 월드 크기 (확대 1.16배): 소환·폭탄·막힘 판정이 이 크기를 쓴다 */
+  viewWeb: () => {
+    const v = RULES.view as { w: number; h: number };
+    v.w = 1103;
+    v.h = 620;
+  },
   /** 스테이지 15 접촉 피해 배율 3.1 → 2.6 */
   st15Contact26: () => {
     STAGES.stage15!.contactMul = 2.6;

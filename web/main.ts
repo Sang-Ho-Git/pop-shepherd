@@ -3,7 +3,7 @@ import { RULES } from "../src/core/rules.ts";
 import type { Card, Game, Input } from "../src/core/types.ts";
 import { CAMPAIGN, CHARACTERS, META, PASSIVES, SHOP, stage, WEAPONS } from "../src/data/index.ts";
 import type { MetaNode } from "../src/data/index.ts";
-import { botCardScore, botChooseBranch, botChooseCard, needsBranch, resolveChoice, xpTotalFor } from "../src/progression/levelup.ts";
+import { botCardScore, botChooseBranch, botChooseCard, needsBranch, resolveChoice, validateFrontChoice, xpTotalFor } from "../src/progression/levelup.ts";
 import { botInput } from "../src/sim/bot.ts";
 import { applyMeta, coinsForRun, isUnlocked, nextCost } from "../src/progression/meta.ts";
 import type { MetaSpecials } from "../src/progression/meta.ts";
@@ -369,6 +369,7 @@ function renderMeta(): void {
 
 function renderChoice(): void {
   if (!g) return;
+  validateFrontChoice(g);
   const ch = g.choices[0];
   if (!ch) return;
   choiceShown = true;
