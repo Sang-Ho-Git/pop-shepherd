@@ -27,8 +27,8 @@
     "name": "큐 (당구사)",
     "startWeapon": "kick",
     "stats": {
-      "max_hp": 80,
-      "move_speed": 1.1,
+      "max_hp": 100,
+      "move_speed": 1.2,
       "knock_power": 1.25,
       "cooldown": 0,
       "area": 1,
