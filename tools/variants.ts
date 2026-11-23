@@ -28,6 +28,10 @@ function scaleArena(f: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 스테이지 4 소환 간격 ×1.2 (적이 덜 쌓이게) */
+  st4fewer: () => {
+    for (const ph of STAGES.stage04!.spawn) ph.interval = Math.round(ph.interval * 1.2 * 100) / 100;
+  },
   /** 연쇄 배율 상한 끄기 (11/23 밤 이전) */
   chainCapOff: () => {
     (RULES.chain as { maxDepth: number }).maxDepth = 999;
