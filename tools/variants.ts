@@ -26,8 +26,25 @@ function scaleArena(f: number): void {
   }
 }
 
+/**
+ * 임시 난이도 (영구 강화 트리 작업용, claude/meta-difficulty 결과가 오기 전까지):
+ * 모든 스테이지 접촉 피해 × contact, 적 속도 × speed
+ */
+function harder(contact: number, speed: number): void {
+  for (const st of Object.values(STAGES)) {
+    st.contactMul = Math.round((st.contactMul ?? 1) * contact * 1000) / 1000;
+    for (const ph of st.spawn) ph.speedMul = Math.round((ph.speedMul ?? 1) * speed * 1000) / 1000;
+  }
+}
+
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 임시 난이도 후보 (강화 0 완주 약 20% 목표) */
+  hardA: () => harder(1.25, 1.05),
+  hardB: () => harder(1.4, 1.08),
+  hardC: () => harder(1.55, 1.1),
+  /** 지금 쓰는 임시 난이도 (= hardB) */
+  hard20: () => harder(1.4, 1.08),
   /** 스테이지 4 적 상한 112 → 85 */
   st4cap85: () => {
     STAGES.stage04!.maxAlive = 85;

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createGame } from "../src/core/game.ts";
 import { character, ENEMIES, META, SHOP, weapon } from "../src/data/index.ts";
 import { addPassive } from "../src/progression/passives.ts";
-import { applyMeta, buyNode, canBuyNode, coinsForRun, isUnlocked, profileForCoins, totalTreeCost, validateProfile } from "../src/progression/meta.ts";
+import { applyMeta, buyNode, canBuyNode, coinsForRun, isUnlocked, runCoins, profileForCoins, totalTreeCost, validateProfile } from "../src/progression/meta.ts";
 import { botShop, buy, openShop, priceOf, reroll } from "../src/progression/shop.ts";
 import { runCampaign, startStage } from "../src/sim/campaign.ts";
 import { makeWeapon } from "../src/weapons/weapons.ts";
@@ -74,42 +74,67 @@ describe("2.2 정비 상점", () => {
 });
 
 describe("2.3 영구 강화 트리", () => {
-  it("2단계는 1단계 3레벨, 가지 끝은 2단계를 다 채워야 열린다", () => {
+  it("선행 조건: 앞 노드를 정한 레벨까지 사야 열린다 (데이터의 requires)", () => {
     let p = {};
     expect(isUnlocked(p, "fleece")).toBe(false);
-    for (let i = 0; i < 3; i++) p = buyNode(p, "sturdy");
+    for (let i = 0; i < META.nodes.find((n) => n.id === "fleece")!.requires!.sturdy!; i++) p = buyNode(p, "sturdy");
     expect(isUnlocked(p, "fleece")).toBe(true);
     expect(isUnlocked(p, "second_chance")).toBe(false);
     expect(() => buyNode({}, "second_chance")).toThrow(/잠김/);
     expect(() => validateProfile({ fleece: 1 })).toThrow(/선행/);
-    expect(canBuyNode({}, "sturdy", 19)).toBe(false);
+    expect(canBuyNode({}, "sturdy", META.nodes[0]!.costs[0]! - 1)).toBe(false);
+    // 모든 선행 조건은 있는 노드의 가능한 레벨을 가리킨다
+    for (const n of META.nodes) {
+      expect(n.costs.length).toBe(n.maxLevel);
+      for (const [r, lv] of Object.entries(n.requires ?? {})) expect(lv).toBeLessThanOrEqual(META.nodes.find((x) => x.id === r)!.maxLevel);
+    }
   });
 
   it("능력치 노드는 캐릭터 사본에 더해지고, 원본은 그대로다", () => {
     const base = character("shepherd");
-    const { max_hp: hp0, armor: armor0 } = base.stats;
-    const { character: ch, specials } = applyMeta(base, { sturdy: 5, fleece: 2, second_chance: 1, strength: 3, thrift: 2 });
-    expect(ch.stats.max_hp).toBe(hp0 * 1.25); // 튼튼한 몸 5단계 = +25%
-    expect(ch.stats.armor).toBe(armor0 + 2);
-    expect(ch.stats.knock_power).toBeCloseTo(1.09);
-    expect(ch.stats.gold_find).toBeCloseTo(0.1);
-    expect(specials.revives).toBe(1);
-    expect(base.stats.max_hp).toBe(hp0);
+    const s0 = { ...base.stats };
+    const { character: ch, specials } = applyMeta(base, { sturdy: 4, fleece: 2, second_chance: 2, strength: 3, thrift: 2, boots: 2, crook: 1, purse: 2, chalk: 2, quick_rack: 1, lick: 1 });
+    expect(ch.stats.max_hp).toBe(Math.round(s0.max_hp * 1.32)); // 튼튼한 몸 4단계 = +32%
+    expect(ch.stats.armor).toBe(s0.armor + 2);
+    expect(ch.stats.knock_power).toBeCloseTo(s0.knock_power + 0.15);
+    expect(ch.stats.gold_find).toBeCloseTo(0.2);
+    expect(ch.stats.move_speed).toBeCloseTo(s0.move_speed + 0.1);
+    expect(ch.stats.pickup).toBeCloseTo(s0.pickup + 0.25);
+    expect(ch.stats.regen).toBeCloseTo(s0.regen + 0.25);
+    expect(specials).toMatchObject({ revives: 2, startGold: 100, cushionBonusUp: 0.5 });
+    expect(specials.ballCooldownCut).toBeCloseTo(0.08);
+    expect(base.stats.max_hp).toBe(s0.max_hp);
+    // 시작 골드와 당구 효과는 첫 스테이지에 들어간다
+    const g = startStage(1, "shepherd", "stage01", null, applyMeta(base, { thrift: 1, purse: 2, chalk: 1, quick_rack: 2 }), false, true);
+    expect(g.player.gold).toBe(100);
+    expect(g.player.cushionBonusUp).toBeCloseTo(0.25);
+    expect(g.player.ballCooldownCut).toBeCloseTo(0.16);
   });
 
-  it("전부 채우는 비용은 기획(15~20런)에 맞는 범위이고, 코인이 충분하면 트리가 전부 찬다", () => {
+  it("트리를 전부 채우는 비용과, 코인이 충분하면 트리가 전부 찬다", () => {
     const total = totalTreeCost();
-    expect(total).toBeGreaterThan(1500);
+    expect(total).toBeGreaterThan(4000);
     const full = profileForCoins(total);
     for (const n of META.nodes) expect(full[n.id]).toBe(n.maxLevel);
+  });
+
+  it("코인 = 클리어 스테이지 + 터뜨린 적 + 남은 골드 몫", () => {
     expect(coinsForRun(10, 0)).toBe(10 * META.coins.perStage);
+    expect(runCoins(10, 0, 0).fromGold).toBe(0);
+    const r = runCoins(5, 1000, 1999);
+    expect(r.fromGold).toBe(Math.floor(1999 * META.coins.perGold!));
+    expect(r.fromGold).toBeGreaterThan(0);
+    expect(r.total).toBe(r.base + r.fromGold);
+    expect(r.base).toBe(Math.round(5 * META.coins.perStage + 1000 * META.coins.perPoppedEnemy));
+    expect(runCoins(0, 0, -50).fromGold).toBe(0);
   });
 
   it("첫 수: 시작 무기 Lv2, 두 번째 기회: 한 번 쓰러져도 일어난다", () => {
     const meta = applyMeta(character("shepherd"), profileForCoins(totalTreeCost()));
     const g = startStage(1, "shepherd", "stage01", null, meta);
     expect(g.weapons[0]!.level.lv).toBe(2);
-    expect(g.player.revives).toBe(1);
+    const revives = META.nodes.find((n) => n.id === "second_chance")!.maxLevel;
+    expect(g.player.revives).toBe(revives);
     g.player.hp = 1;
     g.player.iframes = 0;
     // 킥은 앞(+x)을 차므로 뒤에 둔다
@@ -118,11 +143,21 @@ describe("2.3 영구 강화 트리", () => {
     const events = run(g, 5);
     expect(events.some((e) => e.type === "player-revive")).toBe(true);
     expect(g.player.dead).toBe(false);
-    expect(g.player.revives).toBe(0);
+    expect(g.player.revives).toBe(revives - 1);
   });
 
-  it("런이 끝나면 코인을 받는다", { timeout: 120_000 }, () => {
+  it("런이 끝나면 코인을 받고, 남은 골드도 코인이 된다 (실패한 런도)", { timeout: 120_000 }, () => {
     const r = runCampaign(3, "shepherd", ["stage01"]);
-    expect(r.coins).toBeGreaterThan(0);
+    expect(r.won).toBe(true);
+    expect(r.goldLeft).toBe(r.stages[0]!.gold);
+    expect(r.coinsFromGold).toBe(runCoins(r.reached, r.stages[0]!.popped, r.goldLeft).fromGold);
+    expect(r.coins).toBe(runCoins(r.reached, r.stages[0]!.popped, r.goldLeft).total);
+    expect(r.coinsFromGold).toBeGreaterThan(0);
+    // 실패한 런 (Lv1로 마지막 스테이지): 쓰러진 순간의 골드가 코인이 된다
+    const f = runCampaign(3, "shepherd", ["stage15"], { meta: { purse: 3, thrift: 1 } });
+    expect(f.won).toBe(false);
+    expect(f.goldLeft).toBe(f.stages[0]!.gold);
+    expect(f.goldLeft).toBeGreaterThanOrEqual(150);
+    expect(f.coinsFromGold).toBe(Math.floor(f.goldLeft * META.coins.perGold!));
   });
 });

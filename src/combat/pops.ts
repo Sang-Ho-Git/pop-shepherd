@@ -76,7 +76,7 @@ export function popCluster(g: Game, indices: number[], trigger: Enemy, color: Ma
   if (master) xp *= 1 + RULES.threeCushion.xpBonus;
   const cushions = opts.cushions ?? (cushion ? 1 : 0);
   const cb = RULES.ball.cushionBonus;
-  const bonus = opts.cushions ? 1 + (cb[Math.min(opts.cushions, cb.length - 1)] ?? 0) : 1;
+  const bonus = opts.cushions ? 1 + (cb[Math.min(opts.cushions, cb.length - 1)] ?? 0) * (1 + (g.player.cushionBonusUp ?? 0)) : 1;
   xp *= bonus;
   if (opts.cushions) {
     g.stats.cushionPops++;

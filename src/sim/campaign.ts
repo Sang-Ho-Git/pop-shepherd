@@ -1,7 +1,7 @@
 import { createGame, step } from "../core/game.ts";
 import { RULES } from "../core/rules.ts";
 import type { CharacterDef, Game } from "../core/types.ts";
-import { applyMeta, coinsForRun } from "../progression/meta.ts";
+import { applyMeta, runCoins } from "../progression/meta.ts";
 import type { MetaProfile, MetaSpecials } from "../progression/meta.ts";
 import { botShop } from "../progression/shop.ts";
 import { CAMPAIGN, character, ENEMIES, stage, weapon } from "../data/index.ts";
@@ -79,8 +79,11 @@ export interface CampaignReport {
   reached: number;
   won: boolean;
   stages: StageResult[];
-  /** 런이 끝나고 받는 영구 강화 코인 */
+  /** 런이 끝나고 받는 영구 강화 코인 (남은 골드 몫 포함) */
   coins: number;
+  /** 런이 끝날 때 남은 골드와 그중 코인으로 바뀐 몫 */
+  goldLeft: number;
+  coinsFromGold: number;
 }
 
 export interface CampaignOptions {
@@ -134,7 +137,11 @@ export function startStage(
     g.player.revives = carry.revives;
   } else {
     g.player.revives = meta?.specials.revives ?? 0;
+    g.player.gold = meta?.specials.startGold ?? 0;
   }
+  // 당구 가지 효과는 스테이지마다 다시 건다 (런 상태가 아니라 영구 강화)
+  g.player.ballCooldownCut = meta?.specials.ballCooldownCut ?? 0;
+  g.player.cushionBonusUp = meta?.specials.cushionBonusUp ?? 0;
   return g;
 }
 
@@ -225,6 +232,8 @@ export function runCampaign(seed: number, characterId: string, stages: string[] 
     opts.onCarry?.(i + 1, carry);
   }
   const reached = out.filter((r) => r.cleared).length;
-  const coins = coinsForRun(reached, out.reduce((a, r) => a + r.popped, 0));
-  return { seed, character: characterId, reached, won: reached === stages.length, stages: out, coins };
+  // 런이 끝날 때(완주·실패 모두) 남은 골드: 마지막으로 돌린 스테이지가 끝난 순간의 골드
+  const goldLeft = out[out.length - 1]?.gold ?? 0;
+  const c = runCoins(reached, out.reduce((a, r) => a + r.popped, 0), goldLeft);
+  return { seed, character: characterId, reached, won: reached === stages.length, stages: out, coins: c.total, goldLeft, coinsFromGold: c.fromGold };
 }

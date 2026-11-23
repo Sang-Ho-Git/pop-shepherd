@@ -27,9 +27,10 @@ describe("5.5 세이브", () => {
   });
 
   it("영구 강화 구매: 코인이 줄고, 모자라거나 잠긴 노드는 살 수 없다", () => {
-    let s = { ...newSave(), coins: 25 };
+    const [c1, c2] = META.nodes.find((n) => n.id === "sturdy")!.costs as [number, number];
+    let s = { ...newSave(), coins: c1 + c2 - 1 };
     s = spendOnMeta(s, "sturdy");
-    expect([s.coins, s.meta.sturdy]).toEqual([5, 1]);
+    expect([s.coins, s.meta.sturdy]).toEqual([c2 - 1, 1]);
     expect(() => spendOnMeta(s, "sturdy")).toThrow(/모자람/);
     expect(() => spendOnMeta({ ...s, coins: 999 }, "fleece")).toThrow(/잠김/);
   });
@@ -66,5 +67,20 @@ describe("5.5 세이브", () => {
     expect(r.dropped.sort()).toEqual(["gone_node", "haggle"]);
     expect([r.save.coins, r.save.runs]).toEqual([0, 3]);
     expect(serializeSave(r.save)).toContain('"version":1');
+  });
+
+  it("11/24 이전 트리(가지 3개)의 세이브도 읽힌다: 남은 노드는 지키고, 넘친 레벨은 깎는다", () => {
+    // 예전 트리를 다 채운 세이브 (sturdy 5, focus 3 등)
+    const old = { sturdy: 5, fleece: 2, second_chance: 1, strength: 5, focus: 3, first_move: 1, thrift: 5, haggle: 3, regular: 1 };
+    const r = parseSave(JSON.stringify({ version: 1, coins: 12, meta: old, runs: 18, wins: 9, bestStage: 15, characters: {} }));
+    if (!r.ok) throw new Error(r.error);
+    for (const [id, lv] of Object.entries(old)) {
+      const n = META.nodes.find((x) => x.id === id);
+      if (!n) expect(r.dropped).toContain(id);
+      else expect(r.save.meta[id] ?? 0).toBe(Math.min(lv, n.maxLevel));
+    }
+    expect(r.save.coins).toBe(12);
+    // 고친 프로필은 규칙을 지키고 그대로 쓸 수 있다
+    expect(() => botSpend({ ...r.save, coins: 500 })).not.toThrow();
   });
 });

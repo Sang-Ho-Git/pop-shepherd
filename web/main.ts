@@ -5,7 +5,7 @@ import { CAMPAIGN, CHARACTERS, META, PASSIVES, SHOP, stage, WEAPONS } from "../s
 import type { MetaNode } from "../src/data/index.ts";
 import { botCardScore, botChooseBranch, botChooseCard, needsBranch, resolveChoice, validateFrontChoice, xpTotalFor } from "../src/progression/levelup.ts";
 import { botInput } from "../src/sim/bot.ts";
-import { applyMeta, coinsForRun, isUnlocked, nextCost } from "../src/progression/meta.ts";
+import { applyMeta, isUnlocked, nextCost, runCoins } from "../src/progression/meta.ts";
 import type { MetaSpecials } from "../src/progression/meta.ts";
 import { browserStore, loadSave, recordRun, spendOnMeta, treeProgress, writeSave } from "../src/progression/save.ts";
 import type { SaveData } from "../src/progression/save.ts";
@@ -266,7 +266,10 @@ function finishRun(won: boolean): void {
     addRunStats();
   }
   const reached = run.stageIndex + (won ? 1 : 0);
-  const coins = coinsForRun(reached, run.popped);
+  // 남은 인게임 골드도 코인으로 바뀐다 (완주·실패 모두)
+  const goldLeft = g.player.gold;
+  const rc = runCoins(reached, run.popped, goldLeft);
+  const coins = rc.total;
   if (!run.dev) {
     save = recordRun(save, { character: run.character, reached, won, coins });
     writeSave(store, save);
@@ -278,7 +281,7 @@ function finishRun(won: boolean): void {
     el("h1", "", won ? "목장을 지켰다" : "양 떼에 묻혔다"),
     el("p", "lede", `${name} · Lv${g.player.level} · 클리어 ${reached}/${CAMPAIGN.length} · 터뜨린 적 ${run.popped}`),
     el("p", "small", `가장 긴 연쇄 ${run.bestChain}${g.ball ? ` · 쿠션 팝 ${run.cushionPops} · 3쿠션 이상 ${run.threeCushions}` : ""}`),
-    el("p", "coins", run.dev ? "시험 판이라 기록과 코인에 넣지 않았다" : `코인 +${coins}  (보유 ${save.coins})`),
+    el("p", "coins", run.dev ? "시험 판이라 기록과 코인에 넣지 않았다" : `코인 +${coins}${rc.fromGold > 0 ? `  (남은 골드 ${goldLeft} → ${rc.fromGold})` : ""}  · 보유 ${save.coins}`),
     row([button("영구 강화", () => renderMeta()), button("다시 하기", () => renderSelect(), "btn ghost")]),
   ]);
   run = null;
@@ -362,6 +365,7 @@ function renderShop(): void {
     el("p", "eyebrow", `스테이지 ${run.stageIndex + 1} 클리어`),
     el("h2", "", "정비 상점"),
     el("p", "lede", `골드 ${Math.floor(g.player.gold)} · 체력 ${Math.ceil(g.player.hp)}/${g.player.maxHp}`),
+    el("p", "small", `남은 골드는 런이 끝나면 영구 강화 코인이 된다 (지금 끝나면 코인 +${runCoins(0, 0, g.player.gold).fromGold})`),
     items,
     row([rr, button(`스테이지 ${run.stageIndex + 2}로`, () => leaveShop())]),
   ]);
@@ -369,7 +373,7 @@ function renderShop(): void {
 
 function renderMeta(): void {
   screen = "meta";
-  const branches: Record<string, string> = { survival: "생존", power: "화력", economy: "경제" };
+  const branches: Record<string, string> = { survival: "생존", power: "화력", cue: "당구", economy: "경제" };
   const cols = row(
     Object.entries(branches).map(([key, label]) => {
       const col = el("div", "branch");

@@ -178,6 +178,9 @@ export interface Player {
   purchases: number;
   /** 남은 부활 횟수 (영구 강화 두 번째 기회) */
   revives: number;
+  /** 영구 강화 당구 가지: 색 공 쿨다운 감소 비율 (0~1), 쿠션 보너스 배율 증가 (0이면 기본) */
+  ballCooldownCut?: number;
+  cushionBonusUp?: number;
   dead: boolean;
 }
 
