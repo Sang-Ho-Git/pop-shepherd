@@ -28,6 +28,14 @@ function scaleArena(f: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 스테이지 4·5 접촉 피해 배율 ×0.9 (초반 벽 완화) */
+  st45soft: () => {
+    for (const k of ["stage04", "stage05"]) STAGES[k]!.contactMul = Math.round(STAGES[k]!.contactMul! * 0.9 * 100) / 100;
+  },
+  /** 스테이지 4·5 적 속도 배율 ×0.9 */
+  st45slow: () => {
+    for (const k of ["stage04", "stage05"]) for (const ph of STAGES[k]!.spawn) ph.speedMul = Math.round((ph.speedMul ?? 1) * 0.9 * 100) / 100;
+  },
   /** 색 공 규칙 킥 쿨다운 배율 1.5 → 1 (11/23 밤 이전) */
   kickMul1: () => {
     (RULES.ball as { kickCooldownMul: number }).kickCooldownMul = 1;
