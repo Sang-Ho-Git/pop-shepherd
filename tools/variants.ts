@@ -28,6 +28,16 @@ function scaleArena(f: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 아레나 0.75배 + 소환 간격 ×1.25 (넓이가 0.56배라 밀도를 맞춘다) */
+  arena75slow: () => {
+    scaleArena(0.75);
+    for (const st of Object.values(STAGES)) for (const ph of st.spawn) ph.interval = Math.round(ph.interval * 1.25 * 100) / 100;
+  },
+  /** 아레나 0.75배 + 동시에 살아 있는 적 상한 ×0.75 */
+  arena75cap: () => {
+    scaleArena(0.75);
+    for (const st of Object.values(STAGES)) st.maxAlive = Math.round(st.maxAlive * 0.75);
+  },
   /** 색 공 던지는 속도 1400 → 1800 (굴러가는 거리는 같음, 먼 곳에 더 빨리 닿는다) */
   fastBall: () => {
     (RULES.ball as { speed: number }).speed = 1800;
