@@ -92,4 +92,29 @@ export const VARIANTS: Record<string, () => void> = {
   shepArmor1: () => {
     CHARACTERS.shepherd!.stats.armor = 1;
   },
+  /** 쓰리쿠션 경험치 +50% → +75% */
+  cushionXp75: () => {
+    (RULES.threeCushion as { xpBonus: number }).xpBonus = 0.75;
+  },
+  /** 양치기 쿨다운 0 → 0.05 (색 공·무기 모두) */
+  shepCd05: () => {
+    CHARACTERS.shepherd!.stats.cooldown = 0.05;
+  },
+  /** 양치기 쿨다운 0 → 0.1 */
+  shepCd10: () => {
+    CHARACTERS.shepherd!.stats.cooldown = 0.1;
+  },
+  /** 양치기 체력 120 + 쿨다운 0.05 */
+  shepHp120Cd05: () => {
+    CHARACTERS.shepherd!.stats.max_hp = 120;
+    CHARACTERS.shepherd!.stats.cooldown = 0.05;
+  },
+  /** 진단: 양치기를 올가미로 시작 */
+  shepLasso: () => {
+    CHARACTERS.shepherd!.startWeapon = "lasso";
+  },
+  /** 진단: 양치기를 페인트 총으로 시작 */
+  shepPaint: () => {
+    CHARACTERS.shepherd!.startWeapon = "paint_gun";
+  },
 };
