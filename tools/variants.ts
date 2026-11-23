@@ -28,6 +28,10 @@ function scaleArena(f: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 스테이지 4 적 상한 112 → 85 */
+  st4cap85: () => {
+    STAGES.stage04!.maxAlive = 85;
+  },
   /** 스테이지 4 가시 젤리 없음 */
   st4noSpiky: () => {
     STAGES.stage04!.mix = {};
