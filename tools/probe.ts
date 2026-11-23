@@ -15,6 +15,7 @@ function arg(name: string, fallback: string): string {
 const variant = arg("variant", "base");
 const chars = arg("chars", "shepherd,cue,olly,pale").split(",");
 const seeds = Number(arg("seeds", "6"));
+const seedStart = Number(arg("seed-start", "11"));
 const ballMode = process.argv.includes("--ball");
 const metaCoins = Number(arg("meta-coins", "0"));
 const apply = VARIANTS[variant];
@@ -29,7 +30,7 @@ let ballPops = 0;
 let pops = 0;
 for (const ch of chars) {
   let w = 0;
-  for (let s = 11; s < 11 + seeds; s++) {
+  for (let s = seedStart; s < seedStart + seeds; s++) {
     const r = runCampaign(s, ch, CAMPAIGN, { ballMode, meta: metaCoins > 0 ? profileForCoins(metaCoins) : undefined });
     n++;
     if (r.won) {
