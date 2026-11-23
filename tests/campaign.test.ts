@@ -21,7 +21,8 @@ describe("캠페인 (스테이지 1~15)", () => {
       const a = stage(CAMPAIGN[i - 1] as string).spawn.at(-1)!;
       const b = stage(CAMPAIGN[i] as string).spawn.at(-1)!;
       expect(b.interval).toBeLessThanOrEqual(a.interval);
-      expect(b.speedMul ?? 1).toBeGreaterThanOrEqual(a.speedMul ?? 1);
+      // 마지막 보스 스테이지는 예외: 보스와 오래 싸우므로 적 속도를 0.85배로 낮췄다 (11/23 밤, 작은 아레나에서 도망칠 곳이 없어 사망이 몰림)
+      if (CAMPAIGN[i] !== "stage15") expect(b.speedMul ?? 1).toBeGreaterThanOrEqual(a.speedMul ?? 1);
     }
   });
 
