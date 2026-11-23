@@ -1,6 +1,6 @@
 # 팝 셰퍼드 (Pop Shepherd)
 
-같은 색 양을 셋 이상 부딪혀 터뜨리는 색깔 몰이 서바이벌. 스테이지 10개, 캐릭터 4명, 무기 7종(갈래·진화), 보스 2종.
+같은 색 양을 셋 이상 부딪혀 터뜨리는 색깔 몰이 서바이벌. 스테이지 15개(약 32분), 캐릭터 4명, 무기 7종(갈래·진화), 보스 2종.
 코어 시뮬레이션은 화면 없이 돌고 규칙은 자동 테스트로 묶여 있다. 그 위에 브라우저 화면(`web/`)이 있다.
 
 설계 문서: "팝 셰퍼드 구조 트리와 로드맵" (코어 규칙 명세, 보스·엘리트·드롭 탭), "팝 셰퍼드 무기 밸런스" 시트.
@@ -9,10 +9,11 @@
 ## 하는 법 (브라우저판)
 
 - 이동 WASD·방향키, 휘슬 Space, 일시정지 Esc, 카드 1·2·3, 소리 M
-- **색 공 규칙** (기본 켜짐, 타이틀에서 끄기): 마우스로 조준하고 클릭으로 던진다. 같은 색 무리에 맞혀 공까지 3마리가 되면 터진다. 오른쪽 클릭·Q로 다음 공과 바꾼다. 공은 울타리에서 한 번 튕긴다 (큐는 두 번).
+- **색 공 규칙** (기본 켜짐, 타이틀에서 끄기): 마우스로 조준하고 클릭으로 던진다. 같은 색 무리에 맞혀 공까지 3마리가 되면 터진다. 오른쪽 클릭·Q로 다음 공과 바꾼다. 공은 당구공처럼 굴러가다 멈추고, 울타리·바위·반사벽(쿠션)에서 튕기며 다른 색에 맞으면 맞고 튕긴다. 쿠션을 거친 팝은 보너스 (1쿠션 +30%, 2쿠션 +60%, 3쿠션 이상 +120%). 큐는 조준선이 늘 보이고 3쿠션까지 꺾여 보인다.
 - **기존 규칙**: 무기가 자동으로 적을 날리고, 날아간 적이 같은 색에 세게 부딪혀야 터진다.
 - 휴대폰: 누르고 끌면 이동, 톡 치면 그곳으로 던지기, 오른쪽 아래 버튼이 휘슬·바꾸기.
-- 시험 진입로: 링크 끝에 `#stage5`처럼 붙이면 올리로 그 스테이지에서 바로 시작한다 (기록·코인에는 넣지 않는다).
+- 스테이지 시험: 타이틀의 "스테이지 시험"에서 캐릭터와 스테이지를 골라 바로 시작한다. 뒤 스테이지는 봇 런의 실제 빌드로 시작한다. 링크 끝에 `#stage15-cue`처럼 붙여도 된다 (기록·코인에는 넣지 않는다).
+- 자동 플레이(점검용): 링크 끝에 `#auto-cue-s1-x3` (캐릭터, 시작 스테이지, 속도)를 붙이면 봇이 실제 화면에서 런을 한다.
 
 ## 실행
 
@@ -22,12 +23,14 @@ Node 22.18 이상 (TypeScript 파일을 Node가 직접 실행한다).
 npm install
 npm run check        # 타입 검사(코어 + 웹) + 전체 테스트
 npm run build:web    # 브라우저판을 한 파일로: dist/pop-shepherd.html
-npm run campaign -- --seeds 8 --character olly --ball   # 스테이지 1→10 런 시뮬 (--ball: 색 공 규칙, --meta-coins N: 영구 강화)
+npm run campaign -- --seeds 8 --character olly --ball   # 스테이지 1→15 런 시뮬 (--ball: 색 공 규칙, --meta-coins N: 영구 강화)
 npm run progress -- --runs 20 --character shepherd,cue,olly,pale --ball   # 세이브를 이어 쓰는 연속 런 (트리가 차는 속도)
 npm run sim -- --stage m1_proving --weapons kick:4B,shockwave:3,magnet_totem:evo   # 고정 구성 한 판
 npm run calib -- paint_gun   # 무기 레벨별 실측 타격 수와 발사력(LP)
 node tools/share.ts --weapons paint_gun:3,kick:3 --ball   # 팝을 누가 일으켰는지 (무기별 몫)
-node tools/probe.ts --variant noTraits --ball --seeds 6   # 조건만 바꿔 완주 비교 (조건은 tools/variants.ts)
+node tools/probe.ts --variant noTraits --ball --seeds 36 --seed-start 11   # 조건만 바꿔 완주 비교 (조건은 tools/variants.ts, 캐릭터 비교는 36시드 이상)
+node tools/stage15.ts base 30 [스테이지] --pool <파일>   # 한 스테이지만 실제 빌드로 (빌드 묶음은 tools/dev-builds.ts --pool)
+node tools/realtime.mjs --runs auto-cue-x3,auto-olly-s15 --out <폴더>   # 브라우저 실시간 점검 (오류·멈춤·프레임)
 ```
 
 ## 구조
