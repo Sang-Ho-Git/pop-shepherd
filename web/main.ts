@@ -60,7 +60,7 @@ const CHAR_ORDER = ["olly", "shepherd", "cue", "pale"];
 const CHAR_NAME: Record<string, string> = { shepherd: "양치기", cue: "큐", olly: "올리", pale: "팔레" };
 const CHAR_BLURB: Record<string, string> = {
   olly: "목동. 체력 130, 방어 2. 올가미로 떨어진 양을 짝에게 끌어다 붙인다. 처음이라면 올리.",
-  shepherd: "튼튼한 기준 캐릭터. 체력 120, 방어 1. 킥으로 이동 방향의 적을 정확히 날린다.",
+  shepherd: "튼튼한 기준 캐릭터. 체력 120, 방어 1, 속도 110%. 킥으로 이동 방향의 적을 정확히 날린다.",
   cue: "당구사. 속도 120%, 날리는 힘 125%. 조준선이 늘 보이고 3쿠션까지 꺾여 보인다. 쿠션에서 속도를 덜 잃고, 공끼리 맞은 것도 쿠션으로 친다.",
   pale: "화가. 쿨다운 −10%, 연쇄 반경 120%. 페인트 총으로 옆 무리의 색을 칠한다.",
 };
