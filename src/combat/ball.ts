@@ -166,6 +166,12 @@ function hitWall(g: Game, ball: FlyingBall): Game["walls"][number] | null {
     const ny = dy / d;
     const vn = ball.vx * nx + ball.vy * ny;
     if (vn >= 0) continue;
+    // 자기 벽은 자기 공을 막지 않는다: 벽을 세운 자리(플레이어 쪽)에서 나가는 공은 지나가고,
+    // 바깥에서 들어오는 공만 튕긴다 (만화경 삼각형 안에 공이 갇히고, 앞에 세운 벽이 던진 공을 돌려보내던 문제)
+    if (wl.ox !== undefined && wl.oy !== undefined) {
+      const side = (px: number, py: number): number => Math.sign(vx * (py - wl.y1) - vy * (px - wl.x1));
+      if (side(ball.x, ball.y) === side(wl.ox, wl.oy)) continue;
+    }
     ball.vx -= 2 * vn * nx;
     ball.vy -= 2 * vn * ny;
     ball.x = qx + nx * (r + 0.5);

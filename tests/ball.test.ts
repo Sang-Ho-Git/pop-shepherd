@@ -167,6 +167,23 @@ describe("색 공 울타리 쿠션", () => {
     expect(g.balls[0]!.vx).toBeLessThan(0);
   });
 
+  it("자기 반사벽은 자기 공을 막지 않는다: 플레이어 쪽에서 나가는 공은 지나가고, 바깥에서 오는 공은 튕긴다", () => {
+    const g = ballGame();
+    const { x, y } = g.player;
+    const wall = { x1: x + 150, y1: y - 100, x2: x + 150, y2: y + 100, t: 5, weapon: g.weapons[0]!, boost: 1, aimAssist: false, shock: 0, ox: x, oy: y };
+    g.walls.push(wall);
+    g.ball!.current = "blue";
+    step(g, throwAt(x + 300, y));
+    let events = run(g, 20);
+    expect(events.filter((e) => e.type === "ball-cushion")).toHaveLength(0);
+    expect(g.balls[0]!.x).toBeGreaterThan(x + 150);
+    // 바깥에서 플레이어 쪽으로 오는 공은 튕긴다
+    g.balls = [{ x: x + 260, y, vx: -900, vy: 0, color: "blue", travel: 0, bounces: 0, lastHit: -1 }];
+    events = run(g, 20);
+    expect(events.filter((e) => e.type === "ball-cushion")).toHaveLength(1);
+    expect(g.balls[0]!.vx).toBeGreaterThan(0);
+  });
+
   it("조준선 미리보기는 울타리에서 꺾인다", async () => {
     const { predictBallPath } = await import("../src/combat/ball.ts");
     const g = ballGame();

@@ -523,7 +523,7 @@ function fireWall(g: Game, w: WeaponInstance, buf: number[]): number {
   if (ahead.length < 3) return -1;
   const len = param(lv, "length") * p.stats.area;
   const t = param(lv, "duration");
-  const base = { t, weapon: w, boost: lv.params.boost ?? 1, aimAssist: !!lv.params.aimAssist, shock: lv.params.wallShock ?? 0 };
+  const base = { t, weapon: w, boost: lv.params.boost ?? 1, aimAssist: !!lv.params.aimAssist, shock: lv.params.wallShock ?? 0, ox: p.x, oy: p.y };
   const seg = (cx: number, cy: number, ang: number): Wall => ({
     ...base,
     x1: cx + (Math.cos(ang) * len) / 2,
