@@ -6,7 +6,7 @@ import { carryOf, runCampaign, startStage, startWeapon } from "../src/sim/campai
 import { botInput } from "../src/sim/bot.ts";
 
 describe("캠페인 (스테이지 1~15)", () => {
-  it("스테이지 10개가 순서대로 있고, 접촉 피해 배율이 계획표와 같다", () => {
+  it("스테이지 15개가 순서대로 있고, 접촉 피해 배율이 계획표와 같다", () => {
     expect(CAMPAIGN).toHaveLength(15);
     CAMPAIGN.forEach((id, i) => {
       const st = stage(id);
