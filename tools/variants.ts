@@ -28,6 +28,18 @@ function scaleArena(f: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 양치기 이동 속도 1.0 → 1.1 */
+  shepSpd11: () => {
+    CHARACTERS.shepherd!.stats.move_speed = 1.1;
+  },
+  /** 양치기 이동 속도 1.15 */
+  shepSpd115: () => {
+    CHARACTERS.shepherd!.stats.move_speed = 1.15;
+  },
+  /** 양치기 체력 120 → 140 */
+  shepHp140: () => {
+    CHARACTERS.shepherd!.stats.max_hp = 140;
+  },
   /** 큐 체력 80 → 100 */
   cueHp100b: () => {
     CHARACTERS.cue!.stats.max_hp = 100;
