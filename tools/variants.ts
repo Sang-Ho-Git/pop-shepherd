@@ -28,6 +28,15 @@ function scaleArena(f: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 색 공 던지는 속도 1400 → 1800 (굴러가는 거리는 같음, 먼 곳에 더 빨리 닿는다) */
+  fastBall: () => {
+    (RULES.ball as { speed: number }).speed = 1800;
+  },
+  /** 던지는 속도 1800 + 아레나 0.75배 */
+  fastBall75: () => {
+    (RULES.ball as { speed: number }).speed = 1800;
+    scaleArena(0.75);
+  },
   /** 아레나 1920×1080 (지금 2560×1440의 0.75배) */
   arena75: () => scaleArena(0.75),
   /** 아레나 1600×900 (0.625배) */
