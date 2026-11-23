@@ -172,4 +172,36 @@ export const VARIANTS: Record<string, () => void> = {
   cushionXp150: () => {
     (RULES.threeCushion as { xpBonus: number }).xpBonus = 1.5;
   },
+  /** cue를 반사벽으로 시작 */
+  cueReflect: () => {
+    CHARACTERS.cue!.startWeapon = "reflect_wall";
+  },
+  /** cue를 충격파으로 시작 */
+  cueShock: () => {
+    CHARACTERS.cue!.startWeapon = "shockwave";
+  },
+  /** cue를 회오리으로 시작 */
+  cueWhirl: () => {
+    CHARACTERS.cue!.startWeapon = "whirlwind";
+  },
+  /** cue를 자석 토템으로 시작 */
+  cueMagnet: () => {
+    CHARACTERS.cue!.startWeapon = "magnet_totem";
+  },
+  /** shepherd를 반사벽으로 시작 */
+  shepReflect: () => {
+    CHARACTERS.shepherd!.startWeapon = "reflect_wall";
+  },
+  /** shepherd를 충격파으로 시작 */
+  shepShock: () => {
+    CHARACTERS.shepherd!.startWeapon = "shockwave";
+  },
+  /** shepherd를 회오리으로 시작 */
+  shepWhirl: () => {
+    CHARACTERS.shepherd!.startWeapon = "whirlwind";
+  },
+  /** shepherd를 자석 토템으로 시작 */
+  shepMagnet: () => {
+    CHARACTERS.shepherd!.startWeapon = "magnet_totem";
+  },
 };
