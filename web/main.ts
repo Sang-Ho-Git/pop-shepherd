@@ -919,7 +919,8 @@ function autoTick(dt: number): void {
   a.wait = 0.4 / a.speed;
   if (screen === "play" && g && choiceShown && g.choices[0]) {
     // 카드 고르기 또는 갈래 고르기: 봇이 고른 번호의 실제 버튼을 누른다
-    const branchScreen = overlay.textContent?.includes("갈래를 고른다");
+    // 갈래 화면은 제목(h2)으로 가린다 (카드 설명 "갈래를 고른다: A 또는 B"와 헷갈려 멈춘 적이 있다)
+    const branchScreen = overlay.querySelector("h2")?.textContent === "갈래를 고른다";
     let idx: number;
     if (branchScreen) {
       const c = g.choices[0].cards.find((x) => x.kind === "weaponUp" && needsBranch(g!, x));
