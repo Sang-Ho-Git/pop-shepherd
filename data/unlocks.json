@@ -1,0 +1,24 @@
+{
+  "start": ["olly"],
+  "characters": {
+    "shepherd": {
+      "any": [{ "kind": "best", "stat": "reached", "n": 5 }],
+      "text": "아무 캐릭터로 스테이지 5(첫 보스) 클리어"
+    },
+    "cue": {
+      "any": [
+        { "kind": "total", "stat": "cushionPops", "n": 60 },
+        { "kind": "total", "stat": "threeCushions", "n": 8 },
+        { "kind": "total", "stat": "runs", "n": 6 }
+      ],
+      "text": "쿠션 팝 누적 60번 또는 3쿠션 팝 누적 8번 (또는 6판 하기)"
+    },
+    "pale": {
+      "any": [
+        { "kind": "best", "stat": "reached", "n": 10 },
+        { "kind": "total", "stat": "poppedEnemies", "n": 15000 }
+      ],
+      "text": "스테이지 10 클리어 또는 적 누적 15000마리 터뜨리기"
+    }
+  }
+}
