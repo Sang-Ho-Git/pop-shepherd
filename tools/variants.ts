@@ -28,6 +28,14 @@ function scaleArena(f: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 스테이지 11~15 적 속도 배율 ×0.9 */
+  lateSpeed90: () => {
+    for (const k of ["stage11", "stage12", "stage13", "stage14", "stage15"]) for (const ph of STAGES[k]!.spawn) ph.speedMul = Math.round((ph.speedMul ?? 1) * 0.9 * 100) / 100;
+  },
+  /** 스테이지 15 적 속도 배율 ×0.85 */
+  st15Speed85: () => {
+    for (const ph of STAGES.stage15!.spawn) ph.speedMul = Math.round((ph.speedMul ?? 1) * 0.85 * 100) / 100;
+  },
   /** 반사벽 동시 상한 3장 (만화경 삼각형 하나, V자 하나 반) */
   wallCap3: () => {
     (RULES.wall as { maxActive: number }).maxActive = 3;
