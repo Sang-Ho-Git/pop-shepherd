@@ -28,6 +28,14 @@ function scaleArena(f: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 스테이지 4 가시 젤리 없음 */
+  st4noSpiky: () => {
+    STAGES.stage04!.mix = {};
+  },
+  /** 스테이지 4 엘리트 없음 */
+  st4noElite: () => {
+    STAGES.stage04!.elites = [];
+  },
   /** 스테이지 4 소환 간격 ×1.2 (적이 덜 쌓이게) */
   st4fewer: () => {
     for (const ph of STAGES.stage04!.spawn) ph.interval = Math.round(ph.interval * 1.2 * 100) / 100;
