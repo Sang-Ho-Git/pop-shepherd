@@ -11,6 +11,44 @@ function paintCooldown(mul: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 보스가 살아 있는 동안 일반 소환 3분의 1 (지금 절반) */
+  bossSlow3: () => {
+    (RULES.boss as { spawnSlowdown: number }).spawnSlowdown = 3;
+  },
+  /** 상점: 인상률 10% → 6% */
+  shopInfl6: () => {
+    SHOP.inflation = 0.06;
+  },
+  /** 상점: 인상률 10% → 4% */
+  shopInfl4: () => {
+    SHOP.inflation = 0.04;
+  },
+  /** 상점: 가격 약 25% 내림 */
+  shopCheap: () => {
+    for (const k of Object.keys(SHOP.prices) as (keyof typeof SHOP.prices)[]) SHOP.prices[k] = Math.round(SHOP.prices[k] * 0.75);
+  },
+  /** 상점: 팝당 골드 0.27 → 0.45 */
+  shopGold45: () => {
+    SHOP.goldPerPop = 0.45;
+  },
+  /** 상점: 팝당 골드 0.27 → 0.6 */
+  shopGold60: () => {
+    SHOP.goldPerPop = 0.6;
+  },
+  /** 상점: 팝당 골드 0.45 + 인상률 6% */
+  shopGold45i6: () => {
+    SHOP.goldPerPop = 0.45;
+    SHOP.inflation = 0.06;
+  },
+  /** 상점: 가격 40% 내림 + 인상률 6% */
+  shopHalf: () => {
+    for (const k of Object.keys(SHOP.prices) as (keyof typeof SHOP.prices)[]) SHOP.prices[k] = Math.round(SHOP.prices[k] * 0.6);
+    SHOP.inflation = 0.06;
+  },
+  /** 상점: 팝당 골드 0.27 → 0.36 */
+  shopGold: () => {
+    SHOP.goldPerPop = 0.36;
+  },
   /** 경험치 곡선 절반 (레벨업 2배 빠르게) */
   xp2: () => {
     const xp = RULES.xp as { base: number; growth: number };

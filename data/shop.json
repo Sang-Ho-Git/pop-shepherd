@@ -1,10 +1,10 @@
 {
-  "_note": "정비 상점. 기획서에는 가격만 방향이 있어 시뮬로 맞춘 임시값. 목표: 한 런에 구매 약 10번.",
+  "_note": "정비 상점. 기획서에는 가격만 방향이 있어 시뮬로 맞춘 임시값. 목표: 한 런에 구매 약 10~15번 (15스테이지). 스테이지 9쯤부터는 빌드가 다 차서 살 게 거의 없으므로, 초반에 스테이지마다 1~2개 살 수 있게 가격을 낮췄다.",
   "goldPerPop": 0.27,
   "fillerGold": 50,
   "slots": 3,
   "rerollCost": 25,
-  "inflation": 0.1,
+  "inflation": 0.06,
   "healFrac": 0.5,
-  "prices": { "weaponUp": 100, "newWeapon": 120, "passiveUp": 70, "newPassive": 80, "heal": 60 }
+  "prices": { "weaponUp": 60, "newWeapon": 72, "passiveUp": 42, "newPassive": 48, "heal": 36 }
 }

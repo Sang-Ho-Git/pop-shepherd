@@ -4,7 +4,7 @@ import type { MetaProfile } from "./meta.ts";
 
 /**
  * 5.5 세이브: 런 밖에 남는 것만 저장한다 (영구 강화 코인과 트리, 기록).
- * 런 중간 저장은 하지 않는다 (한 판이 스테이지 10개, 30~40분).
+ * 런 중간 저장은 하지 않는다 (한 판이 스테이지 15개, 약 30분).
  *
  * 저장 형식은 버전이 붙은 JSON이고, 읽을 때 데이터가 바뀌었어도 깨지지 않게 고친다:
  * 없어진 노드는 버리고, 최대 레벨이 줄었으면 깎고, 선행 조건이 안 맞는 노드는 버린다 (코인은 돌려주지 않는다).
@@ -14,7 +14,7 @@ export const SAVE_VERSION = 1;
 export interface CharacterRecord {
   runs: number;
   wins: number;
-  /** 가장 멀리 클리어한 스테이지 수 (0~10) */
+  /** 가장 멀리 클리어한 스테이지 수 (0~15) */
   bestStage: number;
 }
 
