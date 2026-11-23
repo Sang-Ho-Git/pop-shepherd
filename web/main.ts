@@ -373,7 +373,7 @@ function renderShop(): void {
 
 function renderMeta(): void {
   screen = "meta";
-  const branches: Record<string, string> = { survival: "생존", power: "화력", cue: "당구", economy: "경제" };
+  const branches: Record<string, string> = { survival: "생존", power: "화력", cue: "솜씨", economy: "경제" };
   const cols = row(
     Object.entries(branches).map(([key, label]) => {
       const col = el("div", "branch");
@@ -389,14 +389,19 @@ function renderMeta(): void {
         }, "node");
         b.disabled = cost === null || !unlocked || save.coins < cost;
         b.append(el("strong", "", `${n.name} ${lv}/${n.maxLevel}`), el("span", "", n.note));
-        b.append(el("span", "price", cost === null ? "완료" : !unlocked ? "잠김" : `${cost} 코인`));
+        // 잠긴 노드는 무엇을 사야 열리는지 보여 준다
+        const need = Object.entries(n.requires ?? {})
+          .filter(([r, rl]) => (save.meta[r] ?? 0) < rl)
+          .map(([r, rl]) => `${META.nodes.find((x: MetaNode) => x.id === r)?.name ?? r} ${rl}`)
+          .join(", ");
+        b.append(el("span", "price", cost === null ? "완료" : !unlocked ? `잠김 · ${need} 필요` : `${cost} 코인`));
         col.append(b);
       }
       return col;
     }),
     "tree",
   );
-  show([el("p", "eyebrow", `코인 ${save.coins}`), el("h2", "", "영구 강화"), cols, row([button("시작", () => renderSelect()), button("처음으로", () => renderTitle(), "btn ghost")])]);
+  show([el("p", "eyebrow", `코인 ${save.coins} · 트리 ${Math.round(treeProgress(save) * 100)}%`), el("h2", "", "영구 강화"), cols, row([button("시작", () => renderSelect()), button("처음으로", () => renderTitle(), "btn ghost")])]);
 }
 
 function renderChoice(): void {
