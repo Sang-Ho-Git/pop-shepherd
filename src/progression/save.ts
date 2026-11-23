@@ -1,6 +1,8 @@
 import { CAMPAIGN, META } from "../data/index.ts";
 import { buyNode, canBuyNode, isUnlocked, nextCost } from "./meta.ts";
 import type { MetaProfile } from "./meta.ts";
+import { emptyRunStats, emptyTotals, refreshUnlocks, RUN_STAT_KEYS } from "./unlocks.ts";
+import type { RunStats, RunTotals } from "./unlocks.ts";
 
 /**
  * 5.5 세이브: 런 밖에 남는 것만 저장한다 (영구 강화 코인과 트리, 기록).
@@ -8,6 +10,10 @@ import type { MetaProfile } from "./meta.ts";
  *
  * 저장 형식은 버전이 붙은 JSON이고, 읽을 때 데이터가 바뀌었어도 깨지지 않게 고친다:
  * 없어진 노드는 버리고, 최대 레벨이 줄었으면 깎고, 선행 조건이 안 맞는 노드는 버린다 (코인은 돌려주지 않는다).
+ *
+ * 캐릭터 해금(unlocked, totals, bests)은 버전 1 안에서 나중에 붙인 필드다. 이 필드가 없는 예전 세이브는
+ * 기록으로 판정해 열어 준다: 조건을 이미 채운 캐릭터, 해본 적 있는 캐릭터(characters[id].runs > 0)는 열린다.
+ * 누적 기록(totals)은 예전 세이브에 없으니 0부터 센다 (클리어 스테이지·런 수 조건은 예전 기록으로 판정된다).
  */
 export const SAVE_VERSION = 1;
 
@@ -26,10 +32,15 @@ export interface SaveData {
   wins: number;
   bestStage: number;
   characters: Record<string, CharacterRecord>;
+  /** 열린 캐릭터 (src/progression/unlocks.ts) */
+  unlocked: string[];
+  /** 모든 판 누적 기록, 한 판 최고 기록 (해금 조건 판정용) */
+  totals: RunTotals;
+  bests: RunStats;
 }
 
-/** 런 결과 중 세이브에 필요한 것 (시뮬의 CampaignReport와 같은 이름) */
-export interface RunResult {
+/** 런 결과 중 세이브에 필요한 것 (시뮬의 CampaignReport와 같은 이름). 런 기록이 없으면 0으로 본다. */
+export interface RunResult extends Partial<RunStats> {
   character: string;
   /** 클리어한 스테이지 수 */
   reached: number;
@@ -38,13 +49,24 @@ export interface RunResult {
 }
 
 export function newSave(): SaveData {
-  return { version: SAVE_VERSION, coins: 0, meta: {}, runs: 0, wins: 0, bestStage: 0, characters: {} };
+  const s: SaveData = { version: SAVE_VERSION, coins: 0, meta: {}, runs: 0, wins: 0, bestStage: 0, characters: {}, unlocked: [], totals: emptyTotals(), bests: emptyRunStats() };
+  return { ...s, unlocked: refreshUnlocks(s) };
 }
 
+/** 런 기록을 세이브에 더한다. 조건을 채운 캐릭터는 여기서 열린다 (새로 열린 것은 unlocks.ts의 newlyUnlocked로). */
 export function recordRun(save: SaveData, r: RunResult): SaveData {
   const prev = save.characters[r.character] ?? { runs: 0, wins: 0, bestStage: 0 };
-  return {
+  const totals = { ...save.totals, reached: save.totals.reached + Math.max(0, r.reached) };
+  const bests = { ...save.bests };
+  for (const k of RUN_STAT_KEYS) {
+    const v = Math.max(0, r[k] ?? 0);
+    totals[k] += v;
+    bests[k] = Math.max(bests[k], v);
+  }
+  const next: SaveData = {
     ...save,
+    totals,
+    bests,
     coins: save.coins + Math.max(0, Math.round(r.coins)),
     runs: save.runs + 1,
     wins: save.wins + (r.won ? 1 : 0),
@@ -54,6 +76,7 @@ export function recordRun(save: SaveData, r: RunResult): SaveData {
       [r.character]: { runs: prev.runs + 1, wins: prev.wins + (r.won ? 1 : 0), bestStage: Math.max(prev.bestStage, r.reached) },
     },
   };
+  return { ...next, unlocked: refreshUnlocks(next) };
 }
 
 /** 영구 강화 노드 한 레벨을 코인으로 산다. 코인이 모자라거나 잠겨 있으면 오류. */
@@ -147,19 +170,31 @@ export function parseSave(text: string): ParseResult {
       characters[id] = { runs: count(r.runs), wins: count(r.wins), bestStage: Math.min(CAMPAIGN.length, count(r.bestStage)) };
     }
   }
-  return {
-    ok: true,
-    dropped,
-    save: {
-      version: SAVE_VERSION,
-      coins: count(o.coins),
-      meta,
-      runs: count(o.runs),
-      wins: count(o.wins),
-      bestStage: Math.min(CAMPAIGN.length, count(o.bestStage)),
-      characters,
-    },
+  const save: SaveData = {
+    version: SAVE_VERSION,
+    coins: count(o.coins),
+    meta,
+    runs: count(o.runs),
+    wins: count(o.wins),
+    bestStage: Math.min(CAMPAIGN.length, count(o.bestStage)),
+    characters,
+    unlocked: Array.isArray(o.unlocked) ? o.unlocked.filter((x): x is string => typeof x === "string") : [],
+    totals: { ...readStats(o.totals), reached: count(record(o.totals).reached) },
+    bests: readStats(o.bests),
   };
+  // 예전 세이브(unlocked 없음)도, 해금 규칙이 바뀐 경우도 같은 규칙으로: 기록으로 열릴 것은 열고, 없는 캐릭터는 버린다
+  return { ok: true, dropped, save: { ...save, unlocked: refreshUnlocks(save) } };
+}
+
+function record(v: unknown): Record<string, unknown> {
+  return v && typeof v === "object" ? (v as Record<string, unknown>) : {};
+}
+
+function readStats(v: unknown): RunStats {
+  const r = record(v);
+  const out = emptyRunStats();
+  for (const k of RUN_STAT_KEYS) out[k] = count(r[k]);
+  return out;
 }
 
 /** 저장 장소 (브라우저 localStorage, 파일, 테스트용 메모리) */
