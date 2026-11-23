@@ -1,7 +1,7 @@
 {
   "shepherd": {
     "id": "shepherd",
-    "name": "보정 없음 (테스트용)",
+    "name": "양치기 (튼튼함)",
     "startWeapon": "kick",
     "stats": {
       "max_hp": 120,
