@@ -236,4 +236,13 @@ export const VARIANTS: Record<string, () => void> = {
   kickKnock70: () => {
     for (const l of WEAPONS.kick!.levels) l.knock = Math.round(l.knock * 0.7);
   },
+  /** 양치기 체력 100 → 130 */
+  shepHp130: () => {
+    CHARACTERS.shepherd!.stats.max_hp = 130;
+  },
+  /** 양치기 체력 120 + 방어 1 */
+  shepHp120Armor1: () => {
+    CHARACTERS.shepherd!.stats.max_hp = 120;
+    CHARACTERS.shepherd!.stats.armor = 1;
+  },
 };
