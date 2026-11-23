@@ -1,15 +1,15 @@
 {
-  "_note": "영구 강화 트리 (기획서: 가지 3개, 1단계 → 2단계(1단계 3레벨 필요) → 가지 끝). 전체를 채우는 데 15~20런.",
+  "_note": "영구 강화 트리 (기획서: 가지 3개, 1단계 → 2단계(1단계 3레벨 필요) → 가지 끝). 전체를 채우는 데 15~20런. 15스테이지에서 합계 2430 코인 (봇, 색 공, 4캐릭터 번갈아: 캐릭터 순서에 따라 15~19런).",
   "coins": { "perStage": 7, "perPoppedEnemy": 0.007 },
   "nodes": [
-    { "id": "sturdy", "branch": "survival", "name": "튼튼한 몸", "maxLevel": 5, "costs": [20, 30, 40, 50, 60], "effect": { "max_hp_pct": 0.05 }, "note": "체력 +5%" },
-    { "id": "fleece", "branch": "survival", "name": "두꺼운 털", "maxLevel": 2, "costs": [90, 120], "requires": { "sturdy": 3 }, "effect": { "armor": 1 }, "note": "방어 +1" },
-    { "id": "second_chance", "branch": "survival", "name": "두 번째 기회", "maxLevel": 1, "costs": [250], "requires": { "fleece": 2 }, "effect": { "revive": 1 }, "note": "런마다 부활 1회" },
-    { "id": "strength", "branch": "power", "name": "근력", "maxLevel": 5, "costs": [20, 30, 40, 50, 60], "effect": { "knock_power": 0.03 }, "note": "날리는 힘 +3%" },
-    { "id": "focus", "branch": "power", "name": "집중", "maxLevel": 3, "costs": [80, 100, 120], "requires": { "strength": 3 }, "effect": { "cooldown": 0.02 }, "note": "쿨다운 -2%" },
-    { "id": "first_move", "branch": "power", "name": "첫 수", "maxLevel": 1, "costs": [250], "requires": { "focus": 3 }, "effect": { "startWeaponLevel": 1 }, "note": "시작 무기 Lv2로 출발" },
-    { "id": "thrift", "branch": "economy", "name": "알뜰", "maxLevel": 5, "costs": [20, 30, 40, 50, 60], "effect": { "gold_find": 0.05 }, "note": "골드 +5%" },
-    { "id": "haggle", "branch": "economy", "name": "흥정", "maxLevel": 3, "costs": [80, 100, 120], "requires": { "thrift": 3 }, "effect": { "freeRerolls": 1 }, "note": "상점 새로고침 1회 무료" },
-    { "id": "regular", "branch": "economy", "name": "단골", "maxLevel": 1, "costs": [250], "requires": { "haggle": 3 }, "effect": { "shopSlots": 1 }, "note": "정비 상점 품목 +1" }
+    { "id": "sturdy", "branch": "survival", "name": "튼튼한 몸", "maxLevel": 5, "costs": [20, 30, 45, 55, 70], "effect": { "max_hp_pct": 0.05 }, "note": "체력 +5%" },
+    { "id": "fleece", "branch": "survival", "name": "두꺼운 털", "maxLevel": 2, "costs": [100, 140], "requires": { "sturdy": 3 }, "effect": { "armor": 1 }, "note": "방어 +1" },
+    { "id": "second_chance", "branch": "survival", "name": "두 번째 기회", "maxLevel": 1, "costs": [280], "requires": { "fleece": 2 }, "effect": { "revive": 1 }, "note": "런마다 부활 1회" },
+    { "id": "strength", "branch": "power", "name": "근력", "maxLevel": 5, "costs": [20, 30, 45, 55, 70], "effect": { "knock_power": 0.03 }, "note": "날리는 힘 +3%" },
+    { "id": "focus", "branch": "power", "name": "집중", "maxLevel": 3, "costs": [90, 115, 140], "requires": { "strength": 3 }, "effect": { "cooldown": 0.02 }, "note": "쿨다운 -2%" },
+    { "id": "first_move", "branch": "power", "name": "첫 수", "maxLevel": 1, "costs": [280], "requires": { "focus": 3 }, "effect": { "startWeaponLevel": 1 }, "note": "시작 무기 Lv2로 출발" },
+    { "id": "thrift", "branch": "economy", "name": "알뜰", "maxLevel": 5, "costs": [20, 30, 45, 55, 70], "effect": { "gold_find": 0.05 }, "note": "골드 +5%" },
+    { "id": "haggle", "branch": "economy", "name": "흥정", "maxLevel": 3, "costs": [90, 115, 140], "requires": { "thrift": 3 }, "effect": { "freeRerolls": 1 }, "note": "상점 새로고침 1회 무료" },
+    { "id": "regular", "branch": "economy", "name": "단골", "maxLevel": 1, "costs": [280], "requires": { "haggle": 3 }, "effect": { "shopSlots": 1 }, "note": "정비 상점 품목 +1" }
   ]
 }
