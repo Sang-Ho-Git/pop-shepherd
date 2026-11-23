@@ -28,6 +28,14 @@ function scaleArena(f: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 색 공 규칙 킥 쿨다운 배율 1.5 → 1 (11/23 밤 이전) */
+  kickMul1: () => {
+    (RULES.ball as { kickCooldownMul: number }).kickCooldownMul = 1;
+  },
+  /** 색 공 규칙 킥 쿨다운 배율 2 */
+  kickMul2: () => {
+    (RULES.ball as { kickCooldownMul: number }).kickCooldownMul = 2;
+  },
   /** 색 공 규칙 킥 조준 끄기 (11/23 밤 이전) */
   noKickAim: () => {
     (RULES.ball as { kickAim: number }).kickAim = 0;

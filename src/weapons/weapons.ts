@@ -85,8 +85,10 @@ function param(level: WeaponLevel, key: string, fallback?: number): number {
 }
 
 /** 캐릭터 보정이 들어간 쿨다운 */
-function cooldownOf(g: Game, level: WeaponLevel): number {
-  return level.cooldown * (1 - g.player.stats.cooldown);
+function cooldownOf(g: Game, level: WeaponLevel, id = ""): number {
+  // 색 공 규칙: 킥은 공이 노릴 같은 색 무리를 흩뜨리므로 덜 자주 찬다 (RULES.ball.kickCooldownMul)
+  const mul = g.ballMode && id === "kick" ? RULES.ball.kickCooldownMul : 1;
+  return level.cooldown * mul * (1 - g.player.stats.cooldown);
 }
 
 function knockOf(g: Game, level: WeaponLevel): number {
@@ -673,7 +675,7 @@ export function fireWeapons(g: Game): void {
         throw new Error(`${w.def.id}: 동작 모듈(${w.def.behavior})이 아직 없음`);
     }
     if (hits < 0) continue;
-    w.cd = cooldownOf(g, w.level);
+    w.cd = cooldownOf(g, w.level, w.def.id);
     w.fires++;
     w.hits += hits;
     for (const e of g.enemies) if (firedIds.includes(e.id)) e.cause = w.def.id;
