@@ -8,11 +8,13 @@
  *   --newest           --unlocks와 함께: 가장 최근에 열린 캐릭터로 한다 (새 캐릭터를 바로 써 보는 사람)
  *   --seed n           시드 시작값 (기본 1000, 런 i의 시드는 n + i)
  *   --ball             색 공 규칙
+ *   --contact-mul k    측정용: 모든 스테이지의 접촉 피해 배율에 k를 곱한다 (메모리에서만, 데이터는 그대로).
+ *                      기본 난이도를 올리기 전에 '첫 판 완주 약 20%' 근사로 해금 런 번호를 재는 데 썼다 (k=1.5, 색 공 규칙).
  * 기획 목표: 트리 전체를 채우는 데 15~20런.
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { runCampaign } from "../src/sim/campaign.ts";
-import { CAMPAIGN } from "../src/data/index.ts";
+import { CAMPAIGN, STAGES } from "../src/data/index.ts";
 import { botSpend, loadSave, memoryStore, recordRun, treeProgress, writeSave } from "../src/progression/save.ts";
 import type { SaveStore } from "../src/progression/save.ts";
 import { newlyUnlocked } from "../src/progression/unlocks.ts";
@@ -26,6 +28,8 @@ const useUnlocks = process.argv.includes("--unlocks");
 const newest = process.argv.includes("--newest");
 const chars = arg("character", useUnlocks ? "" : "shepherd").split(",").filter(Boolean);
 const seed0 = Number(arg("seed", "1000"));
+const contactK = Number(arg("contact-mul", "1"));
+if (contactK !== 1) for (const id of CAMPAIGN) STAGES[id]!.contactMul = (STAGES[id]!.contactMul ?? 1) * contactK;
 const file = arg("save", "");
 const ballMode = process.argv.includes("--ball");
 const store: SaveStore = file
