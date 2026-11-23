@@ -171,11 +171,14 @@ function startRun(characterId: string): void {
 }
 
 /** 처음 하는 사람을 위한 안내 (스테이지 1, 처음 세 판). 시각(초)에 맞춰 하나씩 띄운다 */
+/** 터치 화면인지 (안내 문구를 손가락 조작으로) */
+const COARSE = typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches;
+
 const HINTS_BALL: [number, string][] = [
-  [1, "마우스로 조준하고 클릭하면 색 공을 던진다"],
+  [1, COARSE ? "화면을 톡 치면 그곳으로 색 공을 던진다. 누르고 끌면 움직인다" : "마우스로 조준하고 클릭하면 색 공을 던진다"],
   [7, "같은 색 무리에 맞혀 공까지 3마리가 되면 터진다. 바닥이 빛나는 무리가 지금 공으로 터뜨릴 수 있는 곳"],
   [14, "같은 색이 하나뿐이면 공이 그 옆에 붙는다. 다음 공으로 터뜨리면 된다"],
-  [22, "오른쪽 클릭이나 Q로 지금 공과 다음 공을 바꾼다"],
+  [22, COARSE ? "오른쪽 아래 '바꾸기'로 지금 공과 다음 공을 바꾼다" : "오른쪽 클릭이나 Q로 지금 공과 다음 공을 바꾼다"],
   [30, "공은 당구공처럼 굴러가다 멈춘다. 울타리·바위·반사벽(쿠션)에서 튕기고, 다른 색에 맞으면 맞고 튕긴다"],
   [38, "쿠션을 거쳐 터뜨리면 보너스: 1쿠션 +30%, 2쿠션 +60%, 3쿠션 이상 +120%. 조준선이 꺾이는 길을 보여 준다"],
   [46, "터질 때 나오는 충격파가 옆 무리를 날려 연쇄가 된다. Space는 휘슬 (주변을 밀어낸다)"],
@@ -196,6 +199,13 @@ function hintsLeft(): number {
 let hintQueue: [number, string][] = [];
 let hint: { text: string; t: number } | null = null;
 
+/** 버틸 시간 글: 90초 → "1분 30초 버텨라" (예전에는 분을 반올림해 "2분 30초"로 나왔다) */
+function goalTime(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m > 0 ? `${m}분 ` : ""}${s ? `${s}초 ` : ""}버텨라`;
+}
+
 function beginStage(): void {
   if (!run) return;
   const id = CAMPAIGN[run.stageIndex] as string;
@@ -206,7 +216,7 @@ function beginStage(): void {
   screen = "play";
   hideOverlay();
   const st = stage(id);
-  const goal = st.clear === "boss" ? "보스를 쓰러뜨려라" : st.clear === "elites" ? `엘리트 ${st.elites?.length ?? 0}마리를 쓰러뜨려라` : `${Math.round(st.duration / 60)}분 ${st.duration % 60 ? `${st.duration % 60}초 ` : ""}버텨라`;
+  const goal = st.clear === "boss" ? "보스를 쓰러뜨려라" : st.clear === "elites" ? `엘리트 ${st.elites?.length ?? 0}마리를 쓰러뜨려라` : goalTime(st.duration);
   banner = { text: `스테이지 ${run.stageIndex + 1} · ${st.name}`, sub: goal, t: 3 };
   hint = null;
   hintQueue = run.stageIndex === 0 && hintsLeft() > 0 ? [...(ballMode ? HINTS_BALL : HINTS_OLD)] : [];
@@ -284,7 +294,7 @@ function renderTitle(): void {
           renderTitle();
         }, "btn ghost toggle"),
       ]),
-      el("p", "small", ballMode ? "색 공 규칙: 마우스로 조준하고 클릭으로 던진다. 같은 색 무리에 맞혀 3마리를 채우면 터진다." : "기존 규칙: 날아간 적이 같은 색에 세게 부딪혀야 터진다."),
+      el("p", "small", ballMode ? COARSE ? "색 공 규칙: 톡 치면 그곳으로 던진다. 같은 색 무리에 맞혀 3마리를 채우면 터진다." : "색 공 규칙: 마우스로 조준하고 클릭으로 던진다. 같은 색 무리에 맞혀 3마리를 채우면 터진다." : "기존 규칙: 날아간 적이 같은 색에 세게 부딪혀야 터진다."),
       el("p", "small", `기록: ${save.runs}런 · 완주 ${save.wins} · 최고 ${save.bestStage}스테이지 · 영구 강화 ${Math.round(treeProgress(save) * 100)}%`),
       el("p", "small keys", `이동 WASD/방향키 · ${ballMode ? "조준 마우스 · 던지기 클릭 · 공 바꾸기 오른쪽 클릭/Q · " : ""}휘슬 Space · 일시정지 Esc · 카드 1/2/3`),
     ],
