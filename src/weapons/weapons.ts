@@ -179,7 +179,8 @@ function fireDirectional(g: Game, w: WeaponInstance, buf: number[]): number {
   if (candidates.length === 0) return -1;
   const knock = knockOf(g, w.level);
   for (const c of candidates) {
-    launch(c.e, p.faceX, p.faceY, knock, src(w.level));
+    const [dx, dy] = g.ballMode ? kickToward(g, c.e) : [p.faceX, p.faceY];
+    launch(c.e, dx, dy, knock, src(w.level));
     damage(g, c.e, w.level.damage);
   }
   firedIds = candidates.map((c) => c.e.id);
@@ -191,6 +192,29 @@ function fireDirectional(g: Game, w: WeaponInstance, buf: number[]): number {
     }
   }
   return candidates.length;
+}
+
+/**
+ * 색 공 규칙의 킥 방향: 이동 방향 ±kickAim° 안, 500px 안의 가장 가까운 같은 색 적 쪽 (없으면 이동 방향).
+ * 킥이 같은 색 무리를 흩뜨려 공이 노릴 곳을 없애던 문제 (11/23 서브 세션 측정) → 오히려 무리를 만든다.
+ */
+function kickToward(g: Game, e: Enemy): [number, number] {
+  const p = g.player;
+  const lim = Math.cos((RULES.ball.kickAim * Math.PI) / 180);
+  if (RULES.ball.kickAim <= 0) return [p.faceX, p.faceY];
+  let best: Enemy | null = null;
+  let bestD = 500;
+  for (const o of g.enemies) {
+    if (o === e || o.dead || o.rank !== "normal" || (o.color !== e.color && o.color !== "rainbow")) continue;
+    const dx = o.x - e.x;
+    const dy = o.y - e.y;
+    const d = Math.hypot(dx, dy);
+    if (d < 1e-6 || d >= bestD || (dx * p.faceX + dy * p.faceY) / d < lim) continue;
+    best = o;
+    bestD = d;
+  }
+  if (!best) return [p.faceX, p.faceY];
+  return [(best.x - e.x) / bestD, (best.y - e.y) / bestD];
 }
 
 /** 범위 안에서 가장 많은 매치 색 (동률이면 MATCH_COLORS 순서) */

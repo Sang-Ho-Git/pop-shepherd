@@ -28,6 +28,10 @@ function scaleArena(f: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 색 공 규칙 킥 조준 끄기 (11/23 밤 이전) */
+  noKickAim: () => {
+    (RULES.ball as { kickAim: number }).kickAim = 0;
+  },
   /** 양치기 이동 속도 1.0 → 1.1 */
   shepSpd11: () => {
     CHARACTERS.shepherd!.stats.move_speed = 1.1;
