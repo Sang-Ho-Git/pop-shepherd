@@ -3,7 +3,8 @@ import { RULES } from "../src/core/rules.ts";
 import type { Card, Game, Input } from "../src/core/types.ts";
 import { CAMPAIGN, CHARACTERS, META, PASSIVES, SHOP, stage, WEAPONS } from "../src/data/index.ts";
 import type { MetaNode } from "../src/data/index.ts";
-import { needsBranch, resolveChoice, xpTotalFor } from "../src/progression/levelup.ts";
+import { botChooseBranch, botChooseCard, needsBranch, resolveChoice, xpTotalFor } from "../src/progression/levelup.ts";
+import { botInput } from "../src/sim/bot.ts";
 import { applyMeta, coinsForRun, isUnlocked, nextCost } from "../src/progression/meta.ts";
 import type { MetaSpecials } from "../src/progression/meta.ts";
 import { browserStore, loadSave, recordRun, spendOnMeta, treeProgress, writeSave } from "../src/progression/save.ts";
@@ -516,6 +517,7 @@ function aimPoint(): { x: number; y: number } | null {
 }
 
 function readInput(): Input {
+  if (auto && g) return botInput(g);
   let x = 0;
   let y = 0;
   if (keys.has("KeyA") || keys.has("ArrowLeft")) x -= 1;
@@ -729,16 +731,17 @@ function frame(now: number): void {
   if (g && screen === "play") {
     if (hitStop > 0) hitStop = Math.max(0, hitStop - dt);
     else if (!paused && g.choices.length === 0) {
-      acc += dt;
+      acc += dt * (auto?.speed ?? 1);
       let n = 0;
-      while (acc >= DT && n < 5) {
+      const maxSteps = 5 * (auto?.speed ?? 1);
+      while (acc >= DT && n < maxSteps) {
         step(g, readInput());
         handleEvents(g);
         acc -= DT;
         n++;
         if (g.choices.length > 0 || g.phase === "cleared" || g.phase === "failed") break;
       }
-      if (n >= 5) acc = 0;
+      if (n >= maxSteps) acc = 0;
     }
     if (g.choices.length > 0 && !choiceShown && !paused) renderChoice();
     if (g.choices.length === 0 && !paused) {
@@ -746,6 +749,7 @@ function frame(now: number): void {
       else if (g.phase === "failed" || g.player.dead) finishRun(false);
     }
   }
+  if (auto) autoTick(dt);
   for (const f of fx) f.t += dt;
   fx = fx.filter((f) => f.t < f.life);
   if (banner) banner.t -= dt;
@@ -825,6 +829,121 @@ function frame(now: number): void {
   requestAnimationFrame(frame);
 }
 
+/* ───────────────────────── 자동 플레이 (점검용) ───────────────────────── */
+
+/**
+ * 자동 플레이: 주소가 #auto 로 시작하면 봇이 실제 화면에서 런을 한다 (조작·카드·갈래·상점 버튼까지 실제 UI로).
+ * #auto-cue-s15-x4 처럼 캐릭터, 시작 스테이지(s), 속도 배율(x)을 붙일 수 있다. 시험 판이라 기록에 남지 않는다.
+ * 점검 도구(Playwright)는 window.__pop 으로 상태를 읽는다.
+ */
+interface AutoState {
+  character: string;
+  stage: number;
+  speed: number;
+  /** 다음 UI 동작까지 남은 시간 (사람처럼 조금 기다렸다 누른다) */
+  wait: number;
+  runs: number;
+}
+let auto: AutoState | null = null;
+
+interface PopDebug {
+  screen: string;
+  stage: number;
+  time: number;
+  hp: number;
+  maxHp: number;
+  level: number;
+  enemies: number;
+  balls: number;
+  fps: number;
+  result: { won: boolean; reached: number; level: number } | null;
+  runs: number;
+  log: string[];
+}
+const dbg: PopDebug = { screen: "", stage: 0, time: 0, hp: 0, maxHp: 0, level: 0, enemies: 0, balls: 0, fps: 0, result: null, runs: 0, log: [] };
+(globalThis as { __pop?: PopDebug }).__pop = dbg;
+let fpsAcc = 0;
+let fpsN = 0;
+
+function parseAuto(): AutoState | null {
+  const m = /^#auto(.*)$/.exec(location.hash);
+  if (!m) return null;
+  const st: AutoState = { character: "olly", stage: 1, speed: 1, wait: 0.5, runs: 0 };
+  for (const t of (m[1] ?? "").split("-").filter(Boolean)) {
+    if (CHARACTERS[t]) st.character = t;
+    else if (/^s\d+$/.test(t)) st.stage = Number(t.slice(1));
+    else if (/^x\d+$/.test(t)) st.speed = Math.max(1, Math.min(8, Number(t.slice(1))));
+  }
+  return st;
+}
+
+/** 오버레이에서 글자가 맞는 버튼 (없으면 null) */
+function overlayButton(pred: (b: HTMLButtonElement) => boolean): HTMLButtonElement | null {
+  return ([...overlay.querySelectorAll("button")] as HTMLButtonElement[]).find((b) => !b.disabled && pred(b)) ?? null;
+}
+
+function autoTick(dt: number): void {
+  const a = auto!;
+  fpsAcc += dt;
+  fpsN++;
+  if (fpsAcc >= 1) {
+    dbg.fps = Math.round(fpsN / fpsAcc);
+    fpsAcc = 0;
+    fpsN = 0;
+  }
+  dbg.screen = screen;
+  dbg.runs = a.runs;
+  if (g) {
+    dbg.stage = run ? run.stageIndex + 1 : dbg.stage;
+    dbg.time = g.time;
+    dbg.hp = g.player.hp;
+    dbg.maxHp = g.player.maxHp;
+    dbg.level = g.player.level;
+    dbg.enemies = g.enemies.filter((e) => !e.dead).length;
+    dbg.balls = g.balls.length;
+  }
+  a.wait -= dt;
+  if (a.wait > 0) return;
+  a.wait = 0.4 / a.speed;
+  if (screen === "play" && g && choiceShown && g.choices[0]) {
+    // 카드 고르기 또는 갈래 고르기: 봇이 고른 번호의 실제 버튼을 누른다
+    const branchScreen = overlay.textContent?.includes("갈래를 고른다");
+    let idx: number;
+    if (branchScreen) {
+      const c = g.choices[0].cards.find((x) => x.kind === "weaponUp" && needsBranch(g!, x));
+      const w = c && c.kind === "weaponUp" ? g.weapons.find((x) => x.def.id === c.id) : undefined;
+      idx = w && botChooseBranch(w, g) === "B" ? 1 : 0;
+    } else idx = botChooseCard(g.choices[0].cards, g);
+    const btn = overlay.querySelector(`button[data-key="${idx + 1}"]`) as HTMLButtonElement | null;
+    if (btn) {
+      dbg.log.push(`${dbg.stage}스테이지 ${g.time.toFixed(0)}초 Lv${g.player.level}: ${btn.querySelector("strong")?.textContent ?? "?"}`);
+      btn.click();
+    } else dbg.log.push(`오류: 카드 버튼 ${idx + 1}이 없음`);
+    return;
+  }
+  if (screen === "shop") {
+    // 살 수 있는 첫 품목을 사고, 없으면 다음 스테이지로
+    const card = overlayButton((b) => b.classList.contains("card"));
+    if (card) {
+      dbg.log.push(`상점: ${card.querySelector("strong")?.textContent ?? "?"}`);
+      card.click();
+      return;
+    }
+    overlayButton((b) => /^스테이지 \d+로$/.test(b.textContent ?? ""))?.click();
+    return;
+  }
+  if (screen === "result") {
+    if (!dbg.result) {
+      const lede = overlay.querySelector(".lede")?.textContent ?? "";
+      const won = overlay.textContent?.includes("런 완주") ?? false;
+      const reached = Number(/클리어 (\d+)/.exec(lede)?.[1] ?? 0);
+      dbg.result = { won, reached, level: Number(/Lv(\d+)/.exec(lede)?.[1] ?? 0) };
+      dbg.log.push(`결과: ${won ? "완주" : "실패"} · ${lede}`);
+      a.runs++;
+    }
+  }
+}
+
 /** 시험 판에서 고를 캐릭터 (스테이지 시험 화면) */
 let devChar = "shepherd";
 
@@ -887,5 +1006,7 @@ addEventListener("hashchange", () => {
   if (devStart()) return;
 });
 
-if (!devStart()) renderTitle();
+auto = parseAuto();
+if (auto) devBegin(auto.character, auto.stage);
+else if (!devStart()) renderTitle();
 requestAnimationFrame(frame);
