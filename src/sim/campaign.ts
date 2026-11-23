@@ -36,6 +36,8 @@ export interface StageResult {
   xpGained: number;
   pops: number;
   avgChain: number;
+  /** 가장 긴 연쇄 (단계 수) */
+  maxChain: number;
   alivePeak: number;
   weapons: string;
   passives: string;
@@ -182,6 +184,7 @@ export function runCampaign(seed: number, characterId: string, stages: string[] 
       xpGained: s.xp - xpStart,
       pops: s.pops,
       avgChain: s.rootPops > 0 ? s.pops / s.rootPops : 0,
+      maxChain: s.maxChain,
       alivePeak: s.alivePeak,
       weapons: g.weapons.map((w) => `${w.def.id}${w.level.lv}${w.level.branch ?? ""}`).join(" "),
       passives: Object.entries(g.player.passives).map(([k, v]) => `${k}${v}`).join(" "),

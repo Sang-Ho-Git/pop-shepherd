@@ -28,6 +28,10 @@ function scaleArena(f: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 연쇄 배율 상한 끄기 (11/23 밤 이전) */
+  chainCapOff: () => {
+    (RULES.chain as { maxDepth: number }).maxDepth = 999;
+  },
   /** 스테이지 4·5 접촉 피해 배율 ×0.9 (초반 벽 완화) */
   st45soft: () => {
     for (const k of ["stage04", "stage05"]) STAGES[k]!.contactMul = Math.round(STAGES[k]!.contactMul! * 0.9 * 100) / 100;

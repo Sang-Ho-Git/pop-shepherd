@@ -17,3 +17,12 @@ describe("화면 모드 선택지 (11/23 밤 점검에서 찾은 버그)", () =>
     if (g.choices[0]) expect(() => resolveChoice(g, 0)).not.toThrow();
   });
 });
+
+describe("연쇄 배율 상한 (11/23 밤 실시간 점검: 레벨이 몇 초 만에 600을 넘음)", () => {
+  it("깊은 연쇄도 배율은 maxDepth 단계에서 멈춘다", async () => {
+    const { chainMultiplier } = await import("../src/combat/pops.ts");
+    const { RULES } = await import("../src/core/rules.ts");
+    expect(chainMultiplier(30)).toBe(chainMultiplier(RULES.chain.maxDepth));
+    expect(chainMultiplier(3)).toBeCloseTo(1.5 ** 3);
+  });
+});

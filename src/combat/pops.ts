@@ -5,7 +5,8 @@ import { SHOP } from "../data/index.ts";
 
 /** 연쇄 단계 depth의 경험치 배율 */
 export function chainMultiplier(depth: number): number {
-  return Math.pow(RULES.chain.xpPerStep, depth);
+  // 상한: 깊은 연쇄가 끝없이 이어지면 배율이 1.5^30 넘게 커져 레벨이 몇 초 만에 600을 넘었다 (11/23 밤 실시간 점검)
+  return Math.pow(RULES.chain.xpPerStep, Math.min(depth, RULES.chain.maxDepth));
 }
 
 /** 팝 충격파 반경 (캐릭터 chain_radius 배율 적용 전) */
