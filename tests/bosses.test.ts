@@ -185,3 +185,14 @@ describe("엘리트·보스는 즉시 팝 효과에도 끼지 않는다", () => 
     expect(boss.dead).toBe(false);
   });
 });
+
+describe("엘리트·보스 속도", () => {
+  it("보스는 출현 구간 속도 배율을 받지 않고, 엘리트는 1.3배까지만", () => {
+    const g = createGame({ seed: 1, character: character("shepherd"), enemyDefs: ENEMIES, stage: stage("stage15") });
+    g.time = 150;
+    const boss = spawnEnemy(g, "rainbow_shepherd", "red", 100, 100);
+    const elite = spawnEnemy(g, "chief_jelly", "red", 200, 100);
+    expect(boss.speed).toBe(ENEMIES.rainbow_shepherd!.speed);
+    expect(elite.speed).toBeCloseTo(ENEMIES.chief_jelly!.speed * RULES.boss.eliteSpeedCap);
+  });
+});
