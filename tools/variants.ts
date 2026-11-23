@@ -9,8 +9,38 @@ function paintCooldown(mul: number): void {
   for (const l of WEAPONS.paint_gun!.levels) l.cooldown = Math.round(l.cooldown * mul * 100) / 100;
 }
 
+/** 아레나 크기 배율: 울타리와 지형(바위 자리, 개울 높이)을 같이 줄인다. 바위 크기는 그대로 */
+function scaleArena(f: number): void {
+  const a = RULES.arena as { w: number; h: number };
+  a.w = Math.round(a.w * f);
+  a.h = Math.round(a.h * f);
+  for (const st of Object.values(STAGES)) {
+    for (const r of st.rocks ?? []) {
+      r.x = Math.round(r.x * f);
+      r.y = Math.round(r.y * f);
+    }
+    for (const sm of st.streams ?? []) {
+      sm.y = Math.round(sm.y * f);
+      sm.h = Math.round(sm.h * f);
+    }
+  }
+}
+
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 아레나 1920×1080 (지금 2560×1440의 0.75배) */
+  arena75: () => scaleArena(0.75),
+  /** 아레나 1600×900 (0.625배) */
+  arena62: () => scaleArena(0.625),
+  /** 당구 튕김 없이 (다른 색에 맞으면 공이 사라지던 예전 방식) */
+  noCarom: () => {
+    (RULES.ball as { carom: boolean }).carom = false;
+  },
+  /** 아레나 0.75배 + 당구 튕김 없이 */
+  arena75noCarom: () => {
+    scaleArena(0.75);
+    (RULES.ball as { carom: boolean }).carom = false;
+  },
   /** 무지개 양치기 체력 12000 → 10000 */
   boss15Hp10k: () => {
     ENEMIES.rainbow_shepherd!.hp = 10000;

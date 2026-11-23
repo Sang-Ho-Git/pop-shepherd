@@ -1,6 +1,7 @@
 import { RULES } from "../src/core/rules.ts";
 import type { Color, Enemy, Game } from "../src/core/types.ts";
 import { BLADE_RADIUS } from "../src/weapons/weapons.ts";
+import { predictBallPath } from "../src/combat/ball.ts";
 
 /**
  * 캔버스 그리기. 시뮬 상태를 읽기만 한다.
@@ -43,8 +44,10 @@ export interface Fx {
 export interface Aim {
   x: number;
   y: number;
-  /** 조준선을 그리는지 (스테이지 1은 늘, 2~3은 처음 25초, 그 뒤로는 없음) */
+  /** 조준선을 그리는지 (스테이지 1은 늘, 2~3은 처음 25초, 그 뒤로는 없음. 큐는 늘) */
   line: boolean;
+  /** 조준선이 보여 주는 쿠션 수 (큐는 3, 나머지는 1) */
+  cushions: number;
   /** 지금 공과 같은 색으로 2마리 이상 닿은 무리 (반짝임) */
   ready: Set<number>;
 }
@@ -291,18 +294,31 @@ export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: F
     ctx.arc(x, y - 24 * v.scale, 8 * v.scale, 0, Math.PI * 2);
     ctx.fill();
   }
-  // 반사벽
+  // 반사벽: 공과 날아온 양이 튕기는 단단한 쿠션 (캐릭터는 지나간다). 어두운 테두리 + 밝은 면 + 양끝 기둥
   for (const w of g.walls) {
     const [x1, y1] = toScreen(v, w.x1, w.y1);
     const [x2, y2] = toScreen(v, w.x2, w.y2);
-    ctx.strokeStyle = w.boost > 1 ? "#ff9f43" : "#9fe3ff";
+    const core = w.boost > 1 ? "#ff9f43" : "#9fe3ff";
     ctx.globalAlpha = Math.min(1, w.t / 0.6);
-    ctx.lineWidth = 7 * v.scale;
     ctx.lineCap = "round";
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 14 * v.scale;
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
     ctx.stroke();
+    ctx.strokeStyle = core;
+    ctx.lineWidth = 8 * v.scale;
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(255,255,255,0.7)";
+    ctx.lineWidth = 2 * v.scale;
+    ctx.stroke();
+    ctx.fillStyle = INK;
+    for (const [qx, qy] of [[x1, y1], [x2, y2]] as const) {
+      ctx.beginPath();
+      ctx.arc(qx, qy, 8 * v.scale, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.globalAlpha = 1;
   }
   // 바닥 아이템
@@ -381,6 +397,16 @@ export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: F
   // 날아가는 색 공
   for (const b of g.balls) {
     const [x, y] = toScreen(v, b.x, b.y);
+    // 꼬리: 빠를수록 길다 (굴러가며 느려지는 게 보이게)
+    ctx.strokeStyle = PALETTE[b.color];
+    ctx.globalAlpha = 0.35;
+    ctx.lineWidth = RULES.ball.radius * 1.4 * v.scale;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - b.vx * 0.045 * v.scale, y - b.vy * 0.045 * v.scale);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
     ctx.fillStyle = PALETTE[b.color];
     ctx.beginPath();
     ctx.arc(x, y, RULES.ball.radius * v.scale, 0, Math.PI * 2);
@@ -398,15 +424,26 @@ export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: F
   if (aim && g.ball) {
     const ang = Math.atan2(aim.y - p.y, aim.x - p.x);
     if (aim.line) {
-      const reach = RULES.ball.range * v.scale;
-      ctx.strokeStyle = g.ball.cd > 0 ? "rgba(244,239,225,0.18)" : "rgba(244,239,225,0.45)";
+      // 당구 조준선: 쿠션(울타리·바위·반사벽)에서 꺾이는 길을 미리 보여 준다. 꺾인 곳마다 작은 점
+      const pts = predictBallPath(g, ang, aim.cushions);
+      ctx.strokeStyle = g.ball.cd > 0 ? "rgba(244,239,225,0.18)" : "rgba(244,239,225,0.5)";
       ctx.setLineDash([6 * v.scale, 8 * v.scale]);
       ctx.lineWidth = 2 * v.scale;
       ctx.beginPath();
       ctx.moveTo(px, py);
-      ctx.lineTo(px + Math.cos(ang) * reach, py + Math.sin(ang) * reach);
+      for (const q of pts.slice(1)) {
+        const [qx, qy] = toScreen(v, q.x, q.y);
+        ctx.lineTo(qx, qy);
+      }
       ctx.stroke();
       ctx.setLineDash([]);
+      ctx.fillStyle = "#9fe3ff";
+      for (const q of pts.slice(1, -1)) {
+        const [qx, qy] = toScreen(v, q.x, q.y);
+        ctx.beginPath();
+        ctx.arc(qx, qy, 4 * v.scale, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
     const hx = px + Math.cos(ang) * (pr + 12 * v.scale);
     const hy = py + Math.sin(ang) * (pr + 12 * v.scale);

@@ -101,6 +101,8 @@ export function createGame(cfg: GameConfig): Game {
       chestsOpened: 0,
       ballsThrown: 0,
       ballPops: 0,
+      cushionPops: 0,
+      threeCushions: 0,
       popsBy: {},
       damageTaken: 0,
       damageFromSpecial: 0,

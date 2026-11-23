@@ -557,7 +557,14 @@ function handleEvents(game: Game): void {
         sfx.pop(e.size, e.chainDepth);
         if (e.chainDepth >= 1 || e.size >= 5) hitStop = Math.max(hitStop, Math.min(0.09, 0.04 + e.chainDepth * 0.015 + Math.max(0, e.size - 4) * 0.01));
         if (e.chainDepth >= 1) fx.push({ kind: "text", x: e.x, y: e.y, t: 0, life: 0.9, color: "#fff3c4", text: `연쇄 ${e.chainDepth + 1}` });
-        else if (e.cushion) fx.push({ kind: "text", x: e.x, y: e.y, t: 0, life: 0.9, color: "#9fe3ff", text: "쿠션!" });
+        else if (e.cushions >= 3) {
+          // 쓰리쿠션: 가장 큰 보너스. 크게 알리고 화면을 더 흔든다
+          fx.push({ kind: "text", x: e.x, y: e.y, t: 0, life: 1.4, color: "#ffcf5a", text: `${e.cushions}쿠션! +${Math.round((RULES.ball.cushionBonus[3] ?? 0) * 100)}%` });
+          shake = Math.min(18, shake + 6);
+          hitStop = Math.max(hitStop, 0.08);
+        } else if (e.cushions >= 1) {
+          fx.push({ kind: "text", x: e.x, y: e.y, t: 0, life: 1, color: "#9fe3ff", text: `${e.cushions}쿠션 +${Math.round((RULES.ball.cushionBonus[e.cushions] ?? 0) * 100)}%` });
+        } else if (e.cushion) fx.push({ kind: "text", x: e.x, y: e.y, t: 0, life: 0.9, color: "#9fe3ff", text: "쿠션!" });
         break;
       }
       case "player-hit":
@@ -607,6 +614,7 @@ function handleEvents(game: Game): void {
       case "ball-cushion":
         sfx.stick();
         fx.push({ kind: "ring", x: e.x, y: e.y, t: 0, life: 0.25, color: "#9fe3ff", radius: 26 });
+        fx.push({ kind: "text", x: e.x, y: e.y - 18, t: 0, life: 0.6, color: e.n >= 3 ? "#ffcf5a" : "#9fe3ff", text: String(e.n) });
         break;
       case "ball-miss":
         fx.push({ kind: "ring", x: e.x, y: e.y, t: 0, life: 0.25, color: "rgba(244,239,225,0.6)", radius: 20 });
@@ -762,15 +770,18 @@ function frame(now: number): void {
       if (!aimCache || aimTick % 6 === 0) {
         const ready = new Set<number>();
         for (const c of readyClusters(g, g.ball.current, 2)) for (const id of c.ids) ready.add(id);
-        aimCache = { x: 0, y: 0, ready, line: true };
+        aimCache = { x: 0, y: 0, ready, line: true, cushions: 1 };
       }
       const a = aimPoint();
       if (a && aimCache) {
         aimCache.x = a.x;
         aimCache.y = a.y;
-        // 조준 가이드: 스테이지 1은 끝까지, 2~3은 처음 25초만, 그 뒤로는 손에 든 공만 보인다
+        // 조준 가이드: 스테이지 1은 끝까지, 2~3은 처음 25초만, 그 뒤로는 손에 든 공만 보인다.
+        // 큐(당구사)는 늘 보이고 쿠션 3번까지 꺾인 길을 보여 준다
         const si = run?.stageIndex ?? 0;
-        aimCache.line = si === 0 || (si <= 2 && g.time < AIM_GUIDE_SECONDS);
+        const cue = g.player.trait === "three_cushion";
+        aimCache.line = cue || si === 0 || (si <= 2 && g.time < AIM_GUIDE_SECONDS);
+        aimCache.cushions = cue ? 3 : 1;
       }
     } else aimCache = null;
     drawWorld(ctx, g, sv, fx, clock, aimCache);

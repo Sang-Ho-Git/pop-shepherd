@@ -39,16 +39,19 @@ describe("색 공 던지기 (실험 규칙)", () => {
     expect(g.enemies.filter((e) => e.color === "blue")).toHaveLength(2);
   });
 
-  it("다른 색에 맞으면 살짝 밀기만 하고(날리지 않음) 공은 사라진다", () => {
+  it("다른 색에 맞으면 적은 살짝 밀리기만 하고(날리지 않음) 공은 당구처럼 튕겨 느려진다", () => {
     const g = ballGame();
     g.ball!.current = "green";
     const { x, y } = g.player;
     const e = put(g, "yellow", x + 200, y);
     step(g, throwAt(x + 200, y));
-    run(g, 20);
+    const events = run(g, 12);
+    expect(events.some((ev) => ev.type === "ball-bounce")).toBe(true);
     expect(e.x).toBeGreaterThan(x + 205);
     expect(e.state).toBe("walk");
-    expect(g.balls).toHaveLength(0);
+    const b = g.balls[0]!;
+    expect(b.vx).toBeLessThan(0); // 되돌아 온다
+    expect(Math.hypot(b.vx, b.vy)).toBeLessThan(RULES.ball.speed * RULES.ball.caromKeep);
   });
 
   it("섞인 무리에서 다른 색을 맞혀도 뒤의 같은 색이 반동으로 터지지 않는다 (버그 수정)", () => {
@@ -128,15 +131,50 @@ describe("색 공 울타리 쿠션", () => {
     expect(pops(events)[0]).toMatchObject({ cushion: true });
   });
 
-  it("두 번째 울타리에서는 사라진다 (큐는 한 번 더)", () => {
+  it("굴러가며 느려지다 멈추면 사라진다 (쿠션마다 속도를 잃는다)", () => {
     const g = ballGame();
-    g.player.x = 60;
-    g.player.y = 60;
     g.ball!.current = "blue";
-    step(g, throwAt(0, 0));
-    const events = run(g, 60);
-    expect(events.filter((e) => e.type === "ball-cushion")).toHaveLength(1);
+    step(g, throwAt(g.player.x + 100, g.player.y - 40));
+    const events = run(g, 240);
     expect(events.some((e) => e.type === "ball-miss")).toBe(true);
+    expect(g.balls).toHaveLength(0);
+  });
+
+  it("쿠션을 많이 거친 팝일수록 경험치를 더 준다 (3쿠션 이상이 가장 크다)", async () => {
+    const { popCluster } = await import("../src/combat/pops.ts");
+    const xpOf = (cushions: number): number => {
+      const g = ballGame();
+      const a = put(g, "red", 400, 400);
+      put(g, "red", 428, 400);
+      put(g, "red", 456, 400);
+      const before = g.stats.xp;
+      popCluster(g, [0, 1, 2].map((k) => g.enemies.length - 3 + k), a, "red", { by: "ball", cushions });
+      return g.stats.xp - before;
+    };
+    const [x0, x1, x3] = [xpOf(0), xpOf(1), xpOf(3)];
+    expect(x1).toBeCloseTo(x0 * (1 + RULES.ball.cushionBonus[1]!));
+    expect(x3).toBeCloseTo(x0 * (1 + RULES.ball.cushionBonus[3]!));
+  });
+
+  it("반사벽에서도 튕긴다 (쿠션으로 센다)", () => {
+    const g = ballGame();
+    const { x, y } = g.player;
+    g.walls.push({ x1: x + 150, y1: y - 100, x2: x + 150, y2: y + 100, t: 5, weapon: g.weapons[0]!, boost: 1, aimAssist: false, shock: 0 });
+    g.ball!.current = "blue";
+    step(g, throwAt(x + 300, y));
+    const events = run(g, 20);
+    expect(events.filter((e) => e.type === "ball-cushion")).toHaveLength(1);
+    expect(g.balls[0]!.vx).toBeLessThan(0);
+  });
+
+  it("조준선 미리보기는 울타리에서 꺾인다", async () => {
+    const { predictBallPath } = await import("../src/combat/ball.ts");
+    const g = ballGame();
+    g.player.x = 100;
+    g.player.y = 300;
+    const pts = predictBallPath(g, Math.PI * 0.9, 2);
+    expect(pts.length).toBeGreaterThanOrEqual(2);
+    expect(Math.min(...pts.map((p) => p.x))).toBeLessThanOrEqual(RULES.ball.radius + 1);
   });
 });
 

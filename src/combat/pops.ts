@@ -47,6 +47,8 @@ export interface PopOptions {
   by?: string;
   /** 쿠션을 거친 팝으로 친다 (울타리에서 튕긴 색 공) */
   cushion?: boolean;
+  /** 색 공이 거친 쿠션 수: 많을수록 경험치·골드 보너스 (RULES.ball.cushionBonus) */
+  cushions?: number;
 }
 
 export function popCluster(g: Game, indices: number[], trigger: Enemy, color: MatchColor, opts: PopOptions = {}): void {
@@ -71,11 +73,19 @@ export function popCluster(g: Game, indices: number[], trigger: Enemy, color: Ma
   const cushion = trigger.wallBounces > 0 || opts.cushion === true;
   const master = cushion && g.player.trait === "three_cushion";
   if (master) xp *= 1 + RULES.threeCushion.xpBonus;
+  const cushions = opts.cushions ?? (cushion ? 1 : 0);
+  const cb = RULES.ball.cushionBonus;
+  const bonus = opts.cushions ? 1 + (cb[Math.min(opts.cushions, cb.length - 1)] ?? 0) : 1;
+  xp *= bonus;
+  if (opts.cushions) {
+    g.stats.cushionPops++;
+    if (opts.cushions >= 3) g.stats.threeCushions++;
+  }
   g.stats.xp += xp;
-  dropGold(g, cx, cy, n * SHOP.goldPerPop * (1 + g.player.stats.gold_find), n);
+  dropGold(g, cx, cy, n * SHOP.goldPerPop * (1 + g.player.stats.gold_find) * bonus, n);
   recordPop(g, n, depth);
   g.stats.popsBy[by] = (g.stats.popsBy[by] ?? 0) + n;
-  g.events.push({ type: "pop", ids, size: n, color, chainDepth: depth, xp, cushion, x: cx, y: cy });
+  g.events.push({ type: "pop", ids, size: n, color, chainDepth: depth, xp, cushion, cushions, x: cx, y: cy });
 
   const radius = popShockRadius(n) * g.player.stats.chain_radius * (master ? 1 + RULES.threeCushion.shockBonus : 1) * popShockMul(g);
   // 엘리트·보스는 곁의 팝에 피해를 입는다 (충격파가 없는 압축 팝도 같은 반경으로 친다)
@@ -213,7 +223,7 @@ export function detonateBomb(g: Game, color: MatchColor, x = g.player.x, y = g.p
   recordPop(g, count, 0);
   g.stats.bombPops++;
   g.stats.popsBy.bomb = (g.stats.popsBy.bomb ?? 0) + count;
-  g.events.push({ type: "pop", ids, size: count, color: color as Color, chainDepth: 0, xp, cushion: false, x: cx / count, y: cy / count });
+  g.events.push({ type: "pop", ids, size: count, color: color as Color, chainDepth: 0, xp, cushion: false, cushions: 0, x: cx / count, y: cy / count });
   return count;
 }
 

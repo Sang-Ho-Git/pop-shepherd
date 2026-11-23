@@ -357,7 +357,7 @@ export interface Bomb {
 }
 
 export type GameEvent =
-  | { type: "pop"; ids: number[]; size: number; color: Color; chainDepth: number; xp: number; cushion: boolean; x: number; y: number }
+  | { type: "pop"; ids: number[]; size: number; color: Color; chainDepth: number; xp: number; cushion: boolean; cushions: number; x: number; y: number }
   | { type: "kill"; id: number; xp: number }
   | { type: "bounce"; a: number; b: number }
   | { type: "stick"; a: number; b: number }
@@ -375,7 +375,7 @@ export type GameEvent =
   | { type: "gold-pickup"; amount: number }
   | { type: "ball-throw"; color: MatchColor }
   | { type: "ball-miss"; x: number; y: number }
-  | { type: "ball-cushion"; x: number; y: number }
+  | { type: "ball-cushion"; x: number; y: number; n: number }
   | { type: "ball-swap" }
   | { type: "wind-start"; dx: number; dy: number }
   | { type: "ball-bounce"; id: number; x: number; y: number }
@@ -427,6 +427,9 @@ export interface Stats {
   chestsOpened: number;
   ballsThrown: number;
   ballPops: number;
+  /** 쿠션을 한 번 이상 거친 색 공 팝, 세 번 이상 거친 팝 (쓰리쿠션) */
+  cushionPops: number;
+  threeCushions: number;
   /** 터진 적 수를 일으킨 쪽별로 (연쇄는 처음 일으킨 쪽 몫) */
   popsBy: Record<string, number>;
   /** 받은 접촉 피해 합계, 그중 엘리트·보스에게 받은 것 */
@@ -486,7 +489,8 @@ export interface Game {
   ballMode: boolean;
   ball: { current: MatchColor; next: MatchColor; cd: number } | null;
   /** 날아가는 색 공 */
-  balls: { x: number; y: number; vx: number; vy: number; color: MatchColor; travel: number; bounces: number }[];
+  /** 굴러가는 색 공. bounces = 거친 쿠션 수, lastHit = 마지막으로 맞고 튕긴 적 (바로 또 맞지 않게) */
+  balls: { x: number; y: number; vx: number; vy: number; color: MatchColor; travel: number; bounces: number; lastHit: number }[];
   /** 엘리트·보스가 떨어뜨린 보물 상자 */
   chests: Chest[];
   /** 팝 자리에 떨어진 골드 주머니 */

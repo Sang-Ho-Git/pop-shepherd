@@ -134,21 +134,30 @@ export const RULES = {
   traits: { runnerFlee: 220 },
   /** 맵 기믹: 개울 안 걷는 속도 배율, 안개 시야 반경 (화면) */
   terrain: { streamSlow: 0.6, fogRadius: 380, windWalk: 45, windLaunch: 650, bumperBoost: 1.3, bumperKick: 380, bumperMax: 950 },
-  /** 색 공 던지기 (실험 규칙) */
+  /** 색 공 던지기 (실험 규칙). 당구공처럼 굴러가며 느려지고, 쿠션(울타리·바위·반사벽)에서 튕긴다 */
   ball: {
-    /** 날아가는 속도 (px/s), 공 반지름, 사거리 (px), 쿨다운 (s) */
-    speed: 900,
+    /** 던질 때 속도 (px/s), 이보다 느려지면 멈춰 사라지는 속도, 공 반지름 */
+    speed: 1400,
+    minSpeed: 200,
     radius: 12,
-    range: 520,
+    /** 쿠션 없이 곧게 굴러가는 거리 (px). 감속은 여기서 정한다: 속도가 거리에 비례해 준다 */
+    range: 750,
     cooldown: 0.45,
+    /** 쿠션 한 번 튕길 때 남는 속도 (큐는 쓰리쿠션 특성으로 덜 잃는다), 범퍼는 오히려 빨라진다 */
+    railKeep: 0.9,
+    cueRailKeep: 0.97,
+    bumperBoost: 1.15,
+    /** 다른 색·엘리트·보스에 맞으면 당구공처럼 맞고 튕긴다 (적은 살짝 밀리기만). 남는 속도 */
+    carom: true,
+    caromKeep: 0.7,
     /** 다른 색에 맞았을 때 살짝 밀어내는 거리 (px). 날리지 않는다 */
     nudge: 10,
+    /** 쿠션 수별 팝 보너스 (경험치·골드 +). 0·1·2·3쿠션 이상 */
+    cushionBonus: [0, 0.3, 0.6, 1.2],
     /** 공 색 고르기: 근처에 같은 색끼리 닿은 짝 하나당 가중치 */
     pairWeight: 3,
     /** 모자라서 붙은 공 젤리가 멈춰 있는 시간 (s) */
     stickStun: 1.5,
-    /** 울타리에서 튕기는 횟수 (큐는 쓰리쿠션으로 +1). 튕긴 뒤 터뜨리면 쿠션 팝 */
-    cushions: 1,
   },
   /** 드롭 (보물 상자, 골드 주머니) */
   drops: { pickupRange: 70, goldLifetime: 20, chestPicksElite: 1, chestPicksBoss: 3, chestHealFrac: 0.3 },
