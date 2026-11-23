@@ -28,6 +28,14 @@ function scaleArena(f: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 반사벽 동시 상한 3장 (만화경 삼각형 하나, V자 하나 반) */
+  wallCap3: () => {
+    (RULES.wall as { maxActive: number }).maxActive = 3;
+  },
+  /** 반사벽 동시 상한 6장 */
+  wallCap6: () => {
+    (RULES.wall as { maxActive: number }).maxActive = 6;
+  },
   /** 스테이지 11~15 접촉 피해 배율 ×0.9 (2.7~3.1 → 2.43~2.79) */
   lateContact90: () => {
     for (const k of ["stage11", "stage12", "stage13", "stage14", "stage15"]) STAGES[k]!.contactMul = Math.round(STAGES[k]!.contactMul! * 0.9 * 100) / 100;

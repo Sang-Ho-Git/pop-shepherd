@@ -523,6 +523,8 @@ function fireWall(g: Game, w: WeaponInstance, buf: number[]): number {
   } else {
     g.walls.push(seg(p.x + p.faceX * WALL_AHEAD, p.y + p.faceY * WALL_AHEAD, face + Math.PI / 2));
   }
+  // 상한을 넘으면 오래된 벽부터 치운다 (새 벽이 뒤에 쌓인다)
+  if (g.walls.length > RULES.wall.maxActive) g.walls.splice(0, g.walls.length - RULES.wall.maxActive);
   firedIds = [];
   return 0;
 }
