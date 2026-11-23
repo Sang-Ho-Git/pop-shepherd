@@ -28,6 +28,23 @@ function scaleArena(f: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 큐 체력 80 → 100 */
+  cueHp100b: () => {
+    CHARACTERS.cue!.stats.max_hp = 100;
+  },
+  /** 큐 이동 속도 1.1 → 1.2 */
+  cueSpd12: () => {
+    CHARACTERS.cue!.stats.move_speed = 1.2;
+  },
+  /** 큐 체력 100 + 이동 속도 1.2 */
+  cueHpSpd: () => {
+    CHARACTERS.cue!.stats.max_hp = 100;
+    CHARACTERS.cue!.stats.move_speed = 1.2;
+  },
+  /** 큐의 캐롬을 쿠션으로 세지 않음 (11/23 밤 이전) */
+  noCueCarom: () => {
+    (RULES.ball as { cueCaromCushion: boolean }).cueCaromCushion = false;
+  },
   /** 스테이지 11~15 적 속도 배율 ×0.9 */
   lateSpeed90: () => {
     for (const k of ["stage11", "stage12", "stage13", "stage14", "stage15"]) for (const ph of STAGES[k]!.spawn) ph.speedMul = Math.round((ph.speedMul ?? 1) * 0.9 * 100) / 100;

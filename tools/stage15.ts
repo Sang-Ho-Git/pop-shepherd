@@ -26,7 +26,7 @@ const parts: string[] = [];
 let total = 0;
 for (const ch of ["shepherd", "cue", "olly", "pale"]) {
   const one = builds[ch]![String(stageNo)]!;
-  let won = 0, deathT = 0, deaths = 0, bossLeft = 0, special = 0, dmg = 0;
+  let won = 0, deathT = 0, deaths = 0, bossLeft = 0, special = 0, dmg = 0, bp = 0, cp = 0;
   for (let s = 0; s < n; s++) {
     const list = pool?.[ch];
     const carry = list && list.length ? list[s % list.length]! : one;
@@ -40,10 +40,12 @@ for (const ch of ["shepherd", "cue", "olly", "pale"]) {
       const b = g.enemies.find((e) => e.rank === "boss" && !e.dead);
       bossLeft += b ? b.hp / b.maxHp : 0;
     }
+    bp += g.stats.ballPops;
+    cp += g.stats.cushionPops;
     special += g.stats.damageFromSpecial;
     dmg += g.stats.damageTaken;
   }
   total += won;
-  parts.push(`${ch} ${won}/${n}${deaths ? ` (죽음 ${(deathT / deaths).toFixed(0)}초, 보스 ${((100 * bossLeft) / deaths).toFixed(0)}% 남김)` : ""} 특수피해 ${((100 * special) / Math.max(1, dmg)).toFixed(0)}%`);
+  parts.push(`${ch} ${won}/${n}${deaths ? ` (죽음 ${(deathT / deaths).toFixed(0)}초, 보스 ${((100 * bossLeft) / deaths).toFixed(0)}% 남김)` : ""} 특수피해 ${((100 * special) / Math.max(1, dmg)).toFixed(0)}% 쿠션팝 ${((100 * cp) / Math.max(1, bp)).toFixed(0)}%`);
 }
 console.log(`${variant} 스테이지${stageNo}: ${total}/${n * 4} | ${parts.join(" · ")}`);

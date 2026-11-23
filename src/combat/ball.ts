@@ -322,6 +322,11 @@ function resolveBallHit(g: Game, ball: Game["balls"][number], hitIdx: number): b
     ball.x = e.x + nx * (e.radius + RULES.ball.radius + 0.5);
     ball.y = e.y + ny * (e.radius + RULES.ball.radius + 0.5);
     ball.lastHit = e.id;
+    // 큐(당구사): 공끼리 맞은 것도 쿠션으로 센다
+    if (RULES.ball.cueCaromCushion && g.player.trait === "three_cushion") {
+      ball.bounces++;
+      g.events.push({ type: "ball-cushion", x: ball.x, y: ball.y, n: ball.bounces });
+    }
     return true;
   }
   const group = findCluster(g, hitIdx, hitIdx, ball.color).slice(1);
