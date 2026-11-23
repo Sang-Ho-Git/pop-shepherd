@@ -145,6 +145,10 @@ interface Run {
   carry: Carry | null;
   meta: { character: CharacterDef; specials: MetaSpecials };
   popped: number;
+  /** 런 전체: 가장 긴 연쇄, 쿠션 팝, 3쿠션 이상 팝 (결과 화면) */
+  bestChain: number;
+  cushionPops: number;
+  threeCushions: number;
   seed: number;
   /** 시험 진입로(#stageN)로 시작한 판: 기록·코인에 넣지 않는다 */
   dev?: boolean;
@@ -166,7 +170,7 @@ const AIM_GUIDE_SECONDS = 25;
 
 function startRun(characterId: string): void {
   const meta = applyMeta(CHARACTERS[characterId]!, save.meta);
-  run = { character: characterId, stageIndex: 0, carry: null, meta, popped: 0, seed: (Date.now() >>> 0) % 1_000_000 };
+  run = { character: characterId, stageIndex: 0, carry: null, meta, popped: 0, bestChain: 0, cushionPops: 0, threeCushions: 0, seed: (Date.now() >>> 0) % 1_000_000 };
   beginStage();
 }
 
@@ -229,9 +233,18 @@ function beginStage(): void {
   }
 }
 
+/** 스테이지 하나의 기록을 런 기록에 더한다 */
+function addRunStats(): void {
+  if (!run || !g) return;
+  run.bestChain = Math.max(run.bestChain, g.stats.maxChain);
+  run.cushionPops += g.stats.cushionPops;
+  run.threeCushions += g.stats.threeCushions;
+}
+
 function endStage(): void {
   if (!run || !g) return;
   run.popped += g.stats.poppedEnemies;
+  addRunStats();
   if (run.stageIndex >= CAMPAIGN.length - 1) return finishRun(true);
   shop = openShop(g, { extraSlots: run.meta.specials.shopSlots, freeRerolls: run.meta.specials.freeRerolls });
   screen = "shop";
@@ -248,7 +261,10 @@ function leaveShop(): void {
 
 function finishRun(won: boolean): void {
   if (!run || !g) return;
-  if (!won) run.popped += g.stats.poppedEnemies;
+  if (!won) {
+    run.popped += g.stats.poppedEnemies;
+    addRunStats();
+  }
   const reached = run.stageIndex + (won ? 1 : 0);
   const coins = coinsForRun(reached, run.popped);
   if (!run.dev) {
@@ -261,6 +277,7 @@ function finishRun(won: boolean): void {
     el("p", "eyebrow", won ? "런 완주" : `스테이지 ${run.stageIndex + 1}에서 쓰러짐`),
     el("h1", "", won ? "목장을 지켰다" : "양 떼에 묻혔다"),
     el("p", "lede", `${name} · Lv${g.player.level} · 클리어 ${reached}/${CAMPAIGN.length} · 터뜨린 적 ${run.popped}`),
+    el("p", "small", `가장 긴 연쇄 ${run.bestChain}${g.ball ? ` · 쿠션 팝 ${run.cushionPops} · 3쿠션 이상 ${run.threeCushions}` : ""}`),
     el("p", "coins", run.dev ? "시험 판이라 기록과 코인에 넣지 않았다" : `코인 +${coins}  (보유 ${save.coins})`),
     row([button("영구 강화", () => renderMeta()), button("다시 하기", () => renderSelect(), "btn ghost")]),
   ]);
