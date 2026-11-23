@@ -87,13 +87,14 @@ describe("2.3 영구 강화 트리", () => {
 
   it("능력치 노드는 캐릭터 사본에 더해지고, 원본은 그대로다", () => {
     const base = character("shepherd");
+    const { max_hp: hp0, armor: armor0 } = base.stats;
     const { character: ch, specials } = applyMeta(base, { sturdy: 5, fleece: 2, second_chance: 1, strength: 3, thrift: 2 });
-    expect(ch.stats.max_hp).toBe(125);
-    expect(ch.stats.armor).toBe(2);
+    expect(ch.stats.max_hp).toBe(hp0 * 1.25); // 튼튼한 몸 5단계 = +25%
+    expect(ch.stats.armor).toBe(armor0 + 2);
     expect(ch.stats.knock_power).toBeCloseTo(1.09);
     expect(ch.stats.gold_find).toBeCloseTo(0.1);
     expect(specials.revives).toBe(1);
-    expect(base.stats.max_hp).toBe(100);
+    expect(base.stats.max_hp).toBe(hp0);
   });
 
   it("전부 채우는 비용은 기획(15~20런)에 맞는 범위이고, 코인이 충분하면 트리가 전부 찬다", () => {

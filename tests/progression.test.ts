@@ -62,12 +62,14 @@ describe("2.1 레벨업 카드", () => {
 
   it("패시브는 능력치를 더한다. 털옷은 최대 체력과 현재 체력을 함께 올린다", () => {
     const g = game();
+    // 캐릭터 기본 능력치에서 얼마나 더해지는지 본다
+    const { max_hp: hp0, armor: armor0 } = character("shepherd").stats;
     g.player.hp = 60;
     applyCard(g, { kind: "newPassive", id: "thick_fleece" });
     applyCard(g, { kind: "passiveUp", id: "thick_fleece" });
-    expect(g.player.maxHp).toBe(130);
+    expect(g.player.maxHp).toBe(hp0 + 30);
     expect(g.player.hp).toBe(90);
-    expect(g.player.stats.armor).toBe(2);
+    expect(g.player.stats.armor).toBe(armor0 + 2);
     applyCard(g, { kind: "newPassive", id: "mirror_shard" });
     expect(g.player.stats.cooldown).toBeCloseTo(0.06);
   });
