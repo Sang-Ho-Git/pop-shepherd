@@ -21,6 +21,7 @@ const apply = VARIANTS[variant];
 if (!apply) throw new Error(`알 수 없는 variant: ${variant} (${Object.keys(VARIANTS).join(", ")})`);
 apply();
 let won = 0;
+let final = 0;
 let reached = 0;
 let n = 0;
 const perChar: string[] = [];
@@ -36,9 +37,10 @@ for (const ch of chars) {
       w++;
     }
     reached += r.reached;
+    if (r.stages.length === CAMPAIGN.length && !r.won) final++;
   }
   perChar.push(`${ch} ${w}/${seeds}`);
 }
-console.log(`${variant}${ballMode ? " (색 공)" : ""}  완주 ${won}/${n}  평균 도달 ${(reached / n).toFixed(1)}  | ${perChar.join(" · ")}`);
+console.log(`${variant}${ballMode ? " (색 공)" : ""}  완주 ${won}/${n}  마지막 스테이지 사망 ${final}  평균 도달 ${(reached / n).toFixed(1)}  | ${perChar.join(" · ")}`);
 void ballPops;
 void pops;

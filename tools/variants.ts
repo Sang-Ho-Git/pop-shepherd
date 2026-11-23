@@ -11,6 +11,10 @@ function paintCooldown(mul: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 보스가 살아 있는 동안 일반 소환 3분의 1 (지금 절반) */
+  bossSlow3: () => {
+    (RULES.boss as { spawnSlowdown: number }).spawnSlowdown = 3;
+  },
   /** 상점: 인상률 10% → 6% */
   shopInfl6: () => {
     SHOP.inflation = 0.06;
