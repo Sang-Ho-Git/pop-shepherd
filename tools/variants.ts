@@ -1,6 +1,6 @@
 /** 실험 조건: 데이터·규칙을 메모리에서만 바꾼다 (tools/probe.ts에서 쓴다) */
 import { RULES } from "../src/core/rules.ts";
-import { CHARACTERS, SHOP, STAGES, WEAPONS } from "../src/data/index.ts";
+import { CHARACTERS, ENEMIES, SHOP, STAGES, WEAPONS } from "../src/data/index.ts";
 
 const paint = RULES.paint as { push: boolean; dry: number; toBall: boolean };
 
@@ -11,6 +11,18 @@ function paintCooldown(mul: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 무지개 양치기 체력 12000 → 10000 */
+  boss15Hp10k: () => {
+    ENEMIES.rainbow_shepherd!.hp = 10000;
+  },
+  /** 스테이지 15 접촉 피해 배율 3.1 → 2.9 */
+  st15Contact29: () => {
+    STAGES.stage15!.contactMul = 2.9;
+  },
+  /** 무지개 양치기 소환 4 → 3마리 */
+  boss15Summon3: () => {
+    (ENEMIES.rainbow_shepherd!.params as { summonCount: number }).summonCount = 3;
+  },
   /** 보스가 살아 있는 동안 일반 소환 3분의 1 (지금 절반) */
   bossSlow3: () => {
     (RULES.boss as { spawnSlowdown: number }).spawnSlowdown = 3;
