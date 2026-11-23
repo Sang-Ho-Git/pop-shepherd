@@ -37,7 +37,7 @@ describe("1.5 매치 보상", () => {
     for (let i = 0; i < 4; i++) put(g, "red", 500 + i * 28, 400);
     put(g, "red", 700, 500);
     put(g, "red", 400, 700);
-    put(g, "red", 2000, 300);
+    put(g, "red", 1850, 300);
     put(g, "blue", 600, 600);
     launch(a, 1, 0, 600);
     run(g, 6);
@@ -48,7 +48,7 @@ describe("1.5 매치 보상", () => {
     g.player.y = bomb.y;
     const events = run(g, 1);
     expect(events.some((e) => e.type === "bomb-pickup" && e.count === 2)).toBe(true);
-    expect(g.enemies.map((e) => `${e.color}@${e.x}`)).toEqual(["red@2000", "blue@600"]);
+    expect(g.enemies.map((e) => `${e.color}@${e.x}`)).toEqual(["red@1850", "blue@600"]);
   });
 
   it("연쇄: 팝 충격파에 날아간 적이 일으킨 팝은 1단계, 경험치 ×1.5", () => {
@@ -258,7 +258,7 @@ describe("1.6 막힘 방지", () => {
 
   it("화면 밖의 적은 막힘 시계를 돌리지 않는다 (걸어오는 중)", () => {
     const g = emptyGame();
-    for (let i = 0; i < 5; i++) put(g, "red", 200 + i * 100, 200);
+    for (let i = 0; i < 5; i++) put(g, "red", 150 + i * 75, 150);
     run(g, 20 * RULES.tickHz);
     expect(g.stats.stalls).toBe(0);
   });

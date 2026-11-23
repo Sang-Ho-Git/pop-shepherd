@@ -17,7 +17,8 @@ describe("불변식 (점검 도구로 찾은 버그의 회귀 방지)", () => {
         expect(a.outOfArena, `시드 ${seed} 아레나 이탈`).toBe(0);
         expect(a.overCap, `시드 ${seed} 상한 초과`).toBe(0);
         expect(a.longFlight, `시드 ${seed} 5초 넘는 비행`).toBe(0);
-        expect(a.deepOverlap, `시드 ${seed} 깊은 겹침`).toBeLessThanOrEqual(2);
+        // 11/23 아레나를 0.75배로 줄여 밀도가 약 1.3배: 30틱 표본의 순간 겹침 허용치 2 → 4
+        expect(a.deepOverlap, `시드 ${seed} 깊은 겹침`).toBeLessThanOrEqual(4);
       }
     }, 60_000);
   }

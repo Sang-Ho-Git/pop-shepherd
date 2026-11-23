@@ -9,7 +9,7 @@
     "green"
   ],
   "grayRatio": 0.1,
-  "maxAlive": 250,
+  "maxAlive": 188,
   "enemyHpMul": 1,
   "contactMul": 2.7,
   "spawn": [
@@ -96,8 +96,8 @@
   "fog": true,
   "streams": [
     {
-      "y": 620,
-      "h": 200
+      "y": 465,
+      "h": 150
     }
   ]
 }

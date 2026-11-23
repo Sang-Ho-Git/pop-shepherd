@@ -8,7 +8,7 @@
     "yellow"
   ],
   "grayRatio": 0.04,
-  "maxAlive": 140,
+  "maxAlive": 105,
   "enemyHpMul": 1,
   "contactMul": 1.36,
   "spawn": [
@@ -54,26 +54,26 @@
   ],
   "rocks": [
     {
-      "x": 800,
-      "y": 500,
+      "x": 600,
+      "y": 375,
       "r": 32,
       "bumper": true
     },
     {
-      "x": 1760,
-      "y": 500,
+      "x": 1320,
+      "y": 375,
       "r": 32,
       "bumper": true
     },
     {
-      "x": 800,
-      "y": 940,
+      "x": 600,
+      "y": 705,
       "r": 32,
       "bumper": true
     },
     {
-      "x": 1760,
-      "y": 940,
+      "x": 1320,
+      "y": 705,
       "r": 32,
       "bumper": true
     }

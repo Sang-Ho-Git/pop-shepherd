@@ -9,7 +9,7 @@
     "green"
   ],
   "grayRatio": 0.08,
-  "maxAlive": 160,
+  "maxAlive": 120,
   "enemyHpMul": 1,
   "spawn": [
     {

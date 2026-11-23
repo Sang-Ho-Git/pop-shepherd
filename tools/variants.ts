@@ -9,7 +9,7 @@ function paintCooldown(mul: number): void {
   for (const l of WEAPONS.paint_gun!.levels) l.cooldown = Math.round(l.cooldown * mul * 100) / 100;
 }
 
-/** 아레나 크기 배율: 울타리와 지형(바위 자리, 개울 높이)을 같이 줄인다. 바위 크기는 그대로 */
+/** 아레나 크기 배율 (지금 크기 기준, 11/23부터 1920×1080): 울타리와 지형(바위 자리, 개울 높이)을 같이 줄인다. 바위 크기는 그대로 */
 function scaleArena(f: number): void {
   const a = RULES.arena as { w: number; h: number };
   a.w = Math.round(a.w * f);
@@ -28,6 +28,14 @@ function scaleArena(f: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 굴러가는 거리 750 → 520 (예전 사거리). 11/23부터 아레나가 1920×1080이라 따로 줄이지 않는다 */
+  a75range520: () => {
+    (RULES.ball as { range: number }).range = 520;
+  },
+  /** 당구 튕김 끄기 (아레나는 지금 그대로) */
+  a75noCarom: () => {
+    (RULES.ball as { carom: boolean }).carom = false;
+  },
   /** 아레나 0.75배 + 소환 간격 ×1.25 (넓이가 0.56배라 밀도를 맞춘다) */
   arena75slow: () => {
     scaleArena(0.75);
