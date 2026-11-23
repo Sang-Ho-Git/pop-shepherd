@@ -204,4 +204,28 @@ export const VARIANTS: Record<string, () => void> = {
   shepMagnet: () => {
     CHARACTERS.shepherd!.startWeapon = "magnet_totem";
   },
+  /** 킥 모든 레벨 쿨다운 −30% */
+  kickCd70: () => {
+    for (const l of WEAPONS.kick!.levels) l.cooldown = Math.round(l.cooldown * 0.7 * 100) / 100;
+  },
+  /** 킥 모든 레벨 사거리·원뿔 각 +50% (60 → 90) */
+  kickRange150: () => {
+    for (const l of WEAPONS.kick!.levels) {
+      const p = l.params as Record<string, number>;
+      p.range = p.range! * 1.5;
+      p.coneDeg = p.coneDeg! * 1.5;
+    }
+  },
+  /** 킥 쿨다운 −30% + 사거리 +50% */
+  kickCdRange: () => {
+    VARIANTS.kickCd70!();
+    VARIANTS.kickRange150!();
+  },
+  /** 킥 Lv1~3에서 2마리, Lv4A부터 관통 수 +1 */
+  kickTargets: () => {
+    for (const l of WEAPONS.kick!.levels) {
+      const p = l.params as Record<string, number>;
+      p.maxTargets = p.maxTargets! + 1;
+    }
+  },
 };
