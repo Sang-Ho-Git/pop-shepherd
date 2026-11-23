@@ -117,4 +117,21 @@ export const VARIANTS: Record<string, () => void> = {
   shepPaint: () => {
     CHARACTERS.shepherd!.startWeapon = "paint_gun";
   },
+  /** 큐를 페인트 총으로 시작 */
+  cuePaint: () => {
+    CHARACTERS.cue!.startWeapon = "paint_gun";
+  },
+  /** 큐를 올가미로 시작 */
+  cueLasso: () => {
+    CHARACTERS.cue!.startWeapon = "lasso";
+  },
+  /** 쓰리쿠션 경험치 +100% + 큐 체력 100 */
+  cueXp100Hp100: () => {
+    VARIANTS.cushionXp100!();
+    CHARACTERS.cue!.stats.max_hp = 100;
+  },
+  /** 쓰리쿠션 경험치 +150% */
+  cushionXp150: () => {
+    (RULES.threeCushion as { xpBonus: number }).xpBonus = 1.5;
+  },
 };
