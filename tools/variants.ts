@@ -26,8 +26,35 @@ function scaleArena(f: number): void {
   }
 }
 
+/** 11/24 난이도 실험: 환경 변수 RAMP="spd=0.08,hp=0.3,cap=0.2,int=0.1,from=6,to=14,s15spd=0"
+ * 스테이지 from~to에 (k-from+1)/(to-from+1) 비율로 늘려 to에서 1+값이 되게 한다.
+ * spd: 적 속도, hp: 적 체력, cap: 적 상한, int: 소환 간격을 1/(1+값)으로 줄임 */
+function ramp(): void {
+  const o: Record<string, number> = { spd: 0, hp: 0, cap: 0, int: 0, from: 6, to: 14, s15spd: 0, s15hp: 0, s15int: 0 };
+  for (const kv of (process.env.RAMP ?? "").split(",").filter(Boolean)) {
+    const [k, v] = kv.split("=");
+    o[k!] = Number(v);
+  }
+  const r2 = (x: number) => Math.round(x * 100) / 100;
+  for (let k = o.from!; k <= 15; k++) {
+    const st = STAGES[`stage${String(k).padStart(2, "0")}`]!;
+    const f = k === 15 ? 1 : Math.min(1, (k - o.from! + 1) / (o.to! - o.from! + 1));
+    const spd = k === 15 ? o.s15spd! : o.spd! * f;
+    const hp = k === 15 ? o.s15hp! : o.hp! * f;
+    const int = k === 15 ? o.s15int! : o.int! * f;
+    const cap = k === 15 ? 0 : o.cap! * f;
+    for (const ph of st.spawn) {
+      ph.speedMul = r2((ph.speedMul ?? 1) * (1 + spd));
+      ph.interval = r2(ph.interval / (1 + int));
+    }
+    st.enemyHpMul = r2(st.enemyHpMul * (1 + hp));
+    st.maxAlive = Math.round(st.maxAlive * (1 + cap));
+  }
+}
+
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  ramp,
   /** 스테이지 4 적 상한 112 → 85 */
   st4cap85: () => {
     STAGES.stage04!.maxAlive = 85;
