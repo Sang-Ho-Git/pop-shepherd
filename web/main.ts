@@ -18,6 +18,10 @@ import { computeView, drawWorld, PALETTE } from "./render.ts";
 import type { Aim, Fx, View } from "./render.ts";
 import { readyClusters } from "../src/combat/ball.ts";
 import { isMuted, setMuted, sfx, unlock } from "./audio.ts";
+import devBuildsJson from "./dev-builds.json" with { type: "json" };
+
+/** 시험 진입로 빌드: 봇 런에서 스테이지 N 시작 때 실제로 넘어온 상태 (tools/dev-builds.ts로 만든다) */
+const DEV_BUILDS = devBuildsJson as unknown as Record<string, Record<string, Carry>>;
 
 /* ───────────────────────── 기본 ───────────────────────── */
 
@@ -267,7 +271,7 @@ function renderTitle(): void {
       el("p", "eyebrow", "색깔 몰이 서바이벌"),
       el("h1", "logo", "팝 셰퍼드"),
       el("p", "lede", "같은 색 양을 셋 이상 부딪히면 터진다. 날리고, 몰고, 연쇄로 목장을 지켜라."),
-      row([button("시작", () => renderSelect()), button("영구 강화", () => renderMeta(), "btn ghost")]),
+      row([button("시작", () => renderSelect()), button("영구 강화", () => renderMeta(), "btn ghost"), button("스테이지 시험", () => renderDevPick(), "btn ghost")]),
       row([
         button(`색 공 던지기 규칙: ${ballMode ? "켜짐" : "꺼짐"}`, () => {
           setBallMode(!ballMode);
@@ -821,33 +825,62 @@ function frame(now: number): void {
   requestAnimationFrame(frame);
 }
 
+/** 시험 판에서 고를 캐릭터 (스테이지 시험 화면) */
+let devChar = "shepherd";
+
 /**
- * 시험 진입로: 주소 끝이 #stage1 ~ #stage15이면 올리로 그 스테이지에서 바로 시작한다.
- * 뒤 스테이지라면 그만큼 레벨·무기를 미리 채운다 (봇의 평균 빌드를 흉내 낸 대략값).
+ * 스테이지 시험: 캐릭터와 스테이지를 골라 바로 시작한다. 기록·코인에는 넣지 않는다.
+ * 스테이지 2 이후는 봇 런에서 그 스테이지 시작 때 실제로 가진 레벨·무기·패시브로 시작한다 (체력은 가득).
  */
-function devStart(): boolean {
-  const m = /^#stage(\d{1,2})$/.exec(location.hash);
-  if (!m) return false;
-  const n = Math.min(CAMPAIGN.length, Math.max(1, Number(m[1])));
-  startRun("olly");
-  if (run) run.dev = true;
-  if (!run || n === 1) return true;
+function renderDevPick(): void {
+  screen = "select";
+  const chars = row(
+    CHAR_ORDER.map((id) => button(`${devChar === id ? "● " : ""}${CHAR_NAME[id] ?? id}`, () => {
+      devChar = id;
+      renderDevPick();
+    }, devChar === id ? "btn" : "btn ghost")),
+  );
+  const stages = row(
+    CAMPAIGN.map((id, i) => {
+      const st = stage(id);
+      const boss = st.clear === "boss" ? " (보스)" : st.clear === "elites" ? " (엘리트)" : "";
+      return button(`${i + 1}${boss}`, () => devBegin(devChar, i + 1), i === CAMPAIGN.length - 1 ? "btn" : "btn ghost");
+    }),
+  );
+  const b = DEV_BUILDS[devChar]?.[String(CAMPAIGN.length)];
+  show([
+    el("p", "eyebrow", "시험 판 · 기록에 남지 않음"),
+    el("h2", "", "스테이지 시험"),
+    el("p", "lede", "캐릭터를 고르고 스테이지를 누르면 바로 시작한다. 뒤 스테이지는 봇이 실제로 거기까지 가며 만든 빌드로 시작한다 (체력은 가득)."),
+    chars,
+    stages,
+    el("p", "small", b ? `스테이지 ${CAMPAIGN.length} 빌드: Lv${b.level} · ${b.weapons.map((w) => `${weaponName(w.id)} ${lvText(w.lv)}`).join(", ")}` : ""),
+    el("p", "small", "주소 끝에 #stage15 나 #stage15-cue 를 붙여도 바로 시작한다."),
+    row([button("돌아가기", () => renderTitle(), "btn ghost")]),
+  ]);
+}
+
+/** 시험 판 시작: n번째 스테이지부터 */
+function devBegin(characterId: string, n: number): void {
+  n = Math.min(CAMPAIGN.length, Math.max(1, n));
+  startRun(characterId);
+  if (!run) return;
+  run.dev = true;
+  if (n === 1) return;
+  const carry = DEV_BUILDS[characterId]?.[String(n)];
+  if (!carry) return;
   run.stageIndex = n - 1;
-  const lv = Math.min(7, 1 + n);
-  run.carry = {
-    level: 1 + (n - 1) * 4,
-    xp: xpTotalFor(1 + (n - 1) * 4),
-    hp: CHARACTERS.olly!.stats.max_hp,
-    passives: n >= 4 ? { thick_fleece: Math.min(5, n - 2), shepherd_bell: Math.min(5, n - 3) } : {},
-    weapons: [
-      { id: "lasso", lv: lv >= 4 ? lv : lv, branch: lv >= 4 ? "A" : null },
-      ...(n >= 3 ? [{ id: "shockwave", lv: Math.min(7, n - 1), branch: n - 1 >= 4 ? "A" : null }] : []),
-    ],
-    gold: 0,
-    purchases: 0,
-    revives: 0,
-  };
+  run.carry = structuredClone(carry);
   beginStage();
+  if (g) g.player.hp = g.player.maxHp;
+}
+
+/** 시험 진입로: 주소 끝이 #stage1 ~ #stage15 (또는 #stage15-cue처럼 캐릭터까지)이면 바로 시작한다 */
+function devStart(): boolean {
+  const m = /^#stage(\d{1,2})(?:-(\w+))?$/.exec(location.hash);
+  if (!m) return false;
+  const ch = m[2] && CHARACTERS[m[2]] ? m[2] : "olly";
+  devBegin(ch, Number(m[1]));
   return true;
 }
 addEventListener("hashchange", () => {

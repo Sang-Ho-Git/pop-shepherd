@@ -88,6 +88,8 @@ export interface CampaignOptions {
   shop?: boolean;
   /** 색 공 규칙 (실험) */
   ballMode?: boolean;
+  /** 스테이지 사이마다 다음 스테이지로 넘길 상태를 알려 준다 (시험 진입로용 빌드 만들기) */
+  onCarry?: (nextIndex: number, carry: Carry) => void;
 }
 
 /** 캐릭터의 시작 무기. 동작이 아직 없는 무기(올가미·물감총)는 킥으로 대신한다. */
@@ -217,6 +219,7 @@ export function runCampaign(seed: number, characterId: string, stages: string[] 
       last.evolved = res.evolved;
     }
     carry = carryOf(g);
+    opts.onCarry?.(i + 1, carry);
   }
   const reached = out.filter((r) => r.cleared).length;
   const coins = coinsForRun(reached, out.reduce((a, r) => a + r.popped, 0));
