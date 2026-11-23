@@ -228,4 +228,12 @@ export const VARIANTS: Record<string, () => void> = {
       p.maxTargets = p.maxTargets! + 1;
     }
   },
+  /** 진단: 킥 쿨다운 +50% (덜 자주 찬다) */
+  kickCd150: () => {
+    for (const l of WEAPONS.kick!.levels) l.cooldown = Math.round(l.cooldown * 1.5 * 100) / 100;
+  },
+  /** 진단: 킥 날리는 힘 −30% */
+  kickKnock70: () => {
+    for (const l of WEAPONS.kick!.levels) l.knock = Math.round(l.knock * 0.7);
+  },
 };
