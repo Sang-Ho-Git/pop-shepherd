@@ -28,6 +28,14 @@ function scaleArena(f: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 무지개 양치기 체력 12000 → 9000 */
+  boss15Hp9k: () => {
+    ENEMIES.rainbow_shepherd!.hp = 9000;
+  },
+  /** 스테이지 15 적 상한 188 → 150 */
+  st15cap150: () => {
+    STAGES.stage15!.maxAlive = 150;
+  },
   /** 굴러가는 거리 750 → 520 (예전 사거리). 11/23부터 아레나가 1920×1080이라 따로 줄이지 않는다 */
   a75range520: () => {
     (RULES.ball as { range: number }).range = 520;
