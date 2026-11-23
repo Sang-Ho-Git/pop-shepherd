@@ -3,7 +3,7 @@ import { RULES } from "../src/core/rules.ts";
 import type { Card, Game, Input } from "../src/core/types.ts";
 import { CAMPAIGN, CHARACTERS, META, PASSIVES, SHOP, stage, WEAPONS } from "../src/data/index.ts";
 import type { MetaNode } from "../src/data/index.ts";
-import { botChooseBranch, botChooseCard, needsBranch, resolveChoice, xpTotalFor } from "../src/progression/levelup.ts";
+import { botCardScore, botChooseBranch, botChooseCard, needsBranch, resolveChoice, xpTotalFor } from "../src/progression/levelup.ts";
 import { botInput } from "../src/sim/bot.ts";
 import { applyMeta, coinsForRun, isUnlocked, nextCost } from "../src/progression/meta.ts";
 import type { MetaSpecials } from "../src/progression/meta.ts";
@@ -922,12 +922,23 @@ function autoTick(dt: number): void {
     return;
   }
   if (screen === "shop") {
-    // 살 수 있는 첫 품목을 사고, 없으면 다음 스테이지로
-    const card = overlayButton((b) => b.classList.contains("card"));
-    if (card) {
-      dbg.log.push(`상점: ${card.querySelector("strong")?.textContent ?? "?"}`);
-      card.click();
-      return;
+    // 시뮬의 봇 상점과 같은 점수로 고른다 (체력이 60% 아래면 회복부터). 살 것이 없으면 다음 스테이지로
+    if (g && shop) {
+      const sc = (i: number): number => {
+        const it = shop!.items[i]!;
+        if (it.sold || it.price > g!.player.gold) return 0;
+        if (it.card.kind === "heal") return g!.player.hp < g!.player.maxHp * 0.6 ? 200 : g!.player.hp < g!.player.maxHp * 0.85 ? 30 : 0;
+        return botCardScore(it.card, g!);
+      };
+      let best = -1;
+      for (let i = 0; i < shop.items.length; i++) if (sc(i) > 0 && (best < 0 || sc(i) > sc(best))) best = i;
+      const cards = [...overlay.querySelectorAll("button.card")] as HTMLButtonElement[];
+      const card = best >= 0 ? cards[best] : undefined;
+      if (card && !card.disabled) {
+        dbg.log.push(`상점: ${card.querySelector("strong")?.textContent ?? "?"}`);
+        card.click();
+        return;
+      }
     }
     overlayButton((b) => /^스테이지 \d+로$/.test(b.textContent ?? ""))?.click();
     return;

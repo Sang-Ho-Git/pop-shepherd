@@ -28,6 +28,18 @@ function scaleArena(f: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 스테이지 15 접촉 피해 배율 3.1 → 2.6 */
+  st15Contact26: () => {
+    STAGES.stage15!.contactMul = 2.6;
+  },
+  /** 스테이지 15 소환 간격 ×1.3 */
+  st15Slow: () => {
+    for (const ph of STAGES.stage15!.spawn) ph.interval = Math.round(ph.interval * 1.3 * 100) / 100;
+  },
+  /** 팝이 보스·엘리트에 주는 피해 12 → 18 (마리당) */
+  popDmg18: () => {
+    (RULES.boss as { popDamagePerEnemy: number }).popDamagePerEnemy = 18;
+  },
   /** 무지개 양치기 체력 12000 → 9000 */
   boss15Hp9k: () => {
     ENEMIES.rainbow_shepherd!.hp = 9000;
