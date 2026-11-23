@@ -159,7 +159,7 @@ describe("우유병 (스테이지 안 회복)", () => {
     g.player.hp = 50;
     g.milks.push({ x: g.player.x + 10, y: g.player.y, t: RULES.heal.lifetime });
     run(g, 1);
-    expect(g.player.hp).toBeCloseTo(58);
+    expect(g.player.hp).toBeCloseTo(50 + g.player.maxHp * 0.08);
     expect(g.milks).toHaveLength(0);
     g.player.hp = g.player.maxHp - 2;
     g.milks.push({ x: g.player.x, y: g.player.y, t: RULES.heal.lifetime });

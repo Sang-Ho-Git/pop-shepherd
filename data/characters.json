@@ -4,7 +4,7 @@
     "name": "보정 없음 (테스트용)",
     "startWeapon": "kick",
     "stats": {
-      "max_hp": 100,
+      "max_hp": 120,
       "move_speed": 1,
       "knock_power": 1,
       "cooldown": 0,
@@ -12,7 +12,7 @@
       "chain_radius": 1,
       "direct_dmg": 1,
       "pickup": 1,
-      "armor": 0,
+      "armor": 1,
       "regen": 0,
       "luck": 0,
       "heal_find": 0,
