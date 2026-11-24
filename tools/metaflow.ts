@@ -75,10 +75,19 @@ async function press(p: Page, name: string | RegExp): Promise<void> {
   else await b.click();
 }
 
-async function waitScreen(p: Page, screen: string, timeoutMs: number): Promise<boolean> {
+async function waitScreen(p: Page, screen: string, timeoutMs: number, progress = false): Promise<boolean> {
   const t0 = Date.now();
+  let next = 60_000;
   while (Date.now() - t0 < timeoutMs) {
-    if ((await p.evaluate(() => (globalThis as { __pop?: { screen: string } }).__pop?.screen)) === screen) return true;
+    const d = await p.evaluate(() => {
+      const x = (globalThis as { __pop?: { screen: string; stage: number; time: number; fps: number; level: number } }).__pop!;
+      return { screen: x.screen, stage: x.stage, time: x.time, fps: x.fps, level: x.level };
+    });
+    if (d.screen === screen) return true;
+    if (progress && Date.now() - t0 > next) {
+      next += 60_000;
+      log(`    … ${Math.round((Date.now() - t0) / 1000)}초: 스테이지 ${d.stage} ${Math.round(d.time)}초 Lv${d.level} · ${d.fps}fps`);
+    }
     await p.waitForTimeout(500);
   }
   return false;
@@ -136,13 +145,22 @@ async function flow(): Promise<RunLog[]> {
     // 잠긴 캐릭터 카드는 꺼져 있어야 한다
     const disabled = await p.$$eval("button.char", (bs: HTMLButtonElement[]) => bs.filter((b) => b.disabled).length);
     if (disabled !== 4 - before.unlocked.length) issue(`run${i} 잠긴 카드 수 ${disabled} (열린 ${before.unlocked.length})`);
+    // 앞 판 끝의 능력치가 남아 있지 않게 지운 뒤 시작
+    await p.evaluate(() => {
+      const d = (globalThis as { __pop?: { player: unknown; result: unknown } }).__pop!;
+      d.player = null;
+      d.result = null;
+    });
     await press(p, new RegExp(`^${NAME[ch]}`));
-    // 판 시작 직후 능력치
-    await p.waitForFunction(() => (globalThis as { __pop?: { player: unknown } }).__pop?.player);
+    // 판 시작 직후 능력치 (스테이지 1의 처음 1초 안: 레벨업 전)
+    await p.waitForFunction(() => {
+      const d = (globalThis as { __pop?: { player: unknown; time: number; screen: string } }).__pop!;
+      return d.player && d.screen === "play" && d.time < 1;
+    });
     const got = await p.evaluate(() => (globalThis as { __pop?: { player: unknown } }).__pop!.player);
     const bad = checkStats(before, ch, got);
     if (bad.length) issue(`run${i} ${ch} 능력치: ${bad.join(", ")}`);
-    if (!(await waitScreen(p, "result", 40 * 60_000))) {
+    if (!(await waitScreen(p, "result", 40 * 60_000, true))) {
       issue(`run${i}: 40분 안에 결과 화면이 안 뜸`);
       await shot(p, `stuck-run${i}`, false);
       break;
