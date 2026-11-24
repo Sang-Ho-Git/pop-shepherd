@@ -688,7 +688,20 @@ function readInput(): Input {
 
 /* ───────────────────────── 효과 ───────────────────────── */
 
+/** 자동 플레이 점검용 기록: 보스·엘리트 등장과 처치, 스테이지 끝 (tools/realtime.mjs가 읽는다) */
+function autoLog(game: Game): void {
+  const st = run ? run.stageIndex + 1 : 0;
+  for (const e of game.events) {
+    if (e.type === "boss-spawn") dbg.log.push(`보스 등장 s${st} ${game.time.toFixed(1)}`);
+    else if (e.type === "special-killed") dbg.log.push(`${e.rank === "boss" ? "보스" : "엘리트"} 처치 s${st} ${game.time.toFixed(1)} ${e.kind}`);
+    else if (e.type === "stage-clear") dbg.log.push(`클리어 s${st} ${game.time.toFixed(1)} 체력 ${Math.round(game.player.hp)}/${Math.round(game.player.maxHp)}`);
+    else if (e.type === "player-dead") dbg.log.push(`사망 s${st} ${game.time.toFixed(1)} 공격피해 ${Math.round(game.stats.damageFromAttacks)}/${Math.round(game.stats.damageTaken)}`);
+    else if (e.type === "groggy") dbg.log.push(`그로기 s${st} ${game.time.toFixed(1)} ${e.why}`);
+  }
+}
+
 function handleEvents(game: Game): void {
+  if (auto) autoLog(game);
   for (const e of game.events) {
     switch (e.type) {
       case "pop": {

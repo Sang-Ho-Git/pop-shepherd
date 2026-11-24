@@ -81,6 +81,14 @@ const PATTERNS: Record<string, string[]> = {
   rainbow: ["splash", "fan", "splash", "dash"],
 };
 
+/** 다음에 쓸 공격 (없으면 null). 봇이 돌진을 바위로 유인할 때 본다 */
+export function nextAttack(e: Enemy): string | null {
+  const b = e.boss;
+  const list = b ? PATTERNS[b.ai] : undefined;
+  if (!b || !list || !b.params.atkEvery) return null;
+  return list[b.atkN % list.length] ?? null;
+}
+
 /** 지금 공격 중인지 (예고·돌진): 이때는 걷지 않는다 */
 function busy(g: Game, e: Enemy): boolean {
   const b = e.boss!;

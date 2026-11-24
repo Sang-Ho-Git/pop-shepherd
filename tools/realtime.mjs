@@ -46,6 +46,7 @@ async function one(hash) {
   let lastScreen = "";
   let sameScreen = 0;
   let lastShotAt = 0;
+  const bossShots = {};
   while (Date.now() - start < minutes * 60_000) {
     await p.waitForTimeout(5000);
     const s = await p.evaluate(() => {
@@ -76,6 +77,17 @@ async function one(hash) {
     } else sameScreen = 0;
     lastScreen = s.screen;
     if (s.screen === "play" && s.fps > 0 && s.fps < 40) issues.push({ t: Date.now(), kind: "low-fps", msg: `fps ${s.fps} · 적 ${s.enemies} · 스테이지 ${s.stage}` });
+    // 보스전 장면: 예고·그로기·보호막을 몇 장씩 (가독성 점검용)
+    if (s.screen === "play" && s.boss) {
+      const tag = s.boss === "groggy" ? "그로기" : s.boss === "shield" ? "보호막" : s.hazards > 0 ? "예고" : "";
+      if (tag && (bossShots[tag] ?? 0) < 2) {
+        bossShots[tag] = (bossShots[tag] ?? 0) + 1;
+        // 보스 장면은 문제 스크린샷 한도와 따로 센다
+        const f = `${out}/${hash}-boss-s${s.stage}-${tag}-${bossShots[tag]}.png`;
+        await p.screenshot({ path: f }).catch(() => {});
+        issues.push({ t: Date.now(), kind: "screenshot", why: `보스 ${tag} 스테이지 ${s.stage} ${Math.round(s.time)}초`, file: f });
+      }
+    }
     // 3분마다 기록용 스크린샷
     if (Date.now() - lastShotAt > 180_000) {
       lastShotAt = Date.now();

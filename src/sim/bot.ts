@@ -1,7 +1,7 @@
 import type { Enemy, Game, Input, MatchColor } from "../core/types.ts";
 import { RULES } from "../core/rules.ts";
 import { readyClusters } from "../combat/ball.ts";
-import { inHazard } from "../combat/bosses.ts";
+import { inHazard, nextAttack } from "../combat/bosses.ts";
 
 /**
  * 자동 플레이 봇. 사람보다 서툴지만 매번 같은 방식으로 움직여서 수치 비교의 기준선이 된다.
@@ -14,6 +14,9 @@ import { inHazard } from "../combat/bosses.ts";
  * 6) 색 공: 약점 색 공이면 보스에 바로 던지고, 보호막이면 울타리 쿠션으로 맞힌다 (bossShot).
  * 봇은 난수를 쓰지 않는다. 공간 해시는 지난 틱 기준이라 적 목록을 직접 훑는다.
  */
+/** 봇 동작 스위치 (비교 측정용: tools/variants.ts noLure) */
+export const BOT = { lure: true };
+
 export function botInput(g: Game): Input {
   let move = botMove(g);
   const d = dodge(g);
@@ -260,6 +263,15 @@ function botMove(g: Game): Input {
     }
   }
   if (boss) {
+    // 다음 공격이 돌진이면 바위를 등지고 선다: 보스가 플레이어 쪽으로 달려오다 바위에 박혀 그로기
+    const lure = lureSpot(g, boss);
+    if (lure) {
+      const lx = lure.x - p.x;
+      const ly = lure.y - p.y;
+      const ld = Math.hypot(lx, ly);
+      if (ld > 12) return { moveX: lx / ld + ax * 0.6 + wx, moveY: ly / ld + ay * 0.6 + wy, whistle };
+      return { moveX: ax, moveY: ay, whistle };
+    }
     const dx = p.x - boss.x;
     const dy = p.y - boss.y;
     const d = Math.max(1e-6, Math.hypot(dx, dy));
@@ -287,6 +299,35 @@ function botMove(g: Game): Input {
     }
   }
   return { moveX: ax * 1.5 + tx * 0.7 + wx * 2, moveY: ay * 1.5 + ty * 0.7 + wy * 2, whistle };
+}
+
+/**
+ * 돌진 유인 자리: 보스의 다음 공격이 돌진이고 곧(3초 안) 시작하면, 돌진 거리 안의 바위 중 보스에 가장 가까운 것을 골라
+ * 그 바위의 보스 쪽 바로 앞 (바위 테두리 + 70px). 보스가 그쪽으로 달려오면 옆으로 피하고(dodge) 보스는 바위에 박는다.
+ * 돌진 예고가 이미 깔렸거나 그로기면 null.
+ */
+export function lureSpot(g: Game, boss: Enemy): { x: number; y: number } | null {
+  if (!BOT.lure) return null;
+  const b = boss.boss;
+  if (!b || b.groggy > 0 || b.dashLeft > 0 || nextAttack(boss) !== "dash" || b.atkCd > 3) return null;
+  if (g.hazards.some((h) => h.owner === boss.id)) return null;
+  const reach = (b.params.dashLen ?? 600) + boss.radius;
+  let best: { x: number; y: number } | null = null;
+  let bestD = Infinity;
+  for (const rk of g.stage?.rocks ?? []) {
+    const dx = boss.x - rk.x;
+    const dy = boss.y - rk.y;
+    const d = Math.hypot(dx, dy);
+    // 바위 테두리까지 돌진이 닿아야 하고, 유인 자리가 보스 몸에 붙지 않을 만큼은 떨어져 있어야 한다
+    if (d - rk.r > reach * 0.85 || d - rk.r < boss.radius + 140 || d >= bestD) continue;
+    const gap = rk.r + 70;
+    const x = rk.x + (dx / d) * gap;
+    const y = rk.y + (dy / d) * gap;
+    if (x < 40 || y < 40 || x > g.arena.w - 40 || y > g.arena.h - 40) continue;
+    best = { x, y };
+    bestD = d;
+  }
+  return best;
 }
 
 /** 킥으로 날렸을 때 같은 색 줄에 꽂힐 적 (줄에 같은 색이 가장 많은 것, 동률이면 가까운 것) */
