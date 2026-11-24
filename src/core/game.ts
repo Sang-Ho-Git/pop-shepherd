@@ -95,6 +95,8 @@ export function createGame(cfg: GameConfig): Game {
       bombPops: 0,
       bombDrops: 0,
       wrapUpPopped: 0,
+      bladeVanished: 0,
+      clearXp: 0,
       vanished: 0,
       elitesSpawned: 0,
       elitesKilled: 0,
@@ -214,13 +216,15 @@ function chase(g: Game): void {
   const buf: number[] = [];
   if (cs > 0) rebuildGrid(g);
   for (const e of g.enemies) {
+    if (e.slowT !== undefined && e.slowT > 0) e.slowT = Math.max(0, e.slowT - DT);
     if (e.dead || e.state !== "walk") continue;
     const dx = p.x - e.x;
     const dy = p.y - e.y;
     const d = Math.hypot(dx, dy);
     // 겁쟁이 양: 가까우면 도망간다
     const away = e.trait === "runner" && d < RULES.traits.runnerFlee ? -1 : 1;
-    const sp = e.speed * (inStream(g, e.y) ? RULES.terrain.streamSlow : 1);
+    const slowK = e.slowT ? 1 - (e.slowMul ?? 0) : 1;
+    const sp = e.speed * (inStream(g, e.y) ? RULES.terrain.streamSlow : 1) * slowK;
     e.vx = d < 1e-9 ? 0 : ((away * dx) / d) * sp;
     e.vy = d < 1e-9 ? 0 : ((away * dy) / d) * sp;
     if (cs <= 0 || e.speed <= 0 || e.color === "gray" || e.rank !== "normal") continue;
@@ -239,8 +243,8 @@ function chase(g: Game): void {
     }
     const sl = Math.hypot(sx, sy);
     if (sl > 1e-9) {
-      e.vx += (sx / sl) * cs;
-      e.vy += (sy / sl) * cs;
+      e.vx += (sx / sl) * cs * slowK;
+      e.vy += (sy / sl) * cs * slowK;
     }
   }
 }
@@ -380,8 +384,6 @@ function trackStall(g: Game): void {
  *  1 이동  2 소환  3 추적·토템  4 적분  5 공간 해시  6 무기·휘슬  7 충돌 매치  8 겹침 해소
  *  9 접촉 피해·보스 공격 판정  10 폭탄  11 막힘  12 죽은 적 제거
  */
-/** 생존형 클리어: 시간이 끝나면 마무리 시간, 그것도 끝나면 남은 적을 지우고 클리어 */
-/** 이 스테이지의 목표를 이뤘는지: 생존형은 시간, 보스형은 보스 처치, 엘리트형은 엘리트 전부 처치 */
 export function goalMet(g: Game): boolean {
   const st = g.stage;
   if (!st) return false;
@@ -395,6 +397,12 @@ export function goalMet(g: Game): boolean {
   }
 }
 
+/**
+ * 목표를 이루면 클리어. 11/24: 생존형도 처치형도 마무리 시간 없이 바로 끝난다
+ * (피드백: 팝 목표가 없는 시간제한 스테이지에서 추가 시간은 플레이만 늘렸다). wrapUpSeconds를 0보다 크게 하면 예전 마무리 시간이 돌아온다.
+ * 클리어할 때 남은 적은 사라지고, 그 적들 경험치의 clearXpRatio만큼을 받는다 (마무리 시간 팝 경험치를 대신한다).
+ * 남은 골드 주머니와 상자는 자동으로 줍는다.
+ */
 function advancePhase(g: Game): void {
   const st = g.stage;
   if (!st) return;
@@ -403,20 +411,23 @@ function advancePhase(g: Game): void {
     g.hazards = [];
     g.shots = [];
     g.wrapUpAt = g.time;
-    g.events.push({ type: "wrapup-start" });
+    if (RULES.stage.wrapUpSeconds > 0) g.events.push({ type: "wrapup-start" });
   }
   if (g.phase === "wrapup" && g.time >= g.wrapUpAt + RULES.stage.wrapUpSeconds) {
-    // 마무리 시간이 끝날 때 남은 골드 주머니와 상자는 자동으로 줍는다
     for (const gp of g.golds) collectGold(g, gp.amount);
     g.golds = [];
     for (const c of g.chests) openChest(g, c);
     g.chests = [];
     const vanished = g.enemies.length;
+    let xp = 0;
+    for (const e of g.enemies) if (!e.dead && e.rank === "normal") xp += e.xp * RULES.stage.clearXpRatio;
+    g.stats.xp += xp;
+    g.stats.clearXp += xp;
     g.enemies = [];
     g.totems = [];
     g.stats.vanished = vanished;
     g.phase = "cleared";
-    g.events.push({ type: "stage-clear", vanished });
+    g.events.push({ type: "stage-clear", vanished, xp });
   }
 }
 

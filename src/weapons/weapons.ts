@@ -458,11 +458,13 @@ export const BLADE_REHIT = 0.5;
 
 /**
  * orbit (회오리): 칼날 blades개가 플레이어 둘레 radius를 돈다. 쿨다운 = 한 바퀴 시간.
- * 칼날에 닿은 적을 진행 방향(접선)으로 튕긴다. 갈래 B 강풍은 바깥 방향.
- * 진화 사이클론: 반경 2배, 둘레 바깥의 적을 칼날 쪽으로 빨아들인다.
- * 한 바퀴를 발사 1회로 센다 (타격 수 = 한 바퀴에 튕긴 적 수).
+ * 기존 규칙: 칼날에 닿은 적을 진행 방향(접선)으로 튕긴다. 갈래 B 강풍은 바깥 방향.
+ *   진화 사이클론: 반경 2배, 둘레 바깥의 적을 칼날 쪽으로 빨아들인다.
+ * 색 공 규칙: 튕기지 않는다 (11/24 피드백: 튕긴 적이 같은 색 무리를 흩뜨려 공을 쏘기 어려웠다). tickOrbitBall 참고.
+ * 한 바퀴를 발사 1회로 센다 (타격 수 = 한 바퀴에 친 적 수).
  */
 function tickOrbit(g: Game, w: WeaponInstance, buf: number[]): void {
+  if (g.ballMode && !RULES.ball.orbit.legacy) return tickOrbitBall(g, w, buf);
   const p = g.player;
   const lv = w.level;
   const period = Math.max(0.3, cooldownOf(g, lv));
@@ -505,6 +507,84 @@ function tickOrbit(g: Game, w: WeaponInstance, buf: number[]): void {
     w.spin -= period;
     w.fires++;
   }
+}
+
+/**
+ * 색 공 규칙의 회오리: 칼날에 닿은 적을 튕기지 않고 slowSec초 동안 slow만큼 느리게 한다 (무리 모양이 그대로 남는다).
+ * 같은 적이 strikes번 맞으면 연기로 사라진다 — 경험치·골드·점수는 없다 (터뜨린 게 아니다).
+ * 무적 오라가 되지 않게: 한 바퀴에 칠 수 있는 적은 cap마리 (다 쓰면 칼날이 무뎌져 다음 바퀴까지 쉰다),
+ * 회전 주기는 RULES.ball.orbitMinPeriod보다 빠르지 않고, 같은 적은 orbitRehit초 안에 다시 맞지 않는다.
+ * 엘리트·보스는 둔화만 절반 (지우지 않는다). 강풍(push)은 바깥으로 살짝만 민다.
+ * freeze(7B 완성): 마지막 일격 바로 앞의 일격은 1초 동안 멈춰 세운다.
+ */
+function tickOrbitBall(g: Game, w: WeaponInstance, buf: number[]): void {
+  const p = g.player;
+  const lv = w.level;
+  const ob = RULES.ball.orbit;
+  const period = Math.max(ob.minPeriod, cooldownOf(g, lv));
+  const radius = param(lv, "radius") * p.stats.area;
+  const blades = param(lv, "blades", 1);
+  const bladeR = BLADE_RADIUS * p.stats.area;
+  const slow = param(lv, "slow", 0.4);
+  const slowSec = param(lv, "slowSec", 1.5);
+  const strikes = param(lv, "strikes", 4);
+  const cap = param(lv, "cap", 3);
+  const push = lv.params.push ?? 0;
+  w.angle = ((w.angle ?? 0) + (2 * Math.PI * DT) / period) % (2 * Math.PI);
+  w.lastHit ??= new Map();
+  w.bite ??= 0;
+  for (let k = 0; k < blades && w.bite < cap; k++) {
+    const a = w.angle + (k / blades) * 2 * Math.PI;
+    const bx = p.x + Math.cos(a) * radius;
+    const by = p.y + Math.sin(a) * radius;
+    for (const e of enemiesWithin(g, bx, by, bladeR, buf)) {
+      if (w.bite >= cap) break;
+      if (e.state === "launched") continue;
+      const last = w.lastHit.get(e.id);
+      if (last !== undefined && g.time - last < ob.rehit) continue;
+      w.lastHit.set(e.id, g.time);
+      w.bite++;
+      w.hits++;
+      e.cause = w.def.id;
+      if (e.rank !== "normal") {
+        slowEnemy(e, slow * 0.5, slowSec);
+        continue;
+      }
+      e.bladeHits = (e.bladeHits ?? 0) + 1;
+      if (e.bladeHits >= strikes) {
+        e.dead = true;
+        g.stats.bladeVanished++;
+        g.events.push({ type: "blade-vanish", id: e.id, x: e.x, y: e.y, color: e.color });
+        continue;
+      }
+      if (lv.params.freeze && e.bladeHits === strikes - 1) slowEnemy(e, 1, 1);
+      else slowEnemy(e, slow, slowSec);
+      if (push > 0) {
+        const dx = e.x - p.x;
+        const dy = e.y - p.y;
+        const d = Math.hypot(dx, dy) || 1;
+        e.x += (dx / d) * push;
+        e.y += (dy / d) * push;
+      }
+    }
+  }
+  if (w.lastHit.size > 400) for (const [id, t] of w.lastHit) if (g.time - t > ob.rehit) w.lastHit.delete(id);
+  w.spin = (w.spin ?? 0) + DT;
+  if (w.spin >= period) {
+    w.spin -= period;
+    w.fires++;
+    w.bite = 0;
+  }
+}
+
+/** 둔화를 건다 (더 센 둔화·더 긴 시간이 남는다) */
+function slowEnemy(e: Enemy, mul: number, sec: number): void {
+  if ((e.slowT ?? 0) > 0 && (e.slowMul ?? 0) > mul) {
+    e.slowT = Math.max(e.slowT ?? 0, Math.min(sec, 0.5));
+    return;
+  }
+  e.slowMul = mul;
+  e.slowT = Math.max(e.slowT ?? 0, sec);
 }
 
 /** 반사벽이 놓이는 거리: 노리는 적 무리의 뒤쪽 (무리 중심에서 플레이어 반대쪽으로) */

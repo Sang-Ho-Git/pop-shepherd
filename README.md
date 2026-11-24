@@ -32,6 +32,8 @@ node tools/share.ts --weapons paint_gun:3,kick:3 --ball   # 팝을 누가 일으
 node tools/probe.ts --variant noTraits --ball --seeds 36 --seed-start 11   # 조건만 바꿔 완주 비교 (조건은 tools/variants.ts, 캐릭터 비교는 36시드 이상)
 node tools/stage15.ts base 30 [스테이지] --pool <파일>   # 한 스테이지만 실제 빌드로 (빌드 묶음은 tools/dev-builds.ts --pool)
 node tools/bossrun.ts base 36 11 olly > a.jsonl; node tools/bossrun.ts --sum a.jsonl   # 완주·죽은 스테이지·보스전 시간 (캐릭터별로 병렬로 띄워 합친다)
+tools/runtune.sh base <폴더>   # 강화 0 완주 두 시드 벌(11~46, 47~82) × 캐릭터 4 병렬 + 무기별 완주·회오리 삭제·이동 속도 패시브 (조건은 tools/variants.ts)
+node tools/shot-whirl.mjs docs/shots   # 회오리 동작 스크린샷 (build:web 뒤)
 node tools/realtime.mjs --runs auto-cue-x3,auto-olly-s15 --out <폴더>   # 브라우저 실시간 점검 (오류·멈춤·프레임)
 ```
 
@@ -46,7 +48,7 @@ node tools/realtime.mjs --runs auto-cue-x3,auto-olly-s15 --out <폴더>   # 브�
 | `src/progression/` | 레벨업 카드, 패시브, 상점, 보물 상자, 영구 강화, 세이브 | 2.1–2.3, 5.5 |
 | `src/sim/` | 봇, 한 판 시뮬, 스테이지 1→10 런 | 6.3 |
 | `web/` | 캔버스 화면, 입력, 메뉴·카드·상점·영구 강화, 효과음 | 4.x |
-| `data/` | 무기 7·캐릭터 4·패시브 9·적·스테이지 10·상점·영구 강화 트리 | 6.2 |
+| `data/` | 무기 7·캐릭터 4·패시브 10·적·스테이지 10·상점·영구 강화 트리 | 6.2 |
 | `tools/` | 시뮬·측정·비교 도구, 웹 빌드 | 6.x |
 | `tests/` | 규칙별 테스트 | |
 

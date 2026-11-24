@@ -1,6 +1,6 @@
 /** 실험 조건: 데이터·규칙을 메모리에서만 바꾼다 (tools/probe.ts에서 쓴다) */
 import { RULES } from "../src/core/rules.ts";
-import { CHARACTERS, ENEMIES, SHOP, STAGES, WEAPONS } from "../src/data/index.ts";
+import { CHARACTERS, ENEMIES, PASSIVES, SHOP, STAGES, WEAPONS } from "../src/data/index.ts";
 
 const paint = RULES.paint as { push: boolean; dry: number; toBall: boolean };
 
@@ -79,6 +79,38 @@ function harder(contact: number, speed: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 11/24 런 조정 비교: 회오리를 예전처럼 튕기게 */
+  legacyOrbit: () => {
+    (RULES.ball.orbit as { legacy: boolean }).legacy = true;
+  },
+  /** 회오리를 아예 뺀다 (카드·상점에 안 나옴) */
+  noWhirl: () => {
+    WEAPONS.whirlwind!.implemented = false;
+  },
+  /** 반사벽을 아예 뺀다 */
+  noWall: () => {
+    WEAPONS.reflect_wall!.implemented = false;
+  },
+  /** 모든 캐릭터가 회오리로 시작 (회오리 빌드가 튀는지) */
+  allWhirl: () => {
+    for (const c of Object.values(CHARACTERS)) c.startWeapon = "whirlwind";
+  },
+  /** 이동 속도 패시브(가벼운 발굽) 빼기 */
+  noHooves: () => {
+    PASSIVES.swift_hooves!.implemented = false;
+  },
+  /** 예전 마무리 시간 10초 (+50% 팝 경험치), 클리어 경험치 없음 */
+  wrap10: () => {
+    (RULES.stage as { wrapUpSeconds: number; clearXpRatio: number }).wrapUpSeconds = 10;
+    (RULES.stage as { wrapUpSeconds: number; clearXpRatio: number }).clearXpRatio = 0;
+  },
+  /** 11/24 이전 상태 묶음 (반사벽 변경 31bc547만 들어간 상태와 같은 규칙): 예전 회오리 + 마무리 10초 + 발굽 없음 */
+  pre: () => {
+    (RULES.ball.orbit as { legacy: boolean }).legacy = true;
+    (RULES.stage as { wrapUpSeconds: number; clearXpRatio: number }).wrapUpSeconds = 10;
+    (RULES.stage as { wrapUpSeconds: number; clearXpRatio: number }).clearXpRatio = 0;
+    PASSIVES.swift_hooves!.implemented = false;
+  },
   ramp,
   /** 임시 난이도 후보 (강화 0 완주 약 20% 목표) */
   hardA: () => harder(1.25, 1.05),

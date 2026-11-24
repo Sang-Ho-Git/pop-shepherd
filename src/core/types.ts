@@ -145,6 +145,11 @@ export interface Enemy {
   maxHp: number;
   /** 칠한 물감이 마르는 남은 시간 (s). 0보다 크면 매치에 끼지 않는다 */
   wetT: number;
+  /** 회오리(색 공 규칙) 둔화: 남은 시간 (s)과 줄이는 비율 (0.4 = 40% 느리게, 1 = 멈춤) */
+  slowT?: number;
+  slowMul?: number;
+  /** 회오리 칼날에 맞은 횟수 (색 공 규칙: strikes번이면 사라진다) */
+  bladeHits?: number;
   boss: BossState | null;
   dead: boolean;
 }
@@ -348,6 +353,8 @@ export interface WeaponInstance {
   angle?: number;
   spin?: number;
   lastHit?: Map<number, number>;
+  /** 회오리(색 공 규칙): 이번 바퀴에 친 적 수 (cap까지) */
+  bite?: number;
 }
 
 /** 반사벽 한 장 (선분) */
@@ -443,8 +450,10 @@ export type GameEvent =
   | { type: "player-revive" }
   | { type: "evolve"; weapon: string }
   | { type: "wrapup-start" }
+  /** 회오리 칼날에 strikes번 맞아 사라진 적 (점수 없음) */
+  | { type: "blade-vanish"; id: number; x: number; y: number; color: Color }
   | { type: "level-up"; level: number; picked: string }
-  | { type: "stage-clear"; vanished: number }
+  | { type: "stage-clear"; vanished: number; xp: number }
   | { type: "stall" };
 
 export interface Chest {
@@ -471,6 +480,10 @@ export interface Stats {
   bombDrops: number;
   /** 마무리 시간에 터뜨린 적 수 */
   wrapUpPopped: number;
+  /** 회오리 칼날에 지워진 적 수 (색 공 규칙, 점수 없음) */
+  bladeVanished: number;
+  /** 클리어할 때 남은 적에게서 받은 경험치 */
+  clearXp: number;
   /** 마무리 시간이 끝날 때 남아서 사라진 적 수 */
   vanished: number;
   elitesSpawned: number;

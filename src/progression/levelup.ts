@@ -164,6 +164,8 @@ export function botCardScore(c: Card, g: Game): number {
         const partner = g.weapons.some((w) => w.def.evolvesWith === c.id);
         // 털옷은 무기 강화보다 먼저 (생존의 바탕)
         if (c.id === "thick_fleece") return 105 - lv;
+        // 가벼운 발굽(이동 속도): 적이 빨라지는 뒤 스테이지(8~)에서는 진화 짝만큼, 앞에서는 낮게
+        if (c.id === "swift_hooves") return (stageNo(g) >= RULES.cards.botSpeedFrom ? 88 : 45) - lv;
         if (partner) return (c.kind === "newPassive" ? 95 : 85) - lv;
         return (c.kind === "newPassive" ? 50 : 60) - lv;
       }
@@ -172,6 +174,11 @@ export function botCardScore(c: Card, g: Game): number {
       case "gold":
         return 1;
     }
+}
+
+/** 지금 스테이지 번호 (stage08 → 8, 모르면 0) */
+function stageNo(g: Game): number {
+  return Number(/(\d+)$/.exec(g.stage?.id ?? "")?.[1] ?? 0);
 }
 
 export function cardLabel(c: Card): string {
