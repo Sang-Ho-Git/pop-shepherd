@@ -4,7 +4,7 @@
     "name": "양치기 (튼튼함)",
     "startWeapon": "kick",
     "stats": {
-      "max_hp": 120,
+      "max_hp": 140,
       "move_speed": 1.1,
       "knock_power": 1,
       "cooldown": 0,
@@ -77,7 +77,7 @@
       "max_hp": 100,
       "move_speed": 1,
       "knock_power": 1,
-      "cooldown": 0.1,
+      "cooldown": 0,
       "area": 1,
       "chain_radius": 1.2,
       "direct_dmg": 1,

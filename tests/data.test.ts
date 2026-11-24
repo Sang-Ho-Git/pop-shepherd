@@ -58,7 +58,10 @@ describe("데이터: 캐릭터·적·스테이지", () => {
     expect(CHARACTERS.cue?.stats).toMatchObject({ max_hp: 100, move_speed: 1.2, knock_power: 1.25, area: 1 });
     expect(CHARACTERS.cue?.trait).toBe("three_cushion");
     expect(CHARACTERS.olly?.stats).toMatchObject({ max_hp: 130, armor: 2, pickup: 1.4 });
-    expect(CHARACTERS.pale?.stats).toMatchObject({ cooldown: 0.1, chain_radius: 1.2 });
+    // 11/24: 난이도를 올리자 팔레만 크게 앞섰다 (72시드 23 vs 9~11). 쿨다운 −10%가 색 공 쿨다운에도 들어가서라 0으로 (팔레 23 → 13)
+    expect(CHARACTERS.pale?.stats).toMatchObject({ cooldown: 0, chain_radius: 1.2 });
+    // 11/24: 양치기 체력 120 → 140 (가장 약해서)
+    expect(CHARACTERS.shepherd?.stats).toMatchObject({ max_hp: 140, armor: 1 });
   });
 
   it("적 수치는 모두 양수이고 젤리 반지름은 14px", () => {
