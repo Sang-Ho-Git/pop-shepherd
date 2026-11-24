@@ -5,6 +5,7 @@ import type { Input } from "../src/core/types.ts";
 import { character, ENEMIES } from "../src/data/index.ts";
 import { addPassive } from "../src/progression/passives.ts";
 import { pops, put, run } from "./helpers.ts";
+import { rollBallColor } from "../src/combat/ball.ts";
 import { step } from "../src/core/game.ts";
 
 function ballGame() {
@@ -201,5 +202,18 @@ describe("색 공 바꾸기", () => {
     g.ball!.next = "blue";
     step(g, { moveX: 0, moveY: 0, whistle: false, swapBall: true });
     expect([g.ball!.current, g.ball!.next]).toEqual(["blue", "red"]);
+  });
+});
+
+describe("공 색 고르기 (11/24)", () => {
+  it("근처에 없는 색은 거의 나오지 않는다 (가중치 absentWeight)", () => {
+    const g = ballGame();
+    const { x, y } = g.player;
+    put(g, "red", x + 100, y);
+    put(g, "red", x + 300, y + 50);
+    let red = 0;
+    for (let k = 0; k < 400; k++) if (rollBallColor(g) === "red") red++;
+    // 빨강 가중치 1 + 2 = 3, 나머지 세 색 0.15씩 → 약 87%
+    expect(red / 400).toBeGreaterThan(0.8);
   });
 });
