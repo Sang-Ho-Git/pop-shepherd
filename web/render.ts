@@ -287,11 +287,10 @@ function drawHazards(ctx: CanvasRenderingContext2D, g: Game, v: View, time: numb
     }
     ctx.fillStyle = `rgba(255,60,60,${0.12 + 0.1 * k})`;
     ctx.fill();
-    ctx.strokeStyle = `rgba(255,90,90,${0.55 + 0.4 * pulse})`;
-    ctx.lineWidth = Math.max(2, 3 * v.scale);
-    ctx.setLineDash([10 * v.scale, 6 * v.scale]);
+    // 테두리는 실선: 무기 영역(토템·충격파)은 점선이라 위험 경고와 헷갈리지 않게
+    ctx.strokeStyle = `rgba(255,80,80,${0.6 + 0.4 * pulse})`;
+    ctx.lineWidth = Math.max(2.5, 3.5 * v.scale);
     ctx.stroke();
-    ctx.setLineDash([]);
     // 차오르는 안쪽: 다 차면 터진다
     ctx.beginPath();
     if (h.kind === "circle") ctx.arc(x, y, h.r * v.scale * k, 0, Math.PI * 2);

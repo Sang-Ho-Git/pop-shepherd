@@ -259,7 +259,8 @@ export function tickHazards(g: Game): void {
   const pl = g.player;
   for (const h of g.hazards) {
     const e = byId.get(h.owner);
-    if (!e || g.phase !== "play" || (e.boss!.groggy > 0 && h.act === "dash")) continue;
+    // 주인이 쓰러졌거나 그로기면 깔아 둔 예고는 취소된다 (그로기가 공격을 끊는다)
+    if (!e || g.phase !== "play" || e.boss!.groggy > 0) continue;
     h.t -= DT;
     if (h.t > 0) {
       keep.push(h);

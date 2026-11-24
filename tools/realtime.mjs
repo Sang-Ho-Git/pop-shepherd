@@ -1,12 +1,12 @@
 /**
  * 실시간 점검: 웹 빌드(dist/pop-shepherd.html)를 실제 브라우저에서 자동 플레이(#auto)로 돌리며 오류·멈춤·프레임 저하를 찾는다.
- *   node tools/realtime.mjs --runs auto-cue,auto-olly-s15 --out <폴더> [--minutes 40]
+ *   node tools/realtime.mjs --runs auto-cue,auto-olly-s15 --out <폴더> [--minutes 40] [--phone]
  * 각 런은 따로 탭을 연다. 5초마다 window.__pop 을 읽어 기록하고, 이상하면 스크린샷을 남긴다.
  * 결과: <폴더>/<런>.json (상태 기록·로그·문제 목록), 문제 스크린샷.
  */
 import { createRequire } from "node:module";
 // 플레이라이트는 전역에 설치된 것을 쓴다 (프로젝트 의존성에 넣지 않음)
-const { chromium } = createRequire(import.meta.url)("playwright");
+const { chromium, devices } = createRequire(import.meta.url)("playwright");
 import { mkdirSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
@@ -17,13 +17,15 @@ const arg = (k, d) => {
 const runs = arg("runs", "auto-olly").split(",");
 const out = arg("out", "realtime-out");
 const minutes = Number(arg("minutes", "45"));
+// --phone: 휴대폰 세로 화면 (iPhone 13)으로 연다
+const phone = process.argv.includes("--phone");
 const page = fileURLToPath(new URL("../dist/pop-shepherd.html", import.meta.url));
 mkdirSync(out, { recursive: true });
 
 const browser = await chromium.launch();
 
 async function one(hash) {
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+  const ctx = await browser.newContext(phone ? { ...devices["iPhone 13"] } : { viewport: { width: 1280, height: 720 } });
   const p = await ctx.newPage();
   const issues = [];
   const samples = [];
