@@ -1082,7 +1082,8 @@ function frame(now: number): void {
       // 바쁜 화면 위에서도 읽히게: 어두운 띠를 깔고, 부제가 화면보다 넓으면 " · "에서 줄을 나눈다 (휴대폰 세로)
       ctx.textAlign = "center";
       ctx.globalAlpha = Math.min(1, banner.t * 2);
-      const cy = canvas.height * 0.3;
+      // 세로 화면(휴대폰)은 플레이어가 화면 가운데라 배너를 더 위로 (첫 공격 예고를 가리지 않게)
+      const cy = canvas.height * (canvas.height > canvas.width ? 0.16 : 0.3);
       const subFont = `${Math.round(22 * v.scale)}px "Gowun Dodum", sans-serif`;
       ctx.font = subFont;
       let lines = banner.sub ? [banner.sub] : [];
