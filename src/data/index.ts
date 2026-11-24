@@ -89,6 +89,19 @@ export interface MetaEffect {
   gold_find?: number;
   freeRerolls?: number;
   shopSlots?: number;
+  move_speed?: number;
+  pickup?: number;
+  regen?: number;
+  chain_radius?: number;
+  aim_assist?: number;
+  area?: number;
+  luck?: number;
+  /** 런 시작 골드 */
+  startGold?: number;
+  /** 색 공 쿨다운 감소 비율 */
+  ballCooldown?: number;
+  /** 쿠션 보너스 배율 증가 (0.25 = 쿠션 보너스 ×1.25) */
+  cushionBonus?: number;
 }
 export interface MetaNode {
   id: string;
@@ -101,7 +114,7 @@ export interface MetaNode {
   note: string;
 }
 export interface MetaTree {
-  coins: { perStage: number; perPoppedEnemy: number };
+  coins: { perStage: number; perPoppedEnemy: number; /** 런이 끝날 때 남은 골드 1당 코인 */ perGold?: number };
   nodes: MetaNode[];
 }
 export const META = metaJson as MetaTree;

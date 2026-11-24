@@ -5,10 +5,12 @@ import { CAMPAIGN, CHARACTERS, META, PASSIVES, SHOP, stage, WEAPONS } from "../s
 import type { MetaNode } from "../src/data/index.ts";
 import { botCardScore, botChooseBranch, botChooseCard, needsBranch, resolveChoice, validateFrontChoice, xpTotalFor } from "../src/progression/levelup.ts";
 import { botInput } from "../src/sim/bot.ts";
-import { applyMeta, coinsForRun, isUnlocked, nextCost } from "../src/progression/meta.ts";
+import { applyMeta, isUnlocked, nextCost, runCoins } from "../src/progression/meta.ts";
 import type { MetaSpecials } from "../src/progression/meta.ts";
 import { browserStore, loadSave, recordRun, spendOnMeta, treeProgress, writeSave } from "../src/progression/save.ts";
 import type { SaveData } from "../src/progression/save.ts";
+import { conditionProgress, isCharacterUnlocked, newlyUnlocked, statValue, UNLOCKS } from "../src/progression/unlocks.ts";
+import type { UnlockCondition } from "../src/progression/unlocks.ts";
 import { buy, openShop, reroll } from "../src/progression/shop.ts";
 import type { ShopState } from "../src/progression/shop.ts";
 import { carryOf, startStage } from "../src/sim/campaign.ts";
@@ -266,10 +268,25 @@ function finishRun(won: boolean): void {
     addRunStats();
   }
   const reached = run.stageIndex + (won ? 1 : 0);
-  const coins = coinsForRun(reached, run.popped);
+  // 남은 인게임 골드도 코인으로 바뀐다 (완주·실패 모두)
+  const goldLeft = g.player.gold;
+  const rc = runCoins(reached, run.popped, goldLeft);
+  const coins = rc.total;
+  let fresh: string[] = [];
   if (!run.dev) {
-    save = recordRun(save, { character: run.character, reached, won, coins });
+    const before = save;
+    save = recordRun(save, {
+      character: run.character,
+      reached,
+      won,
+      coins,
+      poppedEnemies: run.popped,
+      cushionPops: run.cushionPops,
+      threeCushions: run.threeCushions,
+      maxChain: run.bestChain,
+    });
     writeSave(store, save);
+    fresh = newlyUnlocked(before, save);
   }
   screen = "result";
   const name = CHAR_NAME[run.character] ?? run.character;
@@ -278,8 +295,9 @@ function finishRun(won: boolean): void {
     el("h1", "", won ? "목장을 지켰다" : "양 떼에 묻혔다"),
     el("p", "lede", `${name} · Lv${g.player.level} · 클리어 ${reached}/${CAMPAIGN.length} · 터뜨린 적 ${run.popped}`),
     el("p", "small", `가장 긴 연쇄 ${run.bestChain}${g.ball ? ` · 쿠션 팝 ${run.cushionPops} · 3쿠션 이상 ${run.threeCushions}` : ""}`),
-    el("p", "coins", run.dev ? "시험 판이라 기록과 코인에 넣지 않았다" : `코인 +${coins}  (보유 ${save.coins})`),
-    row([button("영구 강화", () => renderMeta()), button("다시 하기", () => renderSelect(), "btn ghost")]),
+    el("p", "coins", run.dev ? "시험 판이라 기록과 코인에 넣지 않았다" : `코인 +${coins}${rc.fromGold > 0 ? `  (남은 골드 ${goldLeft} → ${rc.fromGold})` : ""}  · 보유 ${save.coins}`),
+    ...fresh.map((id) => el("p", "unlock-new", `새로 열림: ${CHAR_NAME[id] ?? id}`)),
+    row([button("영구 강화", () => renderMeta()), button(fresh.length > 0 ? "캐릭터 고르기" : "다시 하기", () => renderSelect(), "btn ghost")]),
   ]);
   run = null;
 }
@@ -319,22 +337,56 @@ function renderTitle(): void {
   );
 }
 
+/** 해금 조건 하나의 진행 글: "최고 스테이지 3/5", "쿠션 팝 23/60" */
+const STAT_LABEL: Record<string, string> = {
+  reached: "클리어 스테이지",
+  cushionPops: "쿠션 팝",
+  threeCushions: "3쿠션 팝",
+  poppedEnemies: "터뜨린 적",
+  maxChain: "연쇄",
+  runs: "판",
+};
+function conditionText(c: UnlockCondition): string {
+  const v = Math.min(c.n, statValue(save, c.kind, c.stat));
+  return `${c.kind === "best" && c.stat !== "runs" ? "최고 " : ""}${STAT_LABEL[c.stat] ?? c.stat} ${v}/${c.n}`;
+}
+
 function renderSelect(): void {
   screen = "select";
   const cards = row(
-    CHAR_ORDER.map((id) => {
+    CHAR_ORDER.filter((id) => CHARACTERS[id]).map((id) => {
       const ch = CHARACTERS[id]!;
-      const b = button("", () => startRun(id), "char");
+      const open = isCharacterUnlocked(save, id);
+      const b = button("", () => startRun(id), open ? "char" : "char locked");
       const s = ch.stats;
-      b.append(el("strong", "", CHAR_NAME[id] ?? id), el("span", "weapon", `시작 무기 · ${weaponName(ch.startWeapon)}`), el("span", "", CHAR_BLURB[id] ?? ""));
+      b.append(el("strong", "", `${open ? "" : "🔒 "}${CHAR_NAME[id] ?? id}`), el("span", "weapon", `시작 무기 · ${weaponName(ch.startWeapon)}`), el("span", "", CHAR_BLURB[id] ?? ""));
       b.append(el("span", "stats", `체력 ${s.max_hp} · 방어 ${s.armor} · 속도 ${Math.round(s.move_speed * 100)}%`));
-      const rec = save.characters[id];
-      if (rec) b.append(el("span", "rec", `${rec.runs}런 · 완주 ${rec.wins} · 최고 ${rec.bestStage}`));
+      if (open) {
+        const rec = save.characters[id];
+        if (rec) b.append(el("span", "rec", `${rec.runs}런 · 완주 ${rec.wins} · 최고 ${rec.bestStage}`));
+      } else {
+        const rule = UNLOCKS.characters[id];
+        b.disabled = true;
+        b.setAttribute("aria-label", `${CHAR_NAME[id] ?? id}: 잠김. ${rule?.text ?? ""}`);
+        if (rule) {
+          b.append(el("span", "cond", `열리는 조건 · ${rule.text}`));
+          // 가장 많이 채운 조건부터 보여 준다
+          const sorted = [...rule.any].sort((x, y) => conditionProgress(save, y) - conditionProgress(save, x));
+          b.append(el("span", "cond-progress", sorted.map(conditionText).join(" · ")));
+        }
+      }
       return b;
     }),
     "chars",
   );
-  show([el("p", "eyebrow", "캐릭터"), el("h2", "", "누구로 몰까"), cards, row([button("뒤로", () => renderTitle(), "btn ghost")])]);
+  const locked = CHAR_ORDER.filter((id) => CHARACTERS[id] && !isCharacterUnlocked(save, id)).length;
+  show([
+    el("p", "eyebrow", "캐릭터"),
+    el("h2", "", "누구로 몰까"),
+    cards,
+    ...(locked > 0 ? [el("p", "small", "잠긴 캐릭터는 런 기록으로 열린다. 스테이지 시험에서는 모든 캐릭터를 써 볼 수 있다 (기록에 남지 않음).")] : []),
+    row([button("뒤로", () => renderTitle(), "btn ghost")]),
+  ]);
 }
 
 function renderShop(): void {
@@ -362,6 +414,7 @@ function renderShop(): void {
     el("p", "eyebrow", `스테이지 ${run.stageIndex + 1} 클리어`),
     el("h2", "", "정비 상점"),
     el("p", "lede", `골드 ${Math.floor(g.player.gold)} · 체력 ${Math.ceil(g.player.hp)}/${g.player.maxHp}`),
+    el("p", "small", `남은 골드는 런이 끝나면 영구 강화 코인이 된다 (지금 끝나면 코인 +${runCoins(0, 0, g.player.gold).fromGold})`),
     items,
     row([rr, button(`스테이지 ${run.stageIndex + 2}로`, () => leaveShop())]),
   ]);
@@ -369,7 +422,7 @@ function renderShop(): void {
 
 function renderMeta(): void {
   screen = "meta";
-  const branches: Record<string, string> = { survival: "생존", power: "화력", economy: "경제" };
+  const branches: Record<string, string> = { survival: "생존", power: "화력", cue: "솜씨", economy: "경제" };
   const cols = row(
     Object.entries(branches).map(([key, label]) => {
       const col = el("div", "branch");
@@ -385,14 +438,19 @@ function renderMeta(): void {
         }, "node");
         b.disabled = cost === null || !unlocked || save.coins < cost;
         b.append(el("strong", "", `${n.name} ${lv}/${n.maxLevel}`), el("span", "", n.note));
-        b.append(el("span", "price", cost === null ? "완료" : !unlocked ? "잠김" : `${cost} 코인`));
+        // 잠긴 노드는 무엇을 사야 열리는지 보여 준다
+        const need = Object.entries(n.requires ?? {})
+          .filter(([r, rl]) => (save.meta[r] ?? 0) < rl)
+          .map(([r, rl]) => `${META.nodes.find((x: MetaNode) => x.id === r)?.name ?? r} ${rl}`)
+          .join(", ");
+        b.append(el("span", "price", cost === null ? "완료" : !unlocked ? `잠김 · ${need} 필요` : `${cost} 코인`));
         col.append(b);
       }
       return col;
     }),
     "tree",
   );
-  show([el("p", "eyebrow", `코인 ${save.coins}`), el("h2", "", "영구 강화"), cols, row([button("시작", () => renderSelect()), button("처음으로", () => renderTitle(), "btn ghost")])]);
+  show([el("p", "eyebrow", `코인 ${save.coins} · 트리 ${Math.round(treeProgress(save) * 100)}%`), el("h2", "", "영구 강화"), cols, row([button("시작", () => renderSelect()), button("처음으로", () => renderTitle(), "btn ghost")])]);
 }
 
 function renderChoice(): void {

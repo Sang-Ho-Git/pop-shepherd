@@ -110,7 +110,7 @@ export function tickBallThrow(g: Game, input: Input): void {
   });
   b.current = b.next;
   b.next = rollBallColor(g);
-  b.cd = RULES.ball.cooldown * (1 - p.stats.cooldown);
+  b.cd = RULES.ball.cooldown * (1 - p.stats.cooldown) * (1 - (p.ballCooldownCut ?? 0));
   g.stats.ballsThrown++;
   g.events.push({ type: "ball-throw", color: g.balls[g.balls.length - 1]!.color });
 }

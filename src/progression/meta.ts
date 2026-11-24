@@ -14,6 +14,9 @@ export interface MetaSpecials {
   startWeaponLevel: number;
   freeRerolls: number;
   shopSlots: number;
+  startGold: number;
+  ballCooldownCut: number;
+  cushionBonusUp: number;
 }
 
 export function metaNode(id: string): MetaNode {
@@ -63,7 +66,7 @@ export function validateProfile(profile: MetaProfile): void {
 export function applyMeta(ch: CharacterDef, profile: MetaProfile): { character: CharacterDef; specials: MetaSpecials } {
   validateProfile(profile);
   const s = { ...ch.stats };
-  const sp: MetaSpecials = { revives: 0, startWeaponLevel: 1, freeRerolls: 0, shopSlots: 0 };
+  const sp: MetaSpecials = { revives: 0, startWeaponLevel: 1, freeRerolls: 0, shopSlots: 0, startGold: 0, ballCooldownCut: 0, cushionBonusUp: 0 };
   for (const [id, lv] of Object.entries(profile)) {
     if (lv <= 0) continue;
     const e = metaNode(id).effect;
@@ -76,13 +79,38 @@ export function applyMeta(ch: CharacterDef, profile: MetaProfile): { character: 
     if (e.startWeaponLevel) sp.startWeaponLevel += e.startWeaponLevel * lv;
     if (e.freeRerolls) sp.freeRerolls += e.freeRerolls * lv;
     if (e.shopSlots) sp.shopSlots += e.shopSlots * lv;
+    if (e.move_speed) s.move_speed += e.move_speed * lv;
+    if (e.pickup) s.pickup += e.pickup * lv;
+    if (e.regen) s.regen += e.regen * lv;
+    if (e.chain_radius) s.chain_radius += e.chain_radius * lv;
+    if (e.aim_assist) s.aim_assist += e.aim_assist * lv;
+    if (e.area) s.area += e.area * lv;
+    if (e.luck) s.luck += e.luck * lv;
+    if (e.startGold) sp.startGold += e.startGold * lv;
+    if (e.ballCooldown) sp.ballCooldownCut += e.ballCooldown * lv;
+    if (e.cushionBonus) sp.cushionBonusUp += e.cushionBonus * lv;
   }
   return { character: { ...ch, stats: s }, specials: sp };
 }
 
-/** 런이 끝나고 받는 코인 */
-export function coinsForRun(stagesCleared: number, poppedEnemies: number): number {
-  return Math.round(META.coins.perStage * stagesCleared + META.coins.perPoppedEnemy * poppedEnemies);
+/** 런이 끝나고 받는 코인과 그 내역 */
+export interface RunCoins {
+  /** 클리어 스테이지와 터뜨린 적에서 온 몫 */
+  base: number;
+  /** 런이 끝날 때 남은 인게임 골드에서 온 몫 (완주·실패 모두) */
+  fromGold: number;
+  total: number;
+}
+
+export function runCoins(stagesCleared: number, poppedEnemies: number, goldLeft = 0): RunCoins {
+  const base = Math.round(META.coins.perStage * stagesCleared + META.coins.perPoppedEnemy * poppedEnemies);
+  const fromGold = Math.floor(Math.max(0, goldLeft) * (META.coins.perGold ?? 0));
+  return { base, fromGold, total: base + fromGold };
+}
+
+/** 런이 끝나고 받는 코인 (남은 골드 몫 포함) */
+export function coinsForRun(stagesCleared: number, poppedEnemies: number, goldLeft = 0): number {
+  return runCoins(stagesCleared, poppedEnemies, goldLeft).total;
 }
 
 /**
