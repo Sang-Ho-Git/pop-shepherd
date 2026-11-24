@@ -207,7 +207,7 @@ describe("무기 동작 모듈 (M1 3종)", () => {
     expect(e.vx).toBeGreaterThan(Math.abs(e.vy));
   });
 
-  it("반사벽(wall): 앞에 적이 있으면 벽을 세우고, 날아온 적을 되튕겨 쿠션으로 센다", () => {
+  it("반사벽(wall): 앞에 적 무리가 있으면 무리 뒤에 벽을 세우고, 날아온 적을 되튕겨 쿠션으로 센다", () => {
     const w = makeWeapon(weapon("reflect_wall"), 1);
     const g = emptyGame({ weapons: [w] });
     const { x, y } = g.player;
@@ -217,7 +217,9 @@ describe("무기 동작 모듈 (M1 3종)", () => {
     run(g, 1);
     expect(g.walls).toHaveLength(1);
     const first = g.walls[0]!;
-    const shot = put(g, "yellow", x + 60, y);
+    // 벽은 무리(x+250) 뒤쪽에 선다
+    expect(first.x1).toBeGreaterThan(x + 250);
+    const shot = put(g, "yellow", x + 290, y + 30);
     launch(shot, 1, 0, 700);
     run(g, 20);
     expect(shot.vx).toBeLessThan(0);
@@ -228,7 +230,7 @@ describe("무기 동작 모듈 (M1 3종)", () => {
     expect(g.walls).not.toContain(first);
   });
 
-  it("반사벽 진화 만화경: 플레이어를 둘러싼 벽 3장", () => {
+  it("반사벽 진화 만화경: 무리를 감싸는 ㄷ자 벽 3장", () => {
     const w = makeWeapon(weapon("reflect_wall"), "evo");
     const g = emptyGame({ weapons: [w] });
     const { x, y } = g.player;
@@ -244,10 +246,10 @@ describe("무기 동작 모듈 (M1 3종)", () => {
     for (let i = 0; i < 3; i++) put(g, "red", x + 300, y + (i - 1) * 50);
     run(g, 1);
     const wall = g.walls[0]!;
-    const walker = put(g, "blue", x + 200, y, { moving: true });
+    const walker = put(g, "blue", wall.x1 + 120, y + 20, { moving: true });
     w.cd = 999;
     run(g, 120);
-    // 벽(플레이어 앞 110px)보다 플레이어 쪽으로 넘어오지 못한다
+    // 벽(무리 뒤)을 넘어 플레이어 쪽으로 오지 못한다
     expect(walker.x).toBeGreaterThan(wall.x1 - 1);
   });
 });

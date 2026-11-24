@@ -319,9 +319,6 @@ export interface Wall {
   aimAssist: boolean;
   /** 벽에 부딪힐 때 작은 충격파 반경 (7B) */
   shock: number;
-  /** 벽을 세울 때 플레이어 자리: 색 공은 이쪽에서 나가는 방향으로는 벽을 지나간다 (자기 벽이 자기 공을 막지 않게) */
-  ox?: number;
-  oy?: number;
 }
 
 export type DelayedEffect =

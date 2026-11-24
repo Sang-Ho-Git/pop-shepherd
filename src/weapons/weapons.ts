@@ -507,13 +507,18 @@ function tickOrbit(g: Game, w: WeaponInstance, buf: number[]): void {
   }
 }
 
-/** 반사벽이 놓이는 거리 (플레이어 앞) */
+/** 반사벽이 놓이는 거리: 노리는 적 무리의 뒤쪽 (무리 중심에서 플레이어 반대쪽으로) */
 export const WALL_AHEAD = 110;
+const WALL_BEHIND = 80;
 
 /**
- * wall (반사벽): 이동 방향 앞에 이동 방향과 수직인 벽을 세운다. 날아가던 적이 벽에 맞으면 튕긴다 (쿠션 1회로 센다).
+ * wall (반사벽): 앞쪽 적 무리의 뒤편에, 플레이어→무리 방향과 수직인 벽을 세운다.
+ * 공과 날아가던 적은 벽의 어느 쪽에서 닿든 똑같이 튕긴다 (11/24: 벽을 세운 쪽에서 나가는 공만 지나가게 하던 예외를 없앰 —
+ * 플레이어가 움직이면 같은 벽이 어떤 때는 통과, 어떤 때는 반사로 보여 일관성이 없었다).
+ * 벽이 무리 뒤에 서므로 무리를 빗나간 공·튕겨 나간 적이 무리 쪽으로 돌아온다 (당구의 쿠션 역할).
  * 걸어오는 적에게는 울타리다 (뚫고 지나가지 못한다).
- * 앞쪽 350px 안에 적이 3마리 이상 있을 때만 세운다. 갈래 A는 V자 2장, 진화 만화경은 플레이어를 둘러싼 삼각형 3장.
+ * 앞쪽 350px 안에 적이 3마리 이상 있을 때만 세운다. 갈래 A는 무리 쪽으로 오므린 V자 2장,
+ * 진화 만화경은 플레이어 쪽이 열린 ㄷ자 주머니 3장 (공이 들어가 안에서 여러 번 튕긴다).
  * 타격 수 = 벽 한 번 세운 동안 튕긴 횟수 (tickWalls가 더한다).
  */
 function fireWall(g: Game, w: WeaponInstance, buf: number[]): number {
@@ -523,7 +528,7 @@ function fireWall(g: Game, w: WeaponInstance, buf: number[]): number {
   if (ahead.length < 3) return -1;
   const len = param(lv, "length") * p.stats.area;
   const t = param(lv, "duration");
-  const base = { t, weapon: w, boost: lv.params.boost ?? 1, aimAssist: !!lv.params.aimAssist, shock: lv.params.wallShock ?? 0, ox: p.x, oy: p.y };
+  const base = { t, weapon: w, boost: lv.params.boost ?? 1, aimAssist: !!lv.params.aimAssist, shock: lv.params.wallShock ?? 0 };
   const seg = (cx: number, cy: number, ang: number): Wall => ({
     ...base,
     x1: cx + (Math.cos(ang) * len) / 2,
@@ -531,23 +536,45 @@ function fireWall(g: Game, w: WeaponInstance, buf: number[]): number {
     x2: cx - (Math.cos(ang) * len) / 2,
     y2: cy - (Math.sin(ang) * len) / 2,
   });
-  const face = Math.atan2(p.faceY, p.faceX);
-  if (lv.params.triangle) {
-    // 플레이어를 둘러싼 정삼각형의 세 변
-    const r = WALL_AHEAD;
-    for (let k = 0; k < 3; k++) {
-      const a = face + (k * 2 * Math.PI) / 3;
-      g.walls.push(seg(p.x + Math.cos(a) * r * 0.6, p.y + Math.sin(a) * r * 0.6, a + Math.PI / 2));
-    }
-  } else if (param(lv, "walls", 1) >= 2) {
-    // V자: 앞쪽 양옆에 안으로 30° 기울인 벽 두 장 (튕긴 적이 가운데로 모인다)
-    const cx = p.x + p.faceX * WALL_AHEAD;
-    const cy = p.y + p.faceY * WALL_AHEAD;
-    const sx = -p.faceY * len * 0.45;
-    const sy = p.faceX * len * 0.45;
-    g.walls.push(seg(cx + sx, cy + sy, face + Math.PI / 2 - Math.PI / 6), seg(cx - sx, cy - sy, face + Math.PI / 2 + Math.PI / 6));
+  // 무리 중심과 플레이어→무리 방향
+  let mx = 0;
+  let my = 0;
+  for (const e of ahead) {
+    mx += e.x;
+    my += e.y;
+  }
+  mx /= ahead.length;
+  my /= ahead.length;
+  let dx = mx - p.x;
+  let dy = my - p.y;
+  const dl = Math.hypot(dx, dy);
+  if (dl < 1e-6) {
+    dx = p.faceX;
+    dy = p.faceY;
   } else {
-    g.walls.push(seg(p.x + p.faceX * WALL_AHEAD, p.y + p.faceY * WALL_AHEAD, face + Math.PI / 2));
+    dx /= dl;
+    dy /= dl;
+  }
+  const face = Math.atan2(dy, dx);
+  const clampX = (x: number): number => Math.max(20, Math.min(g.arena.w - 20, x));
+  const clampY = (y: number): number => Math.max(20, Math.min(g.arena.h - 20, y));
+  const bx = clampX(mx + dx * WALL_BEHIND);
+  const by = clampY(my + dy * WALL_BEHIND);
+  if (lv.params.triangle) {
+    // ㄷ자 주머니: 무리 뒤 한 장 + 양옆 두 장 (플레이어 쪽이 열림)
+    const half = len * 0.5;
+    g.walls.push(seg(bx, by, face + Math.PI / 2));
+    const sx = -dy * half;
+    const sy = dx * half;
+    g.walls.push(seg(clampX(bx + sx - dx * half), clampY(by + sy - dy * half), face));
+    g.walls.push(seg(clampX(bx - sx - dx * half), clampY(by - sy - dy * half), face));
+  } else if (param(lv, "walls", 1) >= 2) {
+    // V자: 무리 뒤 양옆에 플레이어 쪽으로 30° 오므린 벽 두 장 (튕긴 공·적이 가운데로 모인다)
+    const sx = -dy * len * 0.45;
+    const sy = dx * len * 0.45;
+    g.walls.push(seg(clampX(bx + sx), clampY(by + sy), face + Math.PI / 2 + Math.PI / 6), seg(clampX(bx - sx), clampY(by - sy), face + Math.PI / 2 - Math.PI / 6));
+  } else {
+    g.walls.push(seg(bx, by, face + Math.PI / 2));
   }
   // 상한을 넘으면 오래된 벽부터 치운다 (새 벽이 뒤에 쌓인다)
   if (g.walls.length > RULES.wall.maxActive) g.walls.splice(0, g.walls.length - RULES.wall.maxActive);
