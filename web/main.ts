@@ -1040,6 +1040,8 @@ function frame(now: number): void {
 /**
  * 자동 플레이: 주소가 #auto 로 시작하면 봇이 실제 화면에서 런을 한다 (조작·카드·갈래·상점 버튼까지 실제 UI로).
  * #auto-cue-s15-x4 처럼 캐릭터, 시작 스테이지(s), 속도 배율(x)을 붙일 수 있다. 시험 판이라 기록에 남지 않는다.
+ * #auto-rec-x8 은 메타 흐름 점검용: 바로 시작하지 않고 제목 화면에서 기다린다. 메뉴(시작·캐릭터·영구 강화)는
+ * 점검 도구(tools/metaflow.ts)가 실제 버튼으로 누르고, 판 안(카드·갈래·상점)만 봇이 한다. 이 판은 기록·코인에 남는다.
  * 점검 도구(Playwright)는 window.__pop 으로 상태를 읽는다.
  */
 interface AutoState {
@@ -1049,6 +1051,8 @@ interface AutoState {
   /** 다음 UI 동작까지 남은 시간 (사람처럼 조금 기다렸다 누른다) */
   wait: number;
   runs: number;
+  /** 기록에 남는 판 (메타 흐름 점검) */
+  rec: boolean;
 }
 let auto: AutoState | null = null;
 
@@ -1068,11 +1072,13 @@ interface PopDebug {
   /** 보스·엘리트 공격 예고 수, 보스 상태 (스크린샷 시점 고르기용): "" | "walk" | "groggy" | "shield" */
   hazards: number;
   boss: string;
+  /** 지금 판의 캐릭터와 능력치 (영구 강화가 실제로 붙었는지 확인용) */
+  player: { character: string; maxHp: number; revives: number; gold: number; stats: Record<string, number> } | null;
   /** 점검용: 지금 판에 무기를 준다 (스크린샷용, 예: give("whirlwind", 6, "A")) */
   give: (id: string, lv: number | "evo", branch?: string | null) => void;
 }
 const dbg: PopDebug = {
-  screen: "", stage: 0, time: 0, hp: 0, maxHp: 0, level: 0, enemies: 0, balls: 0, fps: 0, result: null, runs: 0, log: [], hazards: 0, boss: "",
+  screen: "", stage: 0, time: 0, hp: 0, maxHp: 0, level: 0, enemies: 0, balls: 0, fps: 0, result: null, runs: 0, log: [], hazards: 0, boss: "", player: null,
   give: (id, lv, branch = null) => {
     const def = WEAPONS[id];
     if (!g || !def) return;
@@ -1087,10 +1093,11 @@ let fpsN = 0;
 function parseAuto(): AutoState | null {
   const m = /^#auto(.*)$/.exec(location.hash);
   if (!m) return null;
-  const st: AutoState = { character: "olly", stage: 1, speed: 1, wait: 0.5, runs: 0 };
+  const st: AutoState = { character: "olly", stage: 1, speed: 1, wait: 0.5, runs: 0, rec: false };
   for (const t of (m[1] ?? "").split("-").filter(Boolean)) {
     if (CHARACTERS[t]) st.character = t;
     else if (/^s\d+$/.test(t)) st.stage = Number(t.slice(1));
+    else if (t === "rec") st.rec = true;
     else if (/^x\d+$/.test(t)) st.speed = Math.max(1, Math.min(8, Number(t.slice(1))));
   }
   return st;
@@ -1118,6 +1125,7 @@ function autoTick(dt: number): void {
     dbg.hp = g.player.hp;
     dbg.maxHp = g.player.maxHp;
     dbg.level = g.player.level;
+    dbg.player = { character: run?.character ?? "", maxHp: g.player.maxHp, revives: g.player.revives, gold: g.player.gold, stats: { ...g.player.stats } };
     dbg.enemies = g.enemies.filter((e) => !e.dead).length;
     dbg.balls = g.balls.length;
     dbg.hazards = g.hazards.length;
@@ -1241,6 +1249,7 @@ addEventListener("hashchange", () => {
 });
 
 auto = parseAuto();
-if (auto) devBegin(auto.character, auto.stage);
+if (auto && !auto.rec) devBegin(auto.character, auto.stage);
+else if (auto) renderTitle();
 else if (!devStart()) renderTitle();
 requestAnimationFrame(frame);
