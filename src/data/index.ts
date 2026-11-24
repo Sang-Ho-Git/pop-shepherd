@@ -96,6 +96,10 @@ export interface MetaEffect {
   aim_assist?: number;
   area?: number;
   luck?: number;
+  /** 회복 드롭 확률 증가 */
+  heal_find?: number;
+  /** 무지개 젤리가 섞여 나올 확률 */
+  rainbow?: number;
   /** 런 시작 골드 */
   startGold?: number;
   /** 색 공 쿨다운 감소 비율 */
@@ -106,6 +110,8 @@ export interface MetaEffect {
 export interface MetaNode {
   id: string;
   branch: string;
+  /** 이 캐릭터들만 살 수 있는 전용 노드 (없으면 모든 캐릭터의 공통 노드) */
+  chars?: string[];
   name: string;
   maxLevel: number;
   costs: number[];
@@ -115,6 +121,8 @@ export interface MetaNode {
 }
 export interface MetaTree {
   coins: { perStage: number; perPoppedEnemy: number; /** 런이 끝날 때 남은 골드 1당 코인 */ perGold?: number };
+  /** 다른 캐릭터가 이미 산 공통 노드 레벨의 할인율 (0.4 = 40% 싸게) */
+  shareDiscount?: number;
   nodes: MetaNode[];
 }
 export const META = metaJson as MetaTree;

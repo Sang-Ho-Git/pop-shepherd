@@ -112,10 +112,12 @@ describe("2.3 영구 강화 트리", () => {
   });
 
   it("트리를 전부 채우는 비용과, 코인이 충분하면 트리가 전부 찬다", () => {
-    const total = totalTreeCost();
-    expect(total).toBeGreaterThan(4000);
-    const full = profileForCoins(total);
-    for (const n of META.nodes) expect(full[n.id]).toBe(n.maxLevel);
+    for (const ch of ["shepherd", "cue", "olly", "pale"]) {
+      const total = totalTreeCost(ch);
+      expect(total).toBeGreaterThan(4000);
+      const full = profileForCoins(total, ch);
+      for (const n of META.nodes) expect(full[n.id] ?? 0).toBe(!n.chars || n.chars.includes(ch) ? n.maxLevel : 0);
+    }
   });
 
   it("코인 = 클리어 스테이지 + 터뜨린 적 + 남은 골드 몫", () => {
@@ -130,13 +132,15 @@ describe("2.3 영구 강화 트리", () => {
   });
 
   it("첫 수: 시작 무기 Lv2, 두 번째 기회: 한 번 쓰러져도 일어난다", () => {
-    const meta = applyMeta(character("shepherd"), profileForCoins(totalTreeCost()));
+    const meta = applyMeta(character("shepherd"), profileForCoins(totalTreeCost("shepherd"), "shepherd"));
     const g = startStage(1, "shepherd", "stage01", null, meta);
     expect(g.weapons[0]!.level.lv).toBe(2);
     const revives = META.nodes.find((n) => n.id === "second_chance")!.maxLevel;
     expect(g.player.revives).toBe(revives);
     g.player.hp = 1;
     g.player.iframes = 0;
+    // 다 찬 트리는 방어·회복이 높아 한 번 닿아서는 안 쓰러질 수 있다: 부활만 보려고 방어를 뺀다
+    g.player.stats.armor = 0;
     // 킥은 앞(+x)을 차므로 뒤에 둔다
     put(g, "red", g.player.x - 25, g.player.y, { moving: true });
     g.spawnTimer = 9999;

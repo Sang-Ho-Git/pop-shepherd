@@ -31,7 +31,7 @@ let pops = 0;
 for (const ch of chars) {
   let w = 0;
   for (let s = seedStart; s < seedStart + seeds; s++) {
-    const r = runCampaign(s, ch, CAMPAIGN, { ballMode, meta: metaCoins > 0 ? profileForCoins(metaCoins) : undefined });
+    const r = runCampaign(s, ch, CAMPAIGN, { ballMode, meta: metaCoins > 0 ? profileForCoins(metaCoins, ch) : undefined });
     n++;
     if (r.won) {
       won++;
