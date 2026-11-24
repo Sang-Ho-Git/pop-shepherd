@@ -81,7 +81,7 @@
     }
   ],
   "boss": {
-    "at": 35,
+    "at": 25,
     "kind": "rainbow_shepherd"
   },
   "pairs": [

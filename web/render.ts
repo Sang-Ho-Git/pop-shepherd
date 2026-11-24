@@ -230,10 +230,12 @@ function drawEnemy(ctx: CanvasRenderingContext2D, v: View, e: Enemy, time: numbe
       ctx.arc(x, y, r + 8 * v.scale, 0, Math.PI * 2);
       ctx.stroke();
       ctx.fillStyle = "#fff6b0";
+      // 화면 위쪽에 붙어 있으면 (울타리에 박힌 경우) 별을 몸 아래에 그린다 (HUD와 겹치지 않게)
+      const sy = y - r < 70 * v.scale ? y + r + 10 * v.scale : y - r - 6 * v.scale;
       for (let k = 0; k < 5; k++) {
         const a = time * 4 + (k * Math.PI * 2) / 5;
         ctx.beginPath();
-        ctx.arc(x + Math.cos(a) * r * 0.9, y - r - 6 * v.scale + Math.sin(a) * r * 0.25, Math.max(2, 3.5 * v.scale), 0, Math.PI * 2);
+        ctx.arc(x + Math.cos(a) * r * 0.9, sy + Math.sin(a) * r * 0.25, Math.max(2, 3.5 * v.scale), 0, Math.PI * 2);
         ctx.fill();
       }
     } else if (b && b.weak) {
@@ -285,11 +287,10 @@ function drawHazards(ctx: CanvasRenderingContext2D, g: Game, v: View, time: numb
     }
     ctx.fillStyle = `rgba(255,60,60,${0.12 + 0.1 * k})`;
     ctx.fill();
-    ctx.strokeStyle = `rgba(255,90,90,${0.55 + 0.4 * pulse})`;
-    ctx.lineWidth = Math.max(2, 3 * v.scale);
-    ctx.setLineDash([10 * v.scale, 6 * v.scale]);
+    // 테두리는 실선: 무기 영역(토템·충격파)은 점선이라 위험 경고와 헷갈리지 않게
+    ctx.strokeStyle = `rgba(255,80,80,${0.6 + 0.4 * pulse})`;
+    ctx.lineWidth = Math.max(2.5, 3.5 * v.scale);
     ctx.stroke();
-    ctx.setLineDash([]);
     // 차오르는 안쪽: 다 차면 터진다
     ctx.beginPath();
     if (h.kind === "circle") ctx.arc(x, y, h.r * v.scale * k, 0, Math.PI * 2);
@@ -626,6 +627,37 @@ export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: F
     grad.addColorStop(1, "rgba(8,17,14,0.88)");
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, cw, ch);
+  }
+
+  // 화면 밖 엘리트·보스: 가장자리에 방향 표시 (그로기면 노랗게 깜빡임: 지금 때릴 틈)
+  for (const e of g.enemies) {
+    if (e.dead || e.rank === "normal") continue;
+    const [ex, ey] = toScreen(v, e.x, e.y);
+    const m = e.radius * v.scale * 0.5;
+    if (ex > -m && ex < cw + m && ey > -m && ey < ch + m) continue;
+    const pad = 26 * v.scale;
+    const dx = ex - cw / 2;
+    const dy = ey - ch / 2;
+    const k = Math.min((cw / 2 - pad) / Math.max(1e-6, Math.abs(dx)), (ch / 2 - pad) / Math.max(1e-6, Math.abs(dy)));
+    const ax = cw / 2 + dx * k;
+    const ay = ch / 2 + dy * k;
+    const a = Math.atan2(dy, dx);
+    const groggy = (e.boss?.groggy ?? 0) > 0;
+    const sz = (e.rank === "boss" ? 16 : 12) * v.scale;
+    ctx.save();
+    ctx.translate(ax, ay);
+    ctx.rotate(a);
+    ctx.fillStyle = groggy ? `rgba(255,236,120,${0.6 + 0.4 * Math.sin(time * 14)})` : e.rank === "boss" ? "#ffcf5a" : "#f1e3b5";
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = Math.max(1.5, 2 * v.scale);
+    ctx.beginPath();
+    ctx.moveTo(sz, 0);
+    ctx.lineTo(-sz * 0.7, sz * 0.75);
+    ctx.lineTo(-sz * 0.7, -sz * 0.75);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
   }
 
   // 효과

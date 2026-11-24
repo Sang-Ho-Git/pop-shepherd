@@ -748,7 +748,20 @@ function readInput(): Input {
 
 /* ───────────────────────── 효과 ───────────────────────── */
 
+/** 자동 플레이 점검용 기록: 보스·엘리트 등장과 처치, 스테이지 끝 (tools/realtime.mjs가 읽는다) */
+function autoLog(game: Game): void {
+  const st = run ? run.stageIndex + 1 : 0;
+  for (const e of game.events) {
+    if (e.type === "boss-spawn") dbg.log.push(`보스 등장 s${st} ${game.time.toFixed(1)}`);
+    else if (e.type === "special-killed") dbg.log.push(`${e.rank === "boss" ? "보스" : "엘리트"} 처치 s${st} ${game.time.toFixed(1)} ${e.kind}`);
+    else if (e.type === "stage-clear") dbg.log.push(`클리어 s${st} ${game.time.toFixed(1)} 체력 ${Math.round(game.player.hp)}/${Math.round(game.player.maxHp)}`);
+    else if (e.type === "player-dead") dbg.log.push(`사망 s${st} ${game.time.toFixed(1)} 공격피해 ${Math.round(game.stats.damageFromAttacks)}/${Math.round(game.stats.damageTaken)}`);
+    else if (e.type === "groggy") dbg.log.push(`그로기 s${st} ${game.time.toFixed(1)} ${e.why}`);
+  }
+}
+
 function handleEvents(game: Game): void {
+  if (auto) autoLog(game);
   for (const e of game.events) {
     switch (e.type) {
       case "pop": {
@@ -1045,14 +1058,25 @@ function frame(now: number): void {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
     if (banner && screen === "play") {
+      // 바쁜 화면 위에서도 읽히게: 어두운 띠를 깔고, 부제가 화면보다 넓으면 " · "에서 줄을 나눈다 (휴대폰 세로)
       ctx.textAlign = "center";
       ctx.globalAlpha = Math.min(1, banner.t * 2);
+      const cy = canvas.height * 0.3;
+      const subFont = `${Math.round(22 * v.scale)}px "Gowun Dodum", sans-serif`;
+      ctx.font = subFont;
+      let lines = banner.sub ? [banner.sub] : [];
+      if (banner.sub && ctx.measureText(banner.sub).width > canvas.width * 0.9) lines = banner.sub.split(" · ");
+      const lh = 30 * v.scale;
+      const top = cy - 50 * v.scale;
+      const h = 66 * v.scale + lines.length * lh;
+      ctx.fillStyle = "rgba(8,17,14,0.62)";
+      ctx.fillRect(0, top, canvas.width, h);
       ctx.fillStyle = "#fff3c4";
       ctx.font = `${Math.round(48 * v.scale)}px Jua, "Gowun Dodum", sans-serif`;
-      ctx.fillText(banner.text, canvas.width / 2, canvas.height * 0.3);
-      ctx.font = `${Math.round(22 * v.scale)}px "Gowun Dodum", sans-serif`;
-      ctx.fillStyle = "#cfe8dd";
-      ctx.fillText(banner.sub, canvas.width / 2, canvas.height * 0.3 + 38 * v.scale);
+      ctx.fillText(banner.text, canvas.width / 2, cy);
+      ctx.font = subFont;
+      ctx.fillStyle = "#e4f4ec";
+      lines.forEach((l, i) => ctx.fillText(l, canvas.width / 2, cy + 38 * v.scale + i * lh));
       ctx.globalAlpha = 1;
     }
     if (screen === "play") renderHud(g);

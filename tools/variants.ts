@@ -1,6 +1,7 @@
 /** 실험 조건: 데이터·규칙을 메모리에서만 바꾼다 (tools/probe.ts에서 쓴다) */
 import { RULES } from "../src/core/rules.ts";
 import { CHARACTERS, ENEMIES, PASSIVES, SHOP, STAGES, WEAPONS } from "../src/data/index.ts";
+import { BOT } from "../src/sim/bot.ts";
 
 const paint = RULES.paint as { push: boolean; dry: number; toBall: boolean };
 
@@ -79,6 +80,10 @@ function harder(contact: number, speed: number): void {
 
 export const VARIANTS: Record<string, () => void> = {
   base: () => {},
+  /** 11/24 보스: 봇이 돌진을 바위로 유인하지 않게 (유인 전 봇) */
+  noLure: () => {
+    BOT.lure = false;
+  },
   /** 11/24 런 조정 비교: 회오리를 예전처럼 튕기게 */
   legacyOrbit: () => {
     (RULES.ball.orbit as { legacy: boolean }).legacy = true;
