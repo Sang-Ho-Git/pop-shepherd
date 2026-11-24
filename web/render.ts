@@ -325,12 +325,16 @@ function drawHazards(ctx: CanvasRenderingContext2D, g: Game, v: View, time: numb
 export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: Fx[], time: number, aim: Aim | null = null): void {
   const cw = ctx.canvas.width;
   const ch = ctx.canvas.height;
-  ctx.fillStyle = "#08110e";
-  ctx.fillRect(0, 0, cw, ch);
   // 풀밭: 바둑판 무늬 (움직임이 보이게)
   const tile = 80;
   const [ax, ay] = toScreen(v, 0, 0);
   const [bx, by] = toScreen(v, g.arena.w, g.arena.h);
+  // 바깥 어둠은 울타리 밖 띠만 칠한다 (예전에는 화면 전체를 먼저 칠했다: 폰에서는 캔버스 픽셀이 병목이라 전체 칠하기 한 번이 크다)
+  ctx.fillStyle = "#08110e";
+  if (ay > 0) ctx.fillRect(0, 0, cw, Math.ceil(ay));
+  if (by < ch) ctx.fillRect(0, Math.floor(by), cw, ch - Math.floor(by));
+  if (ax > 0) ctx.fillRect(0, 0, Math.ceil(ax), ch);
+  if (bx < cw) ctx.fillRect(Math.floor(bx), 0, cw - Math.floor(bx), ch);
   ctx.fillStyle = GRASS_A;
   ctx.fillRect(ax, ay, bx - ax, by - ay);
   ctx.fillStyle = GRASS_B;
@@ -500,7 +504,13 @@ export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: F
   // 바닥 경고는 적 아래, 탄은 적 위에 (drawHazards가 둘 다 그리므로 경고 먼저)
   drawHazards(ctx, g, v, time);
   // 적 (보스는 맨 위에)
-  for (const e of g.enemies) if (e.rank === "normal") drawEnemy(ctx, v, e, time);
+  // 화면 밖 적은 건너뛴다 (폰 세로 화면은 경기장의 1/3쯤만 보인다). 잔상·가시·표식이 닿는 여유를 두어 보이는 것은 그대로
+  const onScreen = (e: Enemy): boolean => {
+    const [x, y] = toScreen(v, e.x, e.y);
+    const m = (e.radius * 2.2 + 40 + Math.hypot(e.vx, e.vy) * 0.06) * v.scale;
+    return x > -m && y > -m && x < cw + m && y < ch + m;
+  };
+  for (const e of g.enemies) if (e.rank === "normal" && onScreen(e)) drawEnemy(ctx, v, e, time);
   for (const e of g.enemies) if (e.rank !== "normal") drawEnemy(ctx, v, e, time);
 
   // 회오리 칼날: 지나간 자리에 바람 꼬리. 색 공 규칙에서 이번 바퀴 cap을 다 쓰면 무뎌져 흐려진다
