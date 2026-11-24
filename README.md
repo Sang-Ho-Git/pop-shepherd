@@ -31,9 +31,9 @@ npm run calib -- paint_gun   # 무기 레벨별 실측 타격 수와 발사력(L
 node tools/share.ts --weapons paint_gun:3,kick:3 --ball   # 팝을 누가 일으켰는지 (무기별 몫)
 node tools/probe.ts --variant noTraits --ball --seeds 36 --seed-start 11   # 조건만 바꿔 완주 비교 (조건은 tools/variants.ts, 캐릭터 비교는 36시드 이상)
 node tools/stage15.ts base 30 [스테이지] --pool <파일>   # 한 스테이지만 실제 빌드로 (빌드 묶음은 tools/dev-builds.ts --pool)
+node tools/bossrun.ts base 36 11 olly > a.jsonl; node tools/bossrun.ts --sum a.jsonl   # 완주·죽은 스테이지·보스전 시간 (캐릭터별로 병렬로 띄워 합친다)
 tools/runtune.sh base <폴더>   # 강화 0 완주 두 시드 벌(11~46, 47~82) × 캐릭터 4 병렬 + 무기별 완주·회오리 삭제·이동 속도 패시브 (조건은 tools/variants.ts)
 node tools/shot-whirl.mjs docs/shots   # 회오리 동작 스크린샷 (build:web 뒤)
-node tools/bossrun.ts base 36 11 olly > a.jsonl; node tools/bossrun.ts --sum a.jsonl   # 완주·죽은 스테이지·보스전 시간 (캐릭터별로 병렬로 띄워 합친다)
 node tools/realtime.mjs --runs auto-cue-x3,auto-olly-s15 --out <폴더>   # 브라우저 실시간 점검 (오류·멈춤·프레임)
 ```
 
