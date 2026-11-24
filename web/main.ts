@@ -81,19 +81,38 @@ function button(label: string, onClick: () => void, cls = "btn"): HTMLButtonElem
   return b;
 }
 
+/** 마지막으로 그린 메뉴 화면 (같은 화면을 다시 그리면 스크롤 위치를 지킨다) */
+let shownScreen = "";
+
+/**
+ * 메뉴 화면을 그린다. 메뉴는 문서 전체가 스크롤된다 (body.menu): 폰에서 오버레이 안쪽 스크롤 상자를 쓰면
+ * 다시 그릴 때마다 맨 위로 튀고(첫 버튼 포커스), 호스트 페이지 안에서 스크롤이 겹치던 문제가 있었다.
+ * 같은 화면을 다시 그릴 때(영구 강화 구매, 상점 구매·새로고침, 캐릭터 탭)는 보던 자리를 지킨다.
+ */
 function show(nodes: HTMLElement[], cls = "panel"): void {
+  const keep = shownScreen === screen && !overlay.hidden;
+  const y = keep ? window.scrollY : 0;
+  // 다시 그리기 전 포커스가 있던 버튼 (같은 글자의 버튼에 포커스를 돌려준다: 키보드로 연달아 살 때)
+  const focused = keep && document.activeElement instanceof HTMLButtonElement ? document.activeElement.textContent : null;
   overlay.replaceChildren();
   const p = el("div", cls);
   for (const n of nodes) p.append(n);
   overlay.append(p);
   overlay.hidden = false;
-  const first = p.querySelector("button");
-  (first as HTMLButtonElement | null)?.focus();
+  document.body.classList.add("menu");
+  shownScreen = screen;
+  const buttons = [...p.querySelectorAll("button")] as HTMLButtonElement[];
+  const target = (focused !== null ? buttons.find((b) => b.textContent === focused && !b.disabled) : undefined) ?? buttons.find((b) => !b.disabled);
+  target?.focus({ preventScroll: true });
+  window.scrollTo(0, y);
 }
 
 function hideOverlay(): void {
   overlay.hidden = true;
   overlay.replaceChildren();
+  document.body.classList.remove("menu");
+  shownScreen = "";
+  window.scrollTo(0, 0);
 }
 
 /* ───────────────────────── 카드 설명 ───────────────────────── */
@@ -496,7 +515,7 @@ function renderMeta(characterId?: string): void {
     "tree",
   );
   show([
-    el("p", "eyebrow", `코인 ${save.coins} (모든 캐릭터 공용)`),
+    el("p", "eyebrow sticky-coins", `코인 ${save.coins} (모든 캐릭터 공용)`),
     el("h2", "", "영구 강화"),
     ...refundNotice(),
     tabs,

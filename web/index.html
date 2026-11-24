@@ -1,5 +1,6 @@
 <title>팝 셰퍼드</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap">
@@ -25,8 +26,10 @@
   #stage { position: fixed; inset: 0; }
   #game { width: 100%; height: 100%; display: block; touch-action: none; }
 
+  /* 메뉴가 떠 있으면 문서가 스크롤된다 (오버레이 안쪽 스크롤 상자를 쓰지 않음: 폰에서 다시 그릴 때 맨 위로 튀던 문제) */
+  body.menu { overflow-y: auto; }
   #overlay {
-    position: fixed; inset: 0; display: grid; place-items: center; overflow-y: auto;
+    position: absolute; top: 0; left: 0; width: 100%; min-height: 100%; display: grid; place-items: center;
     padding-block: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-bottom, 0px));
     padding-left: max(16px, env(safe-area-inset-left, 0px));
     padding-right: max(16px, env(safe-area-inset-right, 0px));
@@ -90,6 +93,8 @@
   .ctab .tbar { display: block; width: 100%; height: 5px; border-radius: 3px; margin-top: 4px; background: linear-gradient(to right, var(--gold) var(--p), rgba(0,0,0,0.4) var(--p)); }
   .branch.own h3 { color: var(--sky); }
   .branch.own .node { border-color: #4f6f78; }
+  /* 영구 강화: 코인 줄은 스크롤해도 위에 붙어 있다 (아래쪽 노드를 살 때 남은 코인이 보이게) */
+  .sticky-coins { position: sticky; top: 0; z-index: 2; background: var(--plank); padding-block: 10px; margin-block: -10px; box-shadow: 0 8px 10px -8px rgba(0,0,0,0.6); }
   .unlock-new { margin: 0; font-family: var(--display); color: var(--sky); font-size: 22px; }
 
   #hud { position: fixed; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between;
