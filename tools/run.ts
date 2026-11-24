@@ -1,7 +1,7 @@
 /**
  * 런 시뮬: 스테이지 1부터 10까지 성장을 이어 가며 봇으로 돌린다.
  *   npm run campaign -- --seeds 10 --character shepherd [--detail] [--meta-coins 1000] [--no-shop]
- *   --meta-coins N  영구 강화 코인 N개를 싼 노드부터 쓴 프로필로 시작 (기본 0)
+ *   --meta-coins N  영구 강화 코인 N개를 그 캐릭터 트리에 싼 노드부터 쓴 프로필로 시작 (기본 0)
  *   --variant 이름  tools/variants.ts의 조건을 메모리에서 적용 (기본 base)
  */
 import { runCampaign } from "../src/sim/campaign.ts";
@@ -23,13 +23,14 @@ const seedStart = Number(arg("seed-start", "1"));
 const chars = arg("character", "shepherd,cue,olly,pale").split(",");
 const detail = process.argv.includes("--detail");
 const metaCoins = Number(arg("meta-coins", "0"));
-const meta = metaCoins > 0 ? profileForCoins(metaCoins) : undefined;
+const metaFor = (ch: string) => (metaCoins > 0 ? profileForCoins(metaCoins, ch) : undefined);
 const shop = !process.argv.includes("--no-shop");
 const ballMode = process.argv.includes("--ball");
-if (meta) console.log(`영구 강화 (코인 ${metaCoins}): ${Object.entries(meta).map(([k, v]) => `${k}${v}`).join(" ")}`);
 const pct = (n: number): string => `${Math.round(n * 100)}%`.padStart(4);
 
 for (const ch of chars) {
+  const meta = metaFor(ch);
+  if (meta) console.log(`영구 강화 ${ch} (코인 ${metaCoins}): ${Object.entries(meta).map(([k, v]) => `${k}${v}`).join(" ")}`);
   const reps: CampaignReport[] = [];
   for (let i = 0; i < seeds; i++) reps.push(runCampaign(seedStart + i, ch, CAMPAIGN, { meta, shop, ballMode }));
   const buys = reps.reduce((a, r) => a + r.stages.reduce((x, st) => x + st.bought.length, 0), 0) / seeds;
