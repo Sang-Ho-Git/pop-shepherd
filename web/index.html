@@ -1,5 +1,6 @@
 <title>팝 셰퍼드</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap">
@@ -25,15 +26,17 @@
   #stage { position: fixed; inset: 0; }
   #game { width: 100%; height: 100%; display: block; touch-action: none; }
 
+  /* 메뉴가 떠 있으면 문서가 스크롤된다 (오버레이 안쪽 스크롤 상자를 쓰지 않음: 폰에서 다시 그릴 때 맨 위로 튀던 문제) */
+  body.menu { overflow-y: auto; }
   #overlay {
-    position: fixed; inset: 0; display: grid; place-items: center; overflow-y: auto;
+    position: absolute; top: 0; left: 0; right: 0; box-sizing: border-box; min-height: 100%; display: grid; place-items: center;
     padding-block: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-bottom, 0px));
     padding-left: max(16px, env(safe-area-inset-left, 0px));
     padding-right: max(16px, env(safe-area-inset-right, 0px));
     background: rgba(8, 17, 14, 0.62);
   }
   .panel {
-    width: min(100%, 980px); display: flex; flex-direction: column; gap: 14px;
+    width: min(100%, 980px); box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;
     background: var(--plank); border: 3px solid var(--plank-edge); border-radius: 14px;
     padding: clamp(18px, 3vw, 34px); box-shadow: 0 18px 50px rgba(0,0,0,0.45);
   }
@@ -49,7 +52,7 @@
   .coins { margin: 0; font-family: var(--display); color: var(--gold); font-size: 24px; }
   .row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
   .cards, .chars { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
-  .tree { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(168px, 100%), 1fr)); gap: 12px; }
+  .tree { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 12px; }
   .branch { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 
   button { font: inherit; color: inherit; cursor: pointer; }
@@ -90,6 +93,11 @@
   .ctab .tbar { display: block; width: 100%; height: 5px; border-radius: 3px; margin-top: 4px; background: linear-gradient(to right, var(--gold) var(--p), rgba(0,0,0,0.4) var(--p)); }
   .branch.own h3 { color: var(--sky); }
   .branch.own .node { border-color: #4f6f78; }
+  /* 영구 강화: 코인 줄은 스크롤해도 위에 붙어 있다 (아래쪽 노드를 살 때 남은 코인이 보이게) */
+  .sticky-coins { position: sticky; top: 0; z-index: 2; background: var(--plank); padding-block: 10px; margin-block: -10px; box-shadow: 0 8px 10px -8px rgba(0,0,0,0.6); }
+  .node.short:disabled { opacity: 0.8; }
+  .node.short .price { color: var(--mute) !important; }
+  .node.done:disabled { opacity: 0.7; border-color: var(--sky); }
   .unlock-new { margin: 0; font-family: var(--display); color: var(--sky); font-size: 22px; }
 
   #hud { position: fixed; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between;
@@ -102,7 +110,8 @@
   .bar { position: relative; height: 18px; max-width: 360px; width: 100%; background: rgba(0,0,0,0.55); border: 2px solid rgba(244,239,225,0.35); border-radius: 9px; overflow: hidden; }
   #hud .bottom .bar { max-width: none; }
   .bar .fill { position: absolute; inset: 0 auto 0 0; }
-  .bar .label { position: relative; padding-left: 8px; font-size: 12px; line-height: 14px; font-variant-numeric: tabular-nums; text-shadow: 0 1px 0 #000; }
+  /* 블록으로: 줄 상자가 부모 글자 크기를 따라 커져 글자가 막대 아래로 밀려 잘리던 것 (폰에서 잘 보였다) */
+  .bar .label { position: relative; display: block; padding-left: 8px; font-size: 12px; line-height: 14px; white-space: nowrap; font-variant-numeric: tabular-nums; text-shadow: 0 1px 0 #000; }
   .weapons { display: flex; flex-wrap: wrap; gap: 6px; }
   .weapons .w { font-size: 12px; background: rgba(0,0,0,0.5); border-radius: 6px; padding: 2px 8px; }
   .weapons .whistle-cd { color: var(--sky); }
@@ -125,7 +134,13 @@
     width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--plank-edge); background: rgba(43,33,24,0.8);
     font-family: var(--display); font-size: 14px; color: var(--cream);
   }
-  @media (hover: hover) and (pointer: fine) { #whistle, #swap { display: none; } }
+  /* 터치 화면의 일시정지 (키보드가 없으면 Esc를 못 누른다) */
+  #pausebtn {
+    position: fixed; right: max(18px, env(safe-area-inset-right, 0px)); top: calc(64px + env(safe-area-inset-top, 0px));
+    width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--plank-edge); background: rgba(43,33,24,0.8);
+    font-size: 14px; color: var(--cream); letter-spacing: -2px;
+  }
+  @media (hover: hover) and (pointer: fine) { #whistle, #swap, #pausebtn { display: none; } }
   @media (prefers-reduced-motion: reduce) { .btn:active:not(:disabled) { transform: none; } }
 </style>
 
@@ -133,6 +148,7 @@
 <div id="hud" hidden></div>
 <button id="whistle" type="button" hidden>휘슬</button>
 <button id="swap" type="button" hidden>바꾸기</button>
+<button id="pausebtn" type="button" aria-label="일시정지" hidden>❚❚</button>
 <p id="hint" hidden></p>
 <div id="overlay" hidden></div>
 <!--BUNDLE-->

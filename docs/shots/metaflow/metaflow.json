@@ -1,0 +1,71 @@
+{
+  "phone": false,
+  "speed": 8,
+  "rows": [
+    {
+      "run": 1,
+      "character": "olly",
+      "reached": 6,
+      "won": false,
+      "coinsShown": 55,
+      "coinsSaved": 55,
+      "goldNote": "",
+      "unlocked": [
+        "olly",
+        "shepherd"
+      ],
+      "bought": [
+        "초크(50)"
+      ],
+      "coinsLeft": 5,
+      "statsChecked": "맞음",
+      "seconds": 93
+    },
+    {
+      "run": 2,
+      "character": "shepherd",
+      "reached": 15,
+      "won": true,
+      "coinsShown": 283,
+      "coinsSaved": 283,
+      "goldNote": "남은 골드 4009 → 코인 100",
+      "unlocked": [
+        "olly",
+        "shepherd"
+      ],
+      "bought": [
+        "초크(30)",
+        "빠른 장전(40)",
+        "알뜰(50)",
+        "비상금(40)",
+        "긴 지팡이(45)",
+        "가벼운 발(55)"
+      ],
+      "coinsLeft": 28,
+      "statsChecked": "맞음",
+      "seconds": 295
+    },
+    {
+      "run": 3,
+      "character": "shepherd",
+      "reached": 9,
+      "won": false,
+      "coinsShown": 98,
+      "coinsSaved": 98,
+      "goldNote": "남은 골드 204 → 코인 5",
+      "unlocked": [
+        "olly",
+        "shepherd"
+      ],
+      "bought": [
+        "튼튼한 몸(60)",
+        "근력(60)"
+      ],
+      "coinsLeft": 6,
+      "statsChecked": "맞음",
+      "seconds": 153
+    }
+  ],
+  "issues": [],
+  "minutes": 9
+}
