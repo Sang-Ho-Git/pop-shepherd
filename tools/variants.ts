@@ -29,7 +29,7 @@ function scaleArena(f: number): void {
 /** 11/24 난이도 실험: 환경 변수 RAMP="spd=0.08,hp=0.3,cap=0.2,int=0.1,from=6,to=14,s15spd=0"
  * 스테이지 from~to에 (k-from+1)/(to-from+1) 비율로 늘려 to에서 1+값이 되게 한다.
  * k13con=-0.1 처럼 k<스테이지><spd|hp|con>으로 한 스테이지만 더 곱할 수 있다.
- * con: 접촉 피해 배율, spd: 적 속도, hp: 적 체력, cap: 적 상한, int: 소환 간격을 1/(1+값)으로 줄임 */
+ * kick: 색 공 규칙 킥 쿨다운 배율 (0이면 그대로), con: 접촉 피해 배율, spd: 적 속도, hp: 적 체력, cap: 적 상한, int: 소환 간격을 1/(1+값)으로 줄임 */
 function ramp(): void {
   const o: Record<string, number> = { spd: 0, hp: 0, cap: 0, int: 0, from: 6, to: 14, s15spd: 0, s15hp: 0, s15int: 0, con: 0, s15con: 0 };
   for (const kv of (process.env.RAMP ?? "").split(",").filter(Boolean)) {
@@ -37,6 +37,7 @@ function ramp(): void {
     o[k!] = Number(v);
   }
   const r2 = (x: number) => Math.round(x * 100) / 100;
+  if (o.kick) (RULES.ball as { kickCooldownMul: number }).kickCooldownMul = o.kick;
   for (let k = o.from!; k <= 15; k++) {
     const st = STAGES[`stage${String(k).padStart(2, "0")}`]!;
     const f = k === 15 ? 1 : Math.min(1, (k - o.from! + 1) / (o.to! - o.from! + 1));
