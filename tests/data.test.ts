@@ -55,7 +55,8 @@ describe("데이터: 캐릭터·적·스테이지", () => {
 
   it("캐릭터 능력치가 기획서 값과 같다", () => {
     // 11/23 밤: 당구 공으로 바꾼 뒤 큐가 가장 약해 체력 80 → 100, 속도 1.1 → 1.2 (36시드 완주 5 → 14)
-    expect(CHARACTERS.cue?.stats).toMatchObject({ max_hp: 100, move_speed: 1.2, knock_power: 1.25, area: 1 });
+    // 11/24 런 조정: 마무리 시간·반사벽 변경 뒤 큐가 47~82에서 2/36으로 처져 100 → 110 (docs/2026-11-24-런조정.md)
+    expect(CHARACTERS.cue?.stats).toMatchObject({ max_hp: 110, move_speed: 1.2, knock_power: 1.25, area: 1 });
     expect(CHARACTERS.cue?.trait).toBe("three_cushion");
     expect(CHARACTERS.olly?.stats).toMatchObject({ max_hp: 130, armor: 2, pickup: 1.4 });
     // 11/24: 난이도를 올리자 팔레만 크게 앞섰다 (72시드 23 vs 9~11). 쿨다운 −10%가 색 공 쿨다운에도 들어가서라 0으로 (팔레 23 → 13)
