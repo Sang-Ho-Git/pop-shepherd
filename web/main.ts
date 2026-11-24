@@ -731,15 +731,52 @@ function handleEvents(game: Game): void {
         sfx.whistle();
         fx.push({ kind: "ring", x: game.player.x, y: game.player.y, t: 0, life: 0.5, color: "#f4efe1", radius: RULES.whistle.radius });
         break;
-      case "boss-spawn":
+      case "boss-spawn": {
         sfx.boss();
-        banner = { text: game.enemies.find((x) => x.id === e.id)?.kind === "wool_giant" ? "양털 거인" : "무지개 양치기", sub: "곁에서 터뜨려야 상처를 입는다", t: 3 };
+        const wool = game.enemies.find((x) => x.id === e.id)?.kind === "wool_giant";
+        banner = wool
+          ? { text: "양털 거인", sub: "빨간 바닥을 피하고, 머리 위 색 공을 맞혀라 · 돌진은 바위로 유인", t: 3.5 }
+          : { text: "무지개 양치기", sub: "머리 위 색 공을 맞혀라 · 보호막은 쿠션 공으로 깬다", t: 3.5 };
         break;
-      case "elite-spawn":
-        banner = { text: "엘리트 등장", sub: "곁에서 터뜨리면 보물 상자", t: 2 };
+      }
+      case "elite-spawn": {
+        const sub: Record<string, string> = {
+          chief_jelly: "내려찍기를 피하고, 몸 색 공을 맞혀라",
+          chameleon: "혀를 피하고, 몸 색 공을 맞혀라 (색이 바뀐다)",
+          armored: "돌진을 바위로 유인해 기절시켜라",
+        };
+        banner = { text: "엘리트 등장", sub: sub[e.kind] ?? "곁에서 터뜨리면 보물 상자", t: 2.5 };
         break;
+      }
       case "boss-phase":
-        banner = { text: "2단계", sub: "보스가 거칠어졌다", t: 2 };
+        banner = { text: "2단계", sub: "공격이 빨라진다", t: 2 };
+        break;
+      case "weak-hit":
+        fx.push({ kind: "ring", x: e.x, y: e.y, t: 0, life: 0.45, color: "#ffcf5a", radius: 70 });
+        fx.push({ kind: "text", x: e.x, y: e.y - 30, t: 0, life: 1.1, color: "#ffcf5a", text: e.cushions > 0 ? `약점! ${e.cushions}쿠션` : "약점!" });
+        shake = Math.min(16, shake + 6);
+        hitStop = Math.max(hitStop, 0.06);
+        sfx.pop(4, 1);
+        break;
+      case "groggy": {
+        const t = game.enemies.find((x) => x.id === e.id);
+        if (t) fx.push({ kind: "text", x: t.x, y: t.y - t.radius - 30, t: 0, life: 1.6, color: "#fff6b0", text: e.why === "crash" ? "쾅! 그로기" : "보호막 깨짐! 그로기" });
+        shake = Math.min(18, shake + 8);
+        hitStop = Math.max(hitStop, 0.1);
+        sfx.chest();
+        break;
+      }
+      case "shield-up":
+        banner = { text: "무지개 보호막", sub: `울타리에 튕긴 공으로 쿠션 ${e.need}개를 채워 깨라`, t: 2.5 };
+        break;
+      case "shield-chip": {
+        const t = game.enemies.find((x) => x.id === e.id);
+        if (t) fx.push({ kind: "text", x: t.x, y: t.y + t.radius + 30, t: 0, life: 0.9, color: "#9fe3ff", text: e.left > 0 ? `보호막 ${e.left}` : "" });
+        sfx.stick();
+        break;
+      }
+      case "telegraph":
+        sfx.warn();
         break;
       case "wrapup-start":
         banner = { text: "마무리", sub: `${RULES.stage.wrapUpSeconds}초 동안 경험치 +${Math.round(RULES.stage.wrapUpXpBonus * 100)}%`, t: 2.5 };
@@ -957,11 +994,14 @@ interface PopDebug {
   result: { won: boolean; reached: number; level: number } | null;
   runs: number;
   log: string[];
+  /** 보스·엘리트 공격 예고 수, 보스 상태 (스크린샷 시점 고르기용): "" | "walk" | "groggy" | "shield" */
+  hazards: number;
+  boss: string;
   /** 점검용: 지금 판에 무기를 준다 (스크린샷용, 예: give("whirlwind", 6, "A")) */
   give: (id: string, lv: number | "evo", branch?: string | null) => void;
 }
 const dbg: PopDebug = {
-  screen: "", stage: 0, time: 0, hp: 0, maxHp: 0, level: 0, enemies: 0, balls: 0, fps: 0, result: null, runs: 0, log: [],
+  screen: "", stage: 0, time: 0, hp: 0, maxHp: 0, level: 0, enemies: 0, balls: 0, fps: 0, result: null, runs: 0, log: [], hazards: 0, boss: "",
   give: (id, lv, branch = null) => {
     const def = WEAPONS[id];
     if (!g || !def) return;
@@ -1009,6 +1049,9 @@ function autoTick(dt: number): void {
     dbg.level = g.player.level;
     dbg.enemies = g.enemies.filter((e) => !e.dead).length;
     dbg.balls = g.balls.length;
+    dbg.hazards = g.hazards.length;
+    const bs = g.enemies.find((e) => e.rank === "boss" && !e.dead)?.boss;
+    dbg.boss = !bs ? "" : bs.groggy > 0 ? "groggy" : bs.shield > 0 ? "shield" : "walk";
   }
   a.wait -= dt;
   if (a.wait > 0) return;

@@ -19,13 +19,58 @@ export interface BossState {
   phase: 1 | 2;
   summonT: number;
   shiftT: number;
-  dashCd: number;
-  /** 돌진 예고 남은 시간, 돌진 남은 시간 */
-  windup: number;
-  dashT: number;
+  /** 돌진 속도 (px/s) */
   dashX: number;
   dashY: number;
-  blastT: number;
+  /** 약점 색: 이 색 공을 직접 맞히면 큰 피해 (null이면 약점 공 없음, 돌갑옷) */
+  weak: MatchColor | null;
+  /** 그로기 남은 시간: 멈추고 패턴을 쓰지 않으며 받는 피해 ×RULES.boss.groggyMul */
+  groggy: number;
+  /** 보호막: 남은 쿠션 수 (0이면 없음). 공이 거친 쿠션 수만큼 깎인다 */
+  shield: number;
+  /** 다음 공격 패턴까지 남은 시간, 지금까지 쓴 패턴 수 (순서대로 돌린다) */
+  atkCd: number;
+  atkN: number;
+  /** 돌진 남은 거리 (px), 돌진 중 몸통 피해 */
+  dashLeft: number;
+  dashDmg: number;
+  /** 보호막 저절로 풀리기까지 남은 시간, 지금까지 친 보호막 수 */
+  shieldT: number;
+  shields: number;
+}
+
+/**
+ * 바닥 경고 (보스·엘리트 공격 예고). t초 동안 경고만 보이고, 0이 되는 틱에 판정한다.
+ * - circle: (x, y) 반지름 r 안이면 맞는다
+ * - line: (x, y)에서 ang 방향 len 길이, 폭 2r (돌진 경로. 판정은 돌진하는 몸으로 한다)
+ * - cone: (x, y)에서 ang ± spread, 길이 len (부채꼴 탄막 예고. 판정은 탄으로 한다)
+ */
+export interface Hazard {
+  kind: "circle" | "line" | "cone";
+  /** 무엇의 예고인지: slam(내려찍기), dash(돌진), fan(탄막), splash(물감 웅덩이), tongue(혀) */
+  act: string;
+  owner: number;
+  x: number;
+  y: number;
+  r: number;
+  ang: number;
+  len: number;
+  spread: number;
+  t: number;
+  total: number;
+  dmg: number;
+}
+
+/** 보스 탄 (털뭉치·물감): 곧게 날아가 플레이어에 닿으면 피해, 울타리·바위에 닿으면 사라진다 */
+export interface Shot {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  r: number;
+  t: number;
+  dmg: number;
+  color: Color;
 }
 
 export interface EnemyDef {
@@ -379,6 +424,13 @@ export type GameEvent =
   | { type: "boss-spawn"; kind: string; id: number }
   | { type: "boss-phase"; id: number; phase: 2 }
   | { type: "special-hit"; id: number; damage: number; hp: number }
+  /** 약점 색 공 직격 (cushions: 공이 거친 쿠션 수) */
+  | { type: "weak-hit"; id: number; damage: number; cushions: number; x: number; y: number }
+  | { type: "groggy"; id: number; why: "crash" | "shield" }
+  | { type: "shield-up"; id: number; need: number }
+  | { type: "shield-chip"; id: number; left: number }
+  | { type: "telegraph"; act: string; id: number }
+  | { type: "hazard-hit"; act: string; damage: number }
   | { type: "special-killed"; id: number; kind: string; rank: EnemyRank }
   | { type: "chest-drop"; kind: "elite" | "boss"; x: number; y: number }
   | { type: "chest-open"; kind: "elite" | "boss"; evolved: string[]; picked: string[] }
@@ -451,6 +503,10 @@ export interface Stats {
   /** 받은 접촉 피해 합계, 그중 엘리트·보스에게 받은 것 */
   damageTaken: number;
   damageFromSpecial: number;
+  /** 보스·엘리트 공격(경고 판정·탄·돌진)으로 받은 피해, 약점 공 직격 수, 그로기 수 */
+  damageFromAttacks: number;
+  weakHits: number;
+  groggies: number;
   /** 진화한 무기 수 */
   evolutions: number;
   /** 엘리트·보스가 팝으로 입은 피해 합계, 그런 팝의 수 */
@@ -511,6 +567,9 @@ export interface Game {
   chests: Chest[];
   /** 팝 자리에 떨어진 골드 주머니 */
   golds: GoldPouch[];
+  /** 보스·엘리트 공격 예고와 탄 */
+  hazards: Hazard[];
+  shots: Shot[];
   /** 마무리 시간이 시작된 시각 */
   wrapUpAt: number;
   stage: StageDef | null;

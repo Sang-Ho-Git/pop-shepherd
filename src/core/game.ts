@@ -5,9 +5,10 @@ import { SpatialHash } from "../world/spatialHash.ts";
 import { collideRocks, integrate, MAX_ENEMY_RADIUS, separate } from "../world/physics.ts";
 import { resolveImpacts } from "../combat/impacts.ts";
 import { detonateBomb, shockwave } from "../combat/pops.ts";
+import { hurtPlayer } from "../combat/hurt.ts";
 import { tickSpawner } from "../combat/spawner.ts";
 import { fireWeapons, tickEffects, tickTotems, tickWalls } from "../weapons/weapons.ts";
-import { spawnScheduled, tickBosses } from "../combat/bosses.ts";
+import { spawnScheduled, tickBosses, tickHazards } from "../combat/bosses.ts";
 import { openChest } from "../progression/chest.ts";
 import { initBall, tickBallThrow, tickBalls } from "../combat/ball.ts";
 import { checkLevelUp } from "../progression/levelup.ts";
@@ -74,6 +75,8 @@ export function createGame(cfg: GameConfig): Game {
     ball: null,
     balls: [],
     golds: [],
+    hazards: [],
+    shots: [],
     wrapUpAt: 0,
     stage: cfg.stage,
     phase: "play",
@@ -108,6 +111,9 @@ export function createGame(cfg: GameConfig): Game {
       popsBy: {},
       damageTaken: 0,
       damageFromSpecial: 0,
+      damageFromAttacks: 0,
+      weakHits: 0,
+      groggies: 0,
       evolutions: 0,
       specialDamage: 0,
       specialHits: 0,
@@ -269,7 +275,8 @@ function contactDamage(g: Game): void {
   let fromSpecial = 0;
   for (const j of buf) {
     const e = g.enemies[j];
-    if (!e || e.dead || e.state !== "walk") continue;
+    // 그로기인 엘리트·보스는 닿아도 아프지 않다 (때릴 틈)
+    if (!e || e.dead || e.state !== "walk" || (e.boss && e.boss.groggy > 0)) continue;
     const reach = p.radius + e.radius + 2;
     const dx = e.x - p.x;
     const dy = e.y - p.y;
@@ -282,26 +289,8 @@ function contactDamage(g: Game): void {
   if (worst <= 0) return;
   // "worst": 닿은 적 중 가장 센 한 마리 피해. "sum": 닿은 적마다 피해 (포위가 위험해진다).
   const dmg = RULES.player.contactMode === "sum" ? sum : Math.max(1, worst - p.stats.armor);
-  p.hp -= dmg;
-  g.stats.damageTaken += dmg;
   g.stats.damageFromSpecial += RULES.player.contactMode === "sum" ? fromSpecial : 0;
-  p.iframes = RULES.player.iframes;
-  g.events.push({ type: "player-hit", damage: dmg, hp: p.hp });
-  if (p.hp <= 0 && p.revives > 0) {
-    // 두 번째 기회: 체력 절반으로 일어나며 주변 적을 밀어낸다
-    p.revives--;
-    p.hp = p.maxHp * RULES.player.reviveHpFrac;
-    p.iframes = RULES.player.reviveIframes;
-    shockwave(g, p.x, p.y, RULES.whistle.radius, RULES.whistle.knock, { chainDepth: 0, chainT: 0 });
-    g.events.push({ type: "player-revive" });
-    return;
-  }
-  if (p.hp <= 0) {
-    p.hp = 0;
-    p.dead = true;
-    g.phase = "failed";
-    g.events.push({ type: "player-dead" });
-  }
+  hurtPlayer(g, dmg);
 }
 
 function pickupBombs(g: Game): void {
@@ -393,7 +382,7 @@ function trackStall(g: Game): void {
 /**
  * 고정 틱 한 번. 순서가 결과를 정하므로 바꾸면 테스트의 재현 해시도 바뀐다.
  *  1 이동  2 소환  3 추적·토템  4 적분  5 공간 해시  6 무기·휘슬  7 충돌 매치  8 겹침 해소
- *  9 접촉 피해  10 폭탄  11 막힘  12 죽은 적 제거
+ *  9 접촉 피해·보스 공격 판정  10 폭탄  11 막힘  12 죽은 적 제거
  */
 export function goalMet(g: Game): boolean {
   const st = g.stage;
@@ -419,6 +408,8 @@ function advancePhase(g: Game): void {
   if (!st) return;
   if (g.phase === "play" && goalMet(g)) {
     g.phase = "wrapup";
+    g.hazards = [];
+    g.shots = [];
     g.wrapUpAt = g.time;
     if (RULES.stage.wrapUpSeconds > 0) g.events.push({ type: "wrapup-start" });
   }
@@ -470,6 +461,7 @@ export function step(g: Game, input: Input): void {
   // 큰 무리(100마리 이상)는 한 번으로 겹침이 다 풀리지 않는다 (야간 점검: 160마리에서 깊은 겹침). 한 번 더 돈다.
   if (g.enemies.length >= 100) separate(g, []);
   contactDamage(g);
+  tickHazards(g);
   pickupBombs(g);
   pickupMilks(g);
   pickupChests(g);
