@@ -646,6 +646,9 @@ function fireWall(g: Game, w: WeaponInstance, buf: number[]): number {
   const clampY = (y: number): number => Math.max(20, Math.min(g.arena.h - 20, y));
   const bx = clampX(mx + dx * WALL_BEHIND);
   const by = clampY(my + dy * WALL_BEHIND);
+  // 11/24: 새 벽을 세우면 같은 무기의 이전 벽은 치운다 (동시 1세트). 남아 있는 벽이 다음 무리로 던지는 공 길을 막았다
+  // (반사벽 시작 빌드 11~46 완주: 공이 벽을 지나가게 하면 32 → 51/144, docs/2026-11-24-런조정.md)
+  if (RULES.wall.oneSet) g.walls = g.walls.filter((wl) => wl.weapon !== w);
   if (lv.params.triangle) {
     // ㄷ자 주머니: 무리 뒤 한 장 + 양옆 두 장 (플레이어 쪽이 열림)
     const half = len * 0.5;

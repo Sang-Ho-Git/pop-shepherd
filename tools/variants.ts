@@ -107,6 +107,11 @@ export const VARIANTS: Record<string, () => void> = {
     for (const c of Object.values(CHARACTERS)) c.startWeapon = "reflect_wall";
     (RULES.wall as { ballPass: boolean }).ballPass = true;
   },
+  /** 반사벽 예전 동작 비교: 벽이 여러 세트 남음 + 지속 6~7초 */
+  wallOld: () => {
+    (RULES.wall as { oneSet: boolean }).oneSet = false;
+    for (const l of WEAPONS.reflect_wall!.levels) (l.params as Record<string, number>).duration = l.lv === 1 || l.lv === 2 ? 6 : 7;
+  },
   /** 반사벽을 아예 뺀다 */
   noWall: () => {
     WEAPONS.reflect_wall!.implemented = false;

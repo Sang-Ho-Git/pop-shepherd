@@ -420,7 +420,8 @@ export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: F
     const [x1, y1] = toScreen(v, w.x1, w.y1);
     const [x2, y2] = toScreen(v, w.x2, w.y2);
     const core = w.boost > 1 ? "#ff9f43" : "#9fe3ff";
-    ctx.globalAlpha = Math.min(1, w.t / 0.6);
+    // 사라지기 0.5초 전부터 깜빡인다 (언제 공 길이 열리는지 보이게)
+    ctx.globalAlpha = w.t < 0.5 ? (Math.floor(w.t * 12) % 2 === 0 ? 0.25 : 0.9) : 1;
     ctx.lineCap = "round";
     ctx.strokeStyle = INK;
     ctx.lineWidth = 14 * v.scale;
