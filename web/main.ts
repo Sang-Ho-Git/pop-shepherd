@@ -1034,6 +1034,8 @@ function renderHud(game: Game): void {
     bottom.append(ws);
     hud.replaceChildren(top, bottom);
     hudRefs = { sig, hp, goal: goalEl, gold: goldEl, boss: bossBar, lv, whistle, cur, next };
+    // 터치 버튼(휘슬·바꾸기)은 아래 HUD 위에 놓는다 (보스 막대·무기 두 줄이면 휘슬이 보스 막대를 가리던 것)
+    document.documentElement.style.setProperty("--hud-bottom", `${Math.ceil(innerHeight - bottom.getBoundingClientRect().top)}px`);
   }
   const r = hudRefs;
   setBar(r.hp, p.hp / p.maxHp, `체력 ${hpText}`);
