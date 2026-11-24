@@ -173,6 +173,8 @@ async function flow(): Promise<RunLog[]> {
     const shownFresh = [...text.matchAll(/새로 열림: (\S+)/g)].map((m) => m[1]);
     if (coinsShown !== after.coins - before.coins) issue(`run${i} 코인: 화면 +${coinsShown}, 세이브 +${after.coins - before.coins}`);
     if (shownFresh.join() !== fresh.map((x) => NAME[x]).join()) issue(`run${i} 새로 열림: 화면 ${shownFresh.join()} / 세이브 ${fresh.join()}`);
+    // 화면 숫자는 정수로 (남은 골드가 4848.891000000002처럼 나온 적이 있다)
+    if (/\d\.\d{3,}/.test(text)) issue(`run${i} 결과 화면에 긴 소수: ${/\S*\d\.\d{3,}\S*/.exec(text)?.[0]}`);
     if (after.runs !== before.runs + 1) issue(`run${i} 런 수 ${before.runs} → ${after.runs}`);
     if (i === 1 || fresh.length > 0) await shot(p, `result-run${i}`);
     const reached = Number(/클리어 (\d+)/.exec(text)?.[1] ?? 0);
@@ -210,7 +212,7 @@ async function flow(): Promise<RunLog[]> {
       won: text.includes("런 완주"),
       coinsShown,
       coinsSaved: after.coins - before.coins,
-      goldNote: /남은 골드 \d+ → \d+/.exec(text)?.[0] ?? "",
+      goldNote: /남은 골드 [\d.]+ → \d+/.exec(text)?.[0] ?? "",
       unlocked: end.unlocked,
       bought,
       coinsLeft: end.coins,
