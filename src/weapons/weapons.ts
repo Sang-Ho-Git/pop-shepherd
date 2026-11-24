@@ -628,7 +628,13 @@ function fireWall(g: Game, w: WeaponInstance, buf: number[]): number {
   let dx = mx - p.x;
   let dy = my - p.y;
   const dl = Math.hypot(dx, dy);
-  if (dl < 1e-6) {
+  // 비교 실험(RULES.wall.front): 예전처럼 플레이어 이동 방향 앞에 세운다
+  if (RULES.wall.front) {
+    dx = p.faceX;
+    dy = p.faceY;
+    mx = p.x + dx * (WALL_AHEAD - WALL_BEHIND);
+    my = p.y + dy * (WALL_AHEAD - WALL_BEHIND);
+  } else if (dl < 1e-6) {
     dx = p.faceX;
     dy = p.faceY;
   } else {

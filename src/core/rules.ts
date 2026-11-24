@@ -145,7 +145,8 @@ export const RULES = {
    */
   paint: { push: false, dry: 0, toBall: true },
   /** 반사벽: 동시에 서 있는 벽 수 상한 (넘으면 오래된 벽부터 사라진다). 진화 만화경이 삼각형을 겹겹이 세워 화면을 덮던 문제 */
-  wall: { maxActive: 99 },
+  /** front·ballPass: 비교 실험용 (front = 예전처럼 플레이어 앞에 세움, ballPass = 공이 벽을 지나감). 게임에서는 둘 다 false */
+  wall: { maxActive: 99, front: false, ballPass: false },
   /** 일반 적 기믹 */
   traits: { runnerFlee: 220 },
   /** 맵 기믹: 개울 안 걷는 속도 배율, 안개 시야 반경 (화면) */

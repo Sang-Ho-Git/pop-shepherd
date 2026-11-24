@@ -152,6 +152,8 @@ function hitRock(g: Game, ball: FlyingBall): { bumper: boolean } | null {
 /** 공이 반사벽(무기)에 닿고 벽 쪽으로 움직이면 거울 반사. 닿은 벽 (없으면 null) */
 function hitWall(g: Game, ball: FlyingBall): Game["walls"][number] | null {
   const r = RULES.ball.radius;
+  // 비교 실험(RULES.wall.ballPass): 공은 벽을 지나간다 (벽이 공을 막는 손해만 따로 보기)
+  if (RULES.wall.ballPass) return null;
   for (const wl of g.walls) {
     const vx = wl.x2 - wl.x1;
     const vy = wl.y2 - wl.y1;

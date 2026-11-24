@@ -87,6 +87,26 @@ export const VARIANTS: Record<string, () => void> = {
   noWhirl: () => {
     WEAPONS.whirlwind!.implemented = false;
   },
+  /** 반사벽을 예전처럼 플레이어 앞에 세움 (방어 몫 비교) */
+  wallFront: () => {
+    (RULES.wall as { front: boolean }).front = true;
+  },
+  /** 공이 반사벽을 지나감 (벽이 공을 막는 손해 비교) */
+  wallBallPass: () => {
+    (RULES.wall as { ballPass: boolean }).ballPass = true;
+  },
+  /** 모든 캐릭터가 반사벽으로 시작 (반사벽 빌드만 따로 보기), 그 위에 front·ballPass */
+  allWall: () => {
+    for (const c of Object.values(CHARACTERS)) c.startWeapon = "reflect_wall";
+  },
+  allWallFront: () => {
+    for (const c of Object.values(CHARACTERS)) c.startWeapon = "reflect_wall";
+    (RULES.wall as { front: boolean }).front = true;
+  },
+  allWallPass: () => {
+    for (const c of Object.values(CHARACTERS)) c.startWeapon = "reflect_wall";
+    (RULES.wall as { ballPass: boolean }).ballPass = true;
+  },
   /** 반사벽을 아예 뺀다 */
   noWall: () => {
     WEAPONS.reflect_wall!.implemented = false;
