@@ -999,7 +999,23 @@ function renderHud(game: Game): void {
  * 빠른 기기에서는 해상도가 그대로라 화면이 전과 같다. 시뮬(결정론)에는 영향이 없다.
  */
 const MAX_RENDER_SCALE = Math.min(2, window.devicePixelRatio || 1);
-let renderScale = MAX_RENDER_SCALE;
+/** 지난번에 자리 잡은 해상도 (다음에 열 때 처음 몇 초 끊기지 않게). 빨라졌으면 다시 천천히 올라간다 */
+const RENDER_KEY = "pop-shepherd-render-scale";
+let renderScale = (() => {
+  try {
+    const v = Number(localStorage.getItem(RENDER_KEY));
+    return v >= 1 && v < MAX_RENDER_SCALE ? v : MAX_RENDER_SCALE;
+  } catch {
+    return MAX_RENDER_SCALE;
+  }
+})();
+function rememberScale(): void {
+  try {
+    localStorage.setItem(RENDER_KEY, String(renderScale));
+  } catch {
+    // 기억하지 못하면 다음에도 처음부터 맞춘다
+  }
+}
 const slowScales = new Set<number>();
 let gapWindow: number[] = [];
 let fastWindows = 0;
@@ -1007,7 +1023,7 @@ let fastWindows = 0;
 function adaptResolution(gap: number): void {
   if (gap > 250) return; // 탭 전환 등 (실제 느림이 아님)
   gapWindow.push(gap);
-  if (gapWindow.length < 90) return;
+  if (gapWindow.length < 60) return;
   const sorted = [...gapWindow].sort((a, b) => a - b);
   const median = sorted[sorted.length >> 1]!;
   gapWindow = [];
@@ -1016,6 +1032,7 @@ function adaptResolution(gap: number): void {
     renderScale = Math.max(1, renderScale - 0.25);
     fastWindows = 0;
     resize();
+    rememberScale();
   } else if (median <= 17.5) {
     // 충분히 빠르면 (이전에 느렸던 적 없는 해상도로만) 천천히 올린다
     fastWindows++;
@@ -1024,6 +1041,7 @@ function adaptResolution(gap: number): void {
       renderScale = up;
       fastWindows = 0;
       resize();
+      rememberScale();
     }
   } else fastWindows = 0;
 }
