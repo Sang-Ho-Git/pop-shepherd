@@ -95,6 +95,9 @@
   .branch.own .node { border-color: #4f6f78; }
   /* 영구 강화: 코인 줄은 스크롤해도 위에 붙어 있다 (아래쪽 노드를 살 때 남은 코인이 보이게) */
   .sticky-coins { position: sticky; top: 0; z-index: 2; background: var(--plank); padding-block: 10px; margin-block: -10px; box-shadow: 0 8px 10px -8px rgba(0,0,0,0.6); }
+  .node.short:disabled { opacity: 0.8; }
+  .node.short .price { color: var(--mute) !important; }
+  .node.done:disabled { opacity: 0.7; border-color: var(--sky); }
   .unlock-new { margin: 0; font-family: var(--display); color: var(--sky); font-size: 22px; }
 
   #hud { position: fixed; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between;

@@ -506,8 +506,12 @@ function renderMeta(characterId?: string): void {
           .filter(([r, rl]) => (profile[r] ?? 0) < rl)
           .map(([r, rl]) => `${META.nodes.find((x: MetaNode) => x.id === r)?.name ?? r} ${rl}`)
           .join(", ");
+        const short = c !== null && unlocked && save.coins < c.cost;
         const price = c === null ? "완료" : !unlocked ? `잠김 · ${need} 필요` : c.shared ? `${c.cost} 코인 · 익힌 기술 −${Math.round((META.shareDiscount ?? 0) * 100)}%` : `${c.cost} 코인`;
-        b.append(el("span", "price", price));
+        b.append(el("span", "price", short ? `${price} · ${c!.cost - save.coins} 모자람` : price));
+        // 코인만 모자란 노드는 잠긴 노드와 다르게 보인다 (다음 판 목표)
+        if (short) b.classList.add("short");
+        if (c === null) b.classList.add("done");
         col.append(b);
       }
       return col;
