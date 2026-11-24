@@ -81,6 +81,14 @@ const PATTERNS: Record<string, string[]> = {
   rainbow: ["splash", "fan", "splash", "dash"],
 };
 
+/** 다음에 쓸 공격 (없으면 null). 봇이 돌진을 바위로 유인할 때 본다 */
+export function nextAttack(e: Enemy): string | null {
+  const b = e.boss;
+  const list = b ? PATTERNS[b.ai] : undefined;
+  if (!b || !list || !b.params.atkEvery) return null;
+  return list[b.atkN % list.length] ?? null;
+}
+
 /** 지금 공격 중인지 (예고·돌진): 이때는 걷지 않는다 */
 function busy(g: Game, e: Enemy): boolean {
   const b = e.boss!;
@@ -108,7 +116,8 @@ export function tickBosses(g: Game): void {
       g.events.push({ type: "boss-phase", id: e.id, phase: 2 });
     }
     // 보호막: 체력 비율 shieldAt1·shieldAt2 아래로 처음 내려가면
-    if (p.shieldNeed && b.shield <= 0) {
+    // 그로기 동안에는 치지 않는다 (그로기 보상을 지우지 않게, 그로기가 끝나면 친다)
+    if (p.shieldNeed && b.shield <= 0 && b.groggy <= 0) {
       const crossed = [p.shieldAt1, p.shieldAt2].filter((m) => m !== undefined && e.hp < e.maxHp * m).length;
       if (crossed > b.shields) {
         b.shields = crossed;
@@ -250,7 +259,8 @@ export function tickHazards(g: Game): void {
   const pl = g.player;
   for (const h of g.hazards) {
     const e = byId.get(h.owner);
-    if (!e || g.phase !== "play" || (e.boss!.groggy > 0 && h.act === "dash")) continue;
+    // 주인이 쓰러졌거나 그로기면 깔아 둔 예고는 취소된다 (그로기가 공격을 끊는다)
+    if (!e || g.phase !== "play" || e.boss!.groggy > 0) continue;
     h.t -= DT;
     if (h.t > 0) {
       keep.push(h);

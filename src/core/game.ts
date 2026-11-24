@@ -401,7 +401,7 @@ export function goalMet(g: Game): boolean {
  * 목표를 이루면 클리어. 11/24: 생존형도 처치형도 마무리 시간 없이 바로 끝난다
  * (피드백: 팝 목표가 없는 시간제한 스테이지에서 추가 시간은 플레이만 늘렸다). wrapUpSeconds를 0보다 크게 하면 예전 마무리 시간이 돌아온다.
  * 클리어할 때 남은 적은 사라지고, 그 적들 경험치의 clearXpRatio만큼을 받는다 (마무리 시간 팝 경험치를 대신한다).
- * 남은 골드 주머니와 상자는 자동으로 줍는다.
+ * 남은 골드 주머니·상자·우유병은 자동으로 줍는다.
  */
 function advancePhase(g: Game): void {
   const st = g.stage;
@@ -418,6 +418,14 @@ function advancePhase(g: Game): void {
     g.golds = [];
     for (const c of g.chests) openChest(g, c);
     g.chests = [];
+    // 바닥에 남은 우유병도 마신다 (마무리 시간이 있을 때는 주울 틈이 있었다)
+    for (const m of g.milks) {
+      const heal = Math.min(g.player.maxHp - g.player.hp, g.player.maxHp * RULES.heal.healFrac);
+      g.player.hp += heal;
+      g.stats.milkPicked++;
+      g.stats.healed += heal;
+    }
+    g.milks = [];
     const vanished = g.enemies.length;
     let xp = 0;
     for (const e of g.enemies) if (!e.dead && e.rank === "normal") xp += e.xp * RULES.stage.clearXpRatio;

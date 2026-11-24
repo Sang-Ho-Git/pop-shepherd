@@ -1,12 +1,12 @@
 /**
  * 실시간 점검: 웹 빌드(dist/pop-shepherd.html)를 실제 브라우저에서 자동 플레이(#auto)로 돌리며 오류·멈춤·프레임 저하를 찾는다.
- *   node tools/realtime.mjs --runs auto-cue,auto-olly-s15 --out <폴더> [--minutes 40]
+ *   node tools/realtime.mjs --runs auto-cue,auto-olly-s15 --out <폴더> [--minutes 40] [--phone]
  * 각 런은 따로 탭을 연다. 5초마다 window.__pop 을 읽어 기록하고, 이상하면 스크린샷을 남긴다.
  * 결과: <폴더>/<런>.json (상태 기록·로그·문제 목록), 문제 스크린샷.
  */
 import { createRequire } from "node:module";
 // 플레이라이트는 전역에 설치된 것을 쓴다 (프로젝트 의존성에 넣지 않음)
-const { chromium } = createRequire(import.meta.url)("playwright");
+const { chromium, devices } = createRequire(import.meta.url)("playwright");
 import { mkdirSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
@@ -17,13 +17,15 @@ const arg = (k, d) => {
 const runs = arg("runs", "auto-olly").split(",");
 const out = arg("out", "realtime-out");
 const minutes = Number(arg("minutes", "45"));
+// --phone: 휴대폰 세로 화면 (iPhone 13)으로 연다
+const phone = process.argv.includes("--phone");
 const page = fileURLToPath(new URL("../dist/pop-shepherd.html", import.meta.url));
 mkdirSync(out, { recursive: true });
 
 const browser = await chromium.launch();
 
 async function one(hash) {
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+  const ctx = await browser.newContext(phone ? { ...devices["iPhone 13"] } : { viewport: { width: 1280, height: 720 } });
   const p = await ctx.newPage();
   const issues = [];
   const samples = [];
@@ -46,6 +48,7 @@ async function one(hash) {
   let lastScreen = "";
   let sameScreen = 0;
   let lastShotAt = 0;
+  const bossShots = {};
   while (Date.now() - start < minutes * 60_000) {
     await p.waitForTimeout(5000);
     const s = await p.evaluate(() => {
@@ -76,6 +79,17 @@ async function one(hash) {
     } else sameScreen = 0;
     lastScreen = s.screen;
     if (s.screen === "play" && s.fps > 0 && s.fps < 40) issues.push({ t: Date.now(), kind: "low-fps", msg: `fps ${s.fps} · 적 ${s.enemies} · 스테이지 ${s.stage}` });
+    // 보스전 장면: 예고·그로기·보호막을 몇 장씩 (가독성 점검용)
+    if (s.screen === "play" && s.boss) {
+      const tag = s.boss === "groggy" ? "그로기" : s.boss === "shield" ? "보호막" : s.hazards > 0 ? "예고" : "";
+      if (tag && (bossShots[tag] ?? 0) < 2) {
+        bossShots[tag] = (bossShots[tag] ?? 0) + 1;
+        // 보스 장면은 문제 스크린샷 한도와 따로 센다
+        const f = `${out}/${hash}-boss-s${s.stage}-${tag}-${bossShots[tag]}.png`;
+        await p.screenshot({ path: f }).catch(() => {});
+        issues.push({ t: Date.now(), kind: "screenshot", why: `보스 ${tag} 스테이지 ${s.stage} ${Math.round(s.time)}초`, file: f });
+      }
+    }
     // 3분마다 기록용 스크린샷
     if (Date.now() - lastShotAt > 180_000) {
       lastShotAt = Date.now();

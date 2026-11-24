@@ -60,12 +60,26 @@ function setBallMode(on: boolean): void {
 
 const CHAR_ORDER = ["olly", "shepherd", "cue", "pale"];
 const CHAR_NAME: Record<string, string> = { shepherd: "양치기", cue: "큐", olly: "올리", pale: "팔레" };
+/** 캐릭터 소개. 숫자는 쓰지 않는다 (능력치 줄이 data/characters.json에서 만든다: 예전에 소개의 체력·쿨다운이 데이터와 어긋났다) */
 const CHAR_BLURB: Record<string, string> = {
-  olly: "목동. 체력 130, 방어 2. 올가미로 떨어진 양을 짝에게 끌어다 붙인다. 처음이라면 올리.",
-  shepherd: "튼튼한 기준 캐릭터. 체력 120, 방어 1, 속도 110%. 킥으로 이동 방향의 적을 정확히 날린다.",
-  cue: "당구사. 속도 120%, 날리는 힘 125%. 조준선이 늘 보이고 3쿠션까지 꺾여 보인다. 쿠션에서 속도를 덜 잃고, 공끼리 맞은 것도 쿠션으로 친다.",
-  pale: "화가. 쿨다운 −10%, 연쇄 반경 120%. 페인트 총으로 옆 무리의 색을 칠한다.",
+  olly: "목동. 튼튼하고 단단하다. 올가미로 떨어진 양을 짝에게 끌어다 붙인다. 처음이라면 올리.",
+  shepherd: "튼튼한 기준 캐릭터. 킥으로 이동 방향의 적을 정확히 날린다.",
+  cue: "당구사. 조준선이 늘 보이고 3쿠션까지 꺾여 보인다. 쿠션에서 속도를 덜 잃고, 공끼리 맞은 것도 쿠션으로 친다.",
+  pale: "화가. 터질 때 연쇄가 멀리 번진다. 페인트 총으로 옆 무리의 색을 칠한다.",
 };
+/** 기본값(1, 쿨다운은 0)과 다른 능력치 (선택 화면의 둘째 능력치 줄) */
+const STAT_NAME: [keyof CharacterDef["stats"], string][] = [
+  ["knock_power", "날리는 힘"],
+  ["area", "무기 범위"],
+  ["chain_radius", "연쇄 반경"],
+  ["pickup", "줍는 거리"],
+  ["direct_dmg", "직격 피해"],
+];
+function statExtras(s: CharacterDef["stats"]): string {
+  const parts = STAT_NAME.filter(([k]) => s[k] !== 1).map(([k, n]) => `${n} ${Math.round(s[k] * 100)}%`);
+  if (s.cooldown !== 0) parts.push(`쿨다운 ${s.cooldown > 0 ? "−" : "+"}${Math.round(Math.abs(s.cooldown) * 100)}%`);
+  return parts.join(" · ");
+}
 
 function el(tag: string, cls = "", text = ""): HTMLElement {
   const e = document.createElement(tag);
@@ -81,19 +95,38 @@ function button(label: string, onClick: () => void, cls = "btn"): HTMLButtonElem
   return b;
 }
 
+/** 마지막으로 그린 메뉴 화면 (같은 화면을 다시 그리면 스크롤 위치를 지킨다) */
+let shownScreen = "";
+
+/**
+ * 메뉴 화면을 그린다. 메뉴는 문서 전체가 스크롤된다 (body.menu): 폰에서 오버레이 안쪽 스크롤 상자를 쓰면
+ * 다시 그릴 때마다 맨 위로 튀고(첫 버튼 포커스), 호스트 페이지 안에서 스크롤이 겹치던 문제가 있었다.
+ * 같은 화면을 다시 그릴 때(영구 강화 구매, 상점 구매·새로고침, 캐릭터 탭)는 보던 자리를 지킨다.
+ */
 function show(nodes: HTMLElement[], cls = "panel"): void {
+  const keep = shownScreen === screen && !overlay.hidden;
+  const y = keep ? window.scrollY : 0;
+  // 다시 그리기 전 포커스가 있던 버튼 (같은 글자의 버튼에 포커스를 돌려준다: 키보드로 연달아 살 때)
+  const focused = keep && document.activeElement instanceof HTMLButtonElement ? document.activeElement.textContent : null;
   overlay.replaceChildren();
   const p = el("div", cls);
   for (const n of nodes) p.append(n);
   overlay.append(p);
   overlay.hidden = false;
-  const first = p.querySelector("button");
-  (first as HTMLButtonElement | null)?.focus();
+  document.body.classList.add("menu");
+  shownScreen = screen;
+  const buttons = [...p.querySelectorAll("button")] as HTMLButtonElement[];
+  const target = (focused !== null ? buttons.find((b) => b.textContent === focused && !b.disabled) : undefined) ?? buttons.find((b) => !b.disabled);
+  target?.focus({ preventScroll: true });
+  window.scrollTo(0, y);
 }
 
 function hideOverlay(): void {
   overlay.hidden = true;
   overlay.replaceChildren();
+  document.body.classList.remove("menu");
+  shownScreen = "";
+  window.scrollTo(0, 0);
 }
 
 /* ───────────────────────── 카드 설명 ───────────────────────── */
@@ -160,6 +193,11 @@ let g: Game | null = null;
 let paused = false;
 let fx: Fx[] = [];
 let banner: { text: string; sub: string; t: number } | null = null;
+/** 클리어 뒤 상점으로 넘어가기 전 잠깐 (s): 마무리 시간이 없어져 0:00에서 곧바로 상점이 덮이던 것을 클리어 배너·흩어지는 연출로 받친다 */
+const CLEAR_HOLD = 1.3;
+let clearHold = 0;
+/** 마지막 틱 전의 적 목록 (클리어하면 g.enemies가 비므로, 사라지는 자리를 그리려고) */
+let prevEnemies: Game["enemies"] = [];
 let shop: ShopState | null = null;
 let choiceShown = false;
 let hitFlash = 0;
@@ -297,9 +335,11 @@ function finishRun(won: boolean): void {
     el("h1", "", won ? "목장을 지켰다" : "양 떼에 묻혔다"),
     el("p", "lede", `${name} · Lv${g.player.level} · 클리어 ${reached}/${CAMPAIGN.length} · 터뜨린 적 ${run.popped}`),
     el("p", "small", `가장 긴 연쇄 ${run.bestChain}${g.ball ? ` · 쿠션 팝 ${run.cushionPops} · 3쿠션 이상 ${run.threeCushions}` : ""}`),
-    el("p", "coins", run.dev ? "시험 판이라 기록과 코인에 넣지 않았다" : `코인 +${coins}${rc.fromGold > 0 ? `  (남은 골드 ${goldLeft} → ${rc.fromGold})` : ""}  · 보유 ${save.coins}`),
+    // 코인 줄은 짧게, 내역은 따로 (폰에서 "보유"가 두 줄로 갈라지던 것)
+    el("p", "coins", run.dev ? "시험 판이라 기록과 코인에 넣지 않았다" : `코인 +${coins}`),
+    ...(run.dev ? [] : [el("p", "small", `${rc.fromGold > 0 ? `남은 골드 ${Math.floor(goldLeft)} → 코인 ${rc.fromGold} · ` : ""}보유 ${save.coins}`)]),
     ...fresh.map((id) => el("p", "unlock-new", `새로 열림: ${CHAR_NAME[id] ?? id}`)),
-    row([button(`${name} 영구 강화`, () => renderMeta(played)), button(fresh.length > 0 ? "캐릭터 고르기" : "다시 하기", () => renderSelect(), "btn ghost")]),
+    row([button(`${name} 영구 강화${affordable(played) > 0 ? ` · ${affordable(played)}개 살 수 있음` : ""}`, () => renderMeta(played)), button(fresh.length > 0 ? "캐릭터 고르기" : "다시 하기", () => renderSelect(), "btn ghost")]),
   ]);
   run = null;
 }
@@ -335,7 +375,10 @@ function renderTitle(): void {
       ...refundNotice(),
       el("p", "small", `기록: ${save.runs}런 · 완주 ${save.wins} · 최고 ${save.bestStage}스테이지`),
       el("p", "small", `영구 강화 · ${CHAR_ORDER.filter((id) => CHARACTERS[id] && isCharacterUnlocked(save, id)).map((id) => `${CHAR_NAME[id] ?? id} ${Math.round(treeProgress(save, id) * 100)}%`).join(" · ")}`),
-      el("p", "small keys", `이동 WASD/방향키 · ${ballMode ? "조준 마우스 · 던지기 클릭 · 공 바꾸기 오른쪽 클릭/Q · " : ""}휘슬 Space · 일시정지 Esc · 카드 1/2/3`),
+      // 터치 화면이면 손가락 조작을 알려 준다 (폰에서 WASD·마우스 안내가 나오던 것)
+      el("p", "small keys", COARSE
+        ? `이동 누르고 끌기 · ${ballMode ? "던지기 톡 · 공 바꾸기 '바꾸기' 버튼 · " : ""}휘슬 '휘슬' 버튼`
+        : `이동 WASD/방향키 · ${ballMode ? "조준 마우스 · 던지기 클릭 · 공 바꾸기 오른쪽 클릭/Q · " : ""}휘슬 Space · 일시정지 Esc · 카드 1/2/3`),
     ],
     "panel title",
   );
@@ -365,6 +408,8 @@ function renderSelect(): void {
       const s = ch.stats;
       b.append(el("strong", "", `${open ? "" : "🔒 "}${CHAR_NAME[id] ?? id}`), el("span", "weapon", `시작 무기 · ${weaponName(ch.startWeapon)}`), el("span", "", CHAR_BLURB[id] ?? ""));
       b.append(el("span", "stats", `체력 ${s.max_hp} · 방어 ${s.armor} · 속도 ${Math.round(s.move_speed * 100)}%`));
+      const extra = statExtras(s);
+      if (extra) b.append(el("span", "stats", extra));
       if (open) {
         const rec = save.characters[id];
         if (rec) b.append(el("span", "rec", `${rec.runs}런 · 완주 ${rec.wins} · 최고 ${rec.bestStage}`));
@@ -439,6 +484,15 @@ function refundNotice(): HTMLElement[] {
   return [el("p", "notice", `영구 강화가 캐릭터별 트리로 바뀌어, 쓴 코인 ${n}을 모두 돌려받았다. 캐릭터마다 다시 골라 보자.`)];
 }
 
+/** 지금 코인으로 바로 살 수 있는 노드 수 (결과 화면 버튼에 알려 준다) */
+function affordable(ch: string): number {
+  const profile = profileOf(save, ch);
+  return nodesFor(ch).filter((n) => {
+    const c = costFor(save.meta, ch, n.id);
+    return c !== null && isUnlocked(profile, n.id) && c.cost <= save.coins;
+  }).length;
+}
+
 /** 영구 강화 화면에서 보고 있는 캐릭터 */
 let metaChar = "";
 
@@ -487,8 +541,12 @@ function renderMeta(characterId?: string): void {
           .filter(([r, rl]) => (profile[r] ?? 0) < rl)
           .map(([r, rl]) => `${META.nodes.find((x: MetaNode) => x.id === r)?.name ?? r} ${rl}`)
           .join(", ");
+        const short = c !== null && unlocked && save.coins < c.cost;
         const price = c === null ? "완료" : !unlocked ? `잠김 · ${need} 필요` : c.shared ? `${c.cost} 코인 · 익힌 기술 −${Math.round((META.shareDiscount ?? 0) * 100)}%` : `${c.cost} 코인`;
-        b.append(el("span", "price", price));
+        b.append(el("span", "price", short ? `${price} · ${c!.cost - save.coins} 모자람` : price));
+        // 코인만 모자란 노드는 잠긴 노드와 다르게 보인다 (다음 판 목표)
+        if (short) b.classList.add("short");
+        if (c === null) b.classList.add("done");
         col.append(b);
       }
       return col;
@@ -496,7 +554,7 @@ function renderMeta(characterId?: string): void {
     "tree",
   );
   show([
-    el("p", "eyebrow", `코인 ${save.coins} (모든 캐릭터 공용)`),
+    el("p", "eyebrow sticky-coins", `코인 ${save.coins} (모든 캐릭터 공용)`),
     el("h2", "", "영구 강화"),
     ...refundNotice(),
     tabs,
@@ -636,6 +694,13 @@ $("swap").addEventListener("pointerdown", (e) => {
   e.preventDefault();
   swapTap = true;
 });
+$("pausebtn").addEventListener("click", () => {
+  if (screen === "play" && !paused && !choiceShown) renderPause();
+});
+// 다른 앱으로 넘어가면 멈춘다 (돌아왔을 때 바로 맞지 않게)
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && screen === "play" && !paused && !choiceShown && !auto) renderPause();
+});
 $("whistle").addEventListener("pointerdown", (e) => {
   e.preventDefault();
   whistleTap = true;
@@ -688,7 +753,20 @@ function readInput(): Input {
 
 /* ───────────────────────── 효과 ───────────────────────── */
 
+/** 자동 플레이 점검용 기록: 보스·엘리트 등장과 처치, 스테이지 끝 (tools/realtime.mjs가 읽는다) */
+function autoLog(game: Game): void {
+  const st = run ? run.stageIndex + 1 : 0;
+  for (const e of game.events) {
+    if (e.type === "boss-spawn") dbg.log.push(`보스 등장 s${st} ${game.time.toFixed(1)}`);
+    else if (e.type === "special-killed") dbg.log.push(`${e.rank === "boss" ? "보스" : "엘리트"} 처치 s${st} ${game.time.toFixed(1)} ${e.kind}`);
+    else if (e.type === "stage-clear") dbg.log.push(`클리어 s${st} ${game.time.toFixed(1)} 체력 ${Math.round(game.player.hp)}/${Math.round(game.player.maxHp)}`);
+    else if (e.type === "player-dead") dbg.log.push(`사망 s${st} ${game.time.toFixed(1)} 공격피해 ${Math.round(game.stats.damageFromAttacks)}/${Math.round(game.stats.damageTaken)}`);
+    else if (e.type === "groggy") dbg.log.push(`그로기 s${st} ${game.time.toFixed(1)} ${e.why}`);
+  }
+}
+
 function handleEvents(game: Game): void {
+  if (auto) autoLog(game);
   for (const e of game.events) {
     switch (e.type) {
       case "pop": {
@@ -745,9 +823,21 @@ function handleEvents(game: Game): void {
       case "chest-open":
         sfx.chest();
         break;
-      case "stage-clear":
+      case "stage-clear": {
         sfx.clear();
+        clearHold = CLEAR_HOLD;
+        banner = { text: "스테이지 클리어", sub: e.vanished > 0 ? `남은 양 ${e.vanished}마리가 흩어진다 · 경험치 +${Math.round(e.xp)}` : "", t: CLEAR_HOLD + 0.2 };
+        // 남은 적은 흰 연기로 흩어진다 (터지는 팝과 구별, 많으면 일부만)
+        const left = prevEnemies.filter((x) => !x.dead);
+        const stride = Math.max(1, Math.ceil(left.length / 120));
+        for (let k = 0; k < left.length; k += stride) {
+          const x = left[k]!;
+          fx.push({ kind: "ring", x: x.x, y: x.y, t: 0, life: 0.5 + Math.random() * 0.4, color: "rgba(235,240,245,0.75)", radius: x.radius + 10 });
+          const a = Math.random() * Math.PI * 2;
+          fx.push({ kind: "spark", x: x.x, y: x.y, t: 0, life: 0.8, color: x.color === "rainbow" ? "#ffffff" : PALETTE[x.color] + "aa", radius: x.radius * 0.6, vx: Math.cos(a) * 40, vy: Math.sin(a) * 40 - 30 });
+        }
         break;
+      }
       case "blade-vanish": {
         // 회오리에 여러 번 맞아 사라진 적: 터지는 팝과 구별되게 회색 연기만 (점수 없음)
         fx.push({ kind: "ring", x: e.x, y: e.y, t: 0, life: 0.4, color: "rgba(220,225,230,0.7)", radius: 22 });
@@ -922,6 +1012,7 @@ function frame(now: number): void {
       let n = 0;
       const maxSteps = 5 * (auto?.speed ?? 1);
       while (acc >= DT && n < maxSteps) {
+        prevEnemies = g.enemies;
         step(g, readInput());
         handleEvents(g);
         acc -= DT;
@@ -932,7 +1023,10 @@ function frame(now: number): void {
     }
     if (g.choices.length > 0 && !choiceShown && !paused) renderChoice();
     if (g.choices.length === 0 && !paused) {
-      if (g.phase === "cleared") endStage();
+      if (g.phase === "cleared") {
+        if (clearHold > 0) clearHold -= dt;
+        else endStage();
+      }
       else if (g.phase === "failed" || g.player.dead) finishRun(false);
     }
   }
@@ -985,14 +1079,25 @@ function frame(now: number): void {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
     if (banner && screen === "play") {
+      // 바쁜 화면 위에서도 읽히게: 어두운 띠를 깔고, 부제가 화면보다 넓으면 " · "에서 줄을 나눈다 (휴대폰 세로)
       ctx.textAlign = "center";
       ctx.globalAlpha = Math.min(1, banner.t * 2);
+      const cy = canvas.height * 0.3;
+      const subFont = `${Math.round(22 * v.scale)}px "Gowun Dodum", sans-serif`;
+      ctx.font = subFont;
+      let lines = banner.sub ? [banner.sub] : [];
+      if (banner.sub && ctx.measureText(banner.sub).width > canvas.width * 0.9) lines = banner.sub.split(" · ");
+      const lh = 30 * v.scale;
+      const top = cy - 50 * v.scale;
+      const h = 66 * v.scale + lines.length * lh;
+      ctx.fillStyle = "rgba(8,17,14,0.62)";
+      ctx.fillRect(0, top, canvas.width, h);
       ctx.fillStyle = "#fff3c4";
       ctx.font = `${Math.round(48 * v.scale)}px Jua, "Gowun Dodum", sans-serif`;
-      ctx.fillText(banner.text, canvas.width / 2, canvas.height * 0.3);
-      ctx.font = `${Math.round(22 * v.scale)}px "Gowun Dodum", sans-serif`;
-      ctx.fillStyle = "#cfe8dd";
-      ctx.fillText(banner.sub, canvas.width / 2, canvas.height * 0.3 + 38 * v.scale);
+      ctx.fillText(banner.text, canvas.width / 2, cy);
+      ctx.font = subFont;
+      ctx.fillStyle = "#e4f4ec";
+      lines.forEach((l, i) => ctx.fillText(l, canvas.width / 2, cy + 38 * v.scale + i * lh));
       ctx.globalAlpha = 1;
     }
     if (screen === "play") renderHud(g);
@@ -1013,6 +1118,7 @@ function frame(now: number): void {
   hud.hidden = screen !== "play";
   $("whistle").hidden = screen !== "play";
   $("swap").hidden = screen !== "play" || !g?.ball;
+  $("pausebtn").hidden = screen !== "play" || paused || choiceShown;
   requestAnimationFrame(frame);
 }
 
@@ -1021,6 +1127,8 @@ function frame(now: number): void {
 /**
  * 자동 플레이: 주소가 #auto 로 시작하면 봇이 실제 화면에서 런을 한다 (조작·카드·갈래·상점 버튼까지 실제 UI로).
  * #auto-cue-s15-x4 처럼 캐릭터, 시작 스테이지(s), 속도 배율(x)을 붙일 수 있다. 시험 판이라 기록에 남지 않는다.
+ * #auto-rec-x8 은 메타 흐름 점검용: 바로 시작하지 않고 제목 화면에서 기다린다. 메뉴(시작·캐릭터·영구 강화)는
+ * 점검 도구(tools/metaflow.ts)가 실제 버튼으로 누르고, 판 안(카드·갈래·상점)만 봇이 한다. 이 판은 기록·코인에 남는다.
  * 점검 도구(Playwright)는 window.__pop 으로 상태를 읽는다.
  */
 interface AutoState {
@@ -1030,6 +1138,8 @@ interface AutoState {
   /** 다음 UI 동작까지 남은 시간 (사람처럼 조금 기다렸다 누른다) */
   wait: number;
   runs: number;
+  /** 기록에 남는 판 (메타 흐름 점검) */
+  rec: boolean;
 }
 let auto: AutoState | null = null;
 
@@ -1049,11 +1159,16 @@ interface PopDebug {
   /** 보스·엘리트 공격 예고 수, 보스 상태 (스크린샷 시점 고르기용): "" | "walk" | "groggy" | "shield" */
   hazards: number;
   boss: string;
+  /** 지금 판의 캐릭터와 능력치 (영구 강화가 실제로 붙었는지 확인용) */
+  player: { character: string; maxHp: number; revives: number; gold: number; stats: Record<string, number> } | null;
+  /** 반사벽 중 가장 빨리 사라지는 벽의 남은 시간 (없으면 −1), 게임 단계 (스크린샷 시점 고르기용) */
+  wallT: number;
+  phase: string;
   /** 점검용: 지금 판에 무기를 준다 (스크린샷용, 예: give("whirlwind", 6, "A")) */
   give: (id: string, lv: number | "evo", branch?: string | null) => void;
 }
 const dbg: PopDebug = {
-  screen: "", stage: 0, time: 0, hp: 0, maxHp: 0, level: 0, enemies: 0, balls: 0, fps: 0, result: null, runs: 0, log: [], hazards: 0, boss: "",
+  screen: "", stage: 0, time: 0, hp: 0, maxHp: 0, level: 0, enemies: 0, balls: 0, fps: 0, result: null, runs: 0, log: [], hazards: 0, boss: "", player: null, wallT: -1, phase: "",
   give: (id, lv, branch = null) => {
     const def = WEAPONS[id];
     if (!g || !def) return;
@@ -1068,10 +1183,11 @@ let fpsN = 0;
 function parseAuto(): AutoState | null {
   const m = /^#auto(.*)$/.exec(location.hash);
   if (!m) return null;
-  const st: AutoState = { character: "olly", stage: 1, speed: 1, wait: 0.5, runs: 0 };
+  const st: AutoState = { character: "olly", stage: 1, speed: 1, wait: 0.5, runs: 0, rec: false };
   for (const t of (m[1] ?? "").split("-").filter(Boolean)) {
     if (CHARACTERS[t]) st.character = t;
     else if (/^s\d+$/.test(t)) st.stage = Number(t.slice(1));
+    else if (t === "rec") st.rec = true;
     else if (/^x\d+$/.test(t)) st.speed = Math.max(1, Math.min(8, Number(t.slice(1))));
   }
   return st;
@@ -1099,9 +1215,12 @@ function autoTick(dt: number): void {
     dbg.hp = g.player.hp;
     dbg.maxHp = g.player.maxHp;
     dbg.level = g.player.level;
+    dbg.player = { character: run?.character ?? "", maxHp: g.player.maxHp, revives: g.player.revives, gold: g.player.gold, stats: { ...g.player.stats } };
     dbg.enemies = g.enemies.filter((e) => !e.dead).length;
     dbg.balls = g.balls.length;
     dbg.hazards = g.hazards.length;
+    dbg.wallT = g.walls.length ? Math.min(...g.walls.map((w) => w.t)) : -1;
+    dbg.phase = g.phase;
     const bs = g.enemies.find((e) => e.rank === "boss" && !e.dead)?.boss;
     dbg.boss = !bs ? "" : bs.groggy > 0 ? "groggy" : bs.shield > 0 ? "shield" : "walk";
   }
@@ -1222,6 +1341,7 @@ addEventListener("hashchange", () => {
 });
 
 auto = parseAuto();
-if (auto) devBegin(auto.character, auto.stage);
+if (auto && !auto.rec) devBegin(auto.character, auto.stage);
+else if (auto) renderTitle();
 else if (!devStart()) renderTitle();
 requestAnimationFrame(frame);

@@ -8,11 +8,11 @@
     },
     "cue": {
       "any": [
-        { "kind": "total", "stat": "cushionPops", "n": 250 },
-        { "kind": "total", "stat": "threeCushions", "n": 30 },
+        { "kind": "total", "stat": "cushionPops", "n": 180 },
+        { "kind": "total", "stat": "threeCushions", "n": 20 },
         { "kind": "total", "stat": "runs", "n": 6 }
       ],
-      "text": "쿠션 팝 누적 250번 또는 3쿠션 팝 누적 30번 (또는 6판 하기)"
+      "text": "쿠션 팝 누적 180번 또는 3쿠션 팝 누적 20번 (또는 6판 하기)"
     },
     "pale": {
       "any": [
