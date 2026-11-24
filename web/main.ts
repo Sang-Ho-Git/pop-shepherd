@@ -5,9 +5,9 @@ import { CAMPAIGN, CHARACTERS, META, PASSIVES, SHOP, stage, WEAPONS } from "../s
 import type { MetaNode } from "../src/data/index.ts";
 import { botCardScore, botChooseBranch, botChooseCard, needsBranch, resolveChoice, validateFrontChoice, xpTotalFor } from "../src/progression/levelup.ts";
 import { botInput } from "../src/sim/bot.ts";
-import { applyMeta, isUnlocked, nextCost, runCoins } from "../src/progression/meta.ts";
+import { applyMeta, costFor, isUnlocked, nodesFor, runCoins } from "../src/progression/meta.ts";
 import type { MetaSpecials } from "../src/progression/meta.ts";
-import { browserStore, loadSave, recordRun, spendOnMeta, treeProgress, writeSave } from "../src/progression/save.ts";
+import { acknowledgeRefund, browserStore, loadSave, profileOf, recordRun, spendOnMeta, treeProgress, writeSave } from "../src/progression/save.ts";
 import type { SaveData } from "../src/progression/save.ts";
 import { conditionProgress, isCharacterUnlocked, newlyUnlocked, statValue, UNLOCKS } from "../src/progression/unlocks.ts";
 import type { UnlockCondition } from "../src/progression/unlocks.ts";
@@ -171,7 +171,8 @@ let aimTick = 0;
 const AIM_GUIDE_SECONDS = 25;
 
 function startRun(characterId: string): void {
-  const meta = applyMeta(CHARACTERS[characterId]!, save.meta);
+  // 영구 강화는 캐릭터별 트리: 이 캐릭터가 산 노드만 적용
+  const meta = applyMeta(CHARACTERS[characterId]!, profileOf(save, characterId));
   run = { character: characterId, stageIndex: 0, carry: null, meta, popped: 0, bestChain: 0, cushionPops: 0, threeCushions: 0, seed: (Date.now() >>> 0) % 1_000_000 };
   beginStage();
 }
@@ -289,7 +290,8 @@ function finishRun(won: boolean): void {
     fresh = newlyUnlocked(before, save);
   }
   screen = "result";
-  const name = CHAR_NAME[run.character] ?? run.character;
+  const played = run.character;
+  const name = CHAR_NAME[played] ?? played;
   show([
     el("p", "eyebrow", won ? "런 완주" : `스테이지 ${run.stageIndex + 1}에서 쓰러짐`),
     el("h1", "", won ? "목장을 지켰다" : "양 떼에 묻혔다"),
@@ -297,7 +299,7 @@ function finishRun(won: boolean): void {
     el("p", "small", `가장 긴 연쇄 ${run.bestChain}${g.ball ? ` · 쿠션 팝 ${run.cushionPops} · 3쿠션 이상 ${run.threeCushions}` : ""}`),
     el("p", "coins", run.dev ? "시험 판이라 기록과 코인에 넣지 않았다" : `코인 +${coins}${rc.fromGold > 0 ? `  (남은 골드 ${goldLeft} → ${rc.fromGold})` : ""}  · 보유 ${save.coins}`),
     ...fresh.map((id) => el("p", "unlock-new", `새로 열림: ${CHAR_NAME[id] ?? id}`)),
-    row([button("영구 강화", () => renderMeta()), button(fresh.length > 0 ? "캐릭터 고르기" : "다시 하기", () => renderSelect(), "btn ghost")]),
+    row([button(`${name} 영구 강화`, () => renderMeta(played)), button(fresh.length > 0 ? "캐릭터 고르기" : "다시 하기", () => renderSelect(), "btn ghost")]),
   ]);
   run = null;
 }
@@ -330,7 +332,9 @@ function renderTitle(): void {
         }, "btn ghost toggle"),
       ]),
       el("p", "small", ballMode ? COARSE ? "색 공 규칙: 톡 치면 그곳으로 던진다. 같은 색 무리에 맞혀 3마리를 채우면 터진다." : "색 공 규칙: 마우스로 조준하고 클릭으로 던진다. 같은 색 무리에 맞혀 3마리를 채우면 터진다." : "기존 규칙: 날아간 적이 같은 색에 세게 부딪혀야 터진다."),
-      el("p", "small", `기록: ${save.runs}런 · 완주 ${save.wins} · 최고 ${save.bestStage}스테이지 · 영구 강화 ${Math.round(treeProgress(save) * 100)}%`),
+      ...refundNotice(),
+      el("p", "small", `기록: ${save.runs}런 · 완주 ${save.wins} · 최고 ${save.bestStage}스테이지`),
+      el("p", "small", `영구 강화 · ${CHAR_ORDER.filter((id) => CHARACTERS[id] && isCharacterUnlocked(save, id)).map((id) => `${CHAR_NAME[id] ?? id} ${Math.round(treeProgress(save, id) * 100)}%`).join(" · ")}`),
       el("p", "small keys", `이동 WASD/방향키 · ${ballMode ? "조준 마우스 · 던지기 클릭 · 공 바꾸기 오른쪽 클릭/Q · " : ""}휘슬 Space · 일시정지 Esc · 카드 1/2/3`),
     ],
     "panel title",
@@ -364,6 +368,8 @@ function renderSelect(): void {
       if (open) {
         const rec = save.characters[id];
         if (rec) b.append(el("span", "rec", `${rec.runs}런 · 완주 ${rec.wins} · 최고 ${rec.bestStage}`));
+        const tp = treeProgress(save, id);
+        if (tp > 0) b.append(el("span", "rec", `영구 강화 ${Math.round(tp * 100)}%`));
       } else {
         const rule = UNLOCKS.characters[id];
         b.disabled = true;
@@ -421,37 +427,83 @@ function renderShop(): void {
   ]);
 }
 
-function renderMeta(): void {
+/**
+ * 영구 강화가 캐릭터별로 바뀌며 돌려받은 코인 안내 (예전 세이브에서 한 번).
+ * 보여 주면 세이브에서 지운다 (제목 화면이나 영구 강화 화면 중 먼저 뜬 곳에 한 번).
+ */
+function refundNotice(): HTMLElement[] {
+  if (save.metaRefund <= 0) return [];
+  const n = save.metaRefund;
+  save = acknowledgeRefund(save);
+  writeSave(store, save);
+  return [el("p", "notice", `영구 강화가 캐릭터별 트리로 바뀌어, 쓴 코인 ${n}을 모두 돌려받았다. 캐릭터마다 다시 골라 보자.`)];
+}
+
+/** 영구 강화 화면에서 보고 있는 캐릭터 */
+let metaChar = "";
+
+function renderMeta(characterId?: string): void {
   screen = "meta";
-  const branches: Record<string, string> = { survival: "생존", power: "화력", cue: "솜씨", economy: "경제" };
+  const open = CHAR_ORDER.filter((id) => CHARACTERS[id] && isCharacterUnlocked(save, id));
+  if (characterId && open.includes(characterId)) metaChar = characterId;
+  if (!open.includes(metaChar)) metaChar = open[0] ?? "shepherd";
+  const ch = metaChar;
+  const profile = profileOf(save, ch);
+  const chName = CHAR_NAME[ch] ?? ch;
+  // 캐릭터 탭: 열린 캐릭터만 고를 수 있고, 탭마다 트리 진행률
+  const tabs = row(
+    CHAR_ORDER.filter((id) => CHARACTERS[id]).map((id) => {
+      const isOpen = open.includes(id);
+      const b = button("", () => renderMeta(id), id === ch ? "ctab on" : "ctab");
+      b.setAttribute("aria-pressed", String(id === ch));
+      b.disabled = !isOpen;
+      b.append(el("strong", "", `${isOpen ? "" : "🔒 "}${CHAR_NAME[id] ?? id}`), el("span", "", isOpen ? `${Math.round(treeProgress(save, id) * 100)}%` : "잠김"));
+      const bar = el("span", "tbar");
+      bar.style.setProperty("--p", `${Math.round(treeProgress(save, id) * 100)}%`);
+      b.append(bar);
+      return b;
+    }),
+    "ctabs",
+  );
+  const branches: [string, string][] = [["own", `${chName} 전용`], ["survival", "생존"], ["power", "화력"], ["cue", "솜씨"], ["economy", "경제"]];
+  const nodes = nodesFor(ch);
   const cols = row(
-    Object.entries(branches).map(([key, label]) => {
-      const col = el("div", "branch");
+    branches.map(([key, label]) => {
+      const col = el("div", key === "own" ? "branch own" : "branch");
       col.append(el("h3", "", label));
-      for (const n of META.nodes.filter((x: MetaNode) => x.branch === key)) {
-        const lv = save.meta[n.id] ?? 0;
-        const cost = nextCost(save.meta, n.id);
-        const unlocked = isUnlocked(save.meta, n.id);
+      for (const n of nodes.filter((x: MetaNode) => x.branch === key)) {
+        const lv = profile[n.id] ?? 0;
+        const c = costFor(save.meta, ch, n.id);
+        const unlocked = isUnlocked(profile, n.id);
         const b = button("", () => {
-          save = spendOnMeta(save, n.id);
+          save = spendOnMeta(save, ch, n.id);
           writeSave(store, save);
-          renderMeta();
+          renderMeta(ch);
         }, "node");
-        b.disabled = cost === null || !unlocked || save.coins < cost;
+        b.disabled = c === null || !unlocked || save.coins < c.cost;
         b.append(el("strong", "", `${n.name} ${lv}/${n.maxLevel}`), el("span", "", n.note));
         // 잠긴 노드는 무엇을 사야 열리는지 보여 준다
         const need = Object.entries(n.requires ?? {})
-          .filter(([r, rl]) => (save.meta[r] ?? 0) < rl)
+          .filter(([r, rl]) => (profile[r] ?? 0) < rl)
           .map(([r, rl]) => `${META.nodes.find((x: MetaNode) => x.id === r)?.name ?? r} ${rl}`)
           .join(", ");
-        b.append(el("span", "price", cost === null ? "완료" : !unlocked ? `잠김 · ${need} 필요` : `${cost} 코인`));
+        const price = c === null ? "완료" : !unlocked ? `잠김 · ${need} 필요` : c.shared ? `${c.cost} 코인 · 익힌 기술 −${Math.round((META.shareDiscount ?? 0) * 100)}%` : `${c.cost} 코인`;
+        b.append(el("span", "price", price));
         col.append(b);
       }
       return col;
     }),
     "tree",
   );
-  show([el("p", "eyebrow", `코인 ${save.coins} · 트리 ${Math.round(treeProgress(save) * 100)}%`), el("h2", "", "영구 강화"), cols, row([button("시작", () => renderSelect()), button("처음으로", () => renderTitle(), "btn ghost")])]);
+  show([
+    el("p", "eyebrow", `코인 ${save.coins} (모든 캐릭터 공용)`),
+    el("h2", "", "영구 강화"),
+    ...refundNotice(),
+    tabs,
+    el("p", "small", `${chName} 트리 ${Math.round(treeProgress(save, ch) * 100)}% · 산 강화는 ${chName}에게만 붙는다. 다른 캐릭터가 이미 익힌 공통 강화는 ${Math.round((META.shareDiscount ?? 0) * 100)}% 싸다.`),
+    cols,
+    row([button(`${chName}로 시작`, () => startRun(ch)), button("캐릭터 고르기", () => renderSelect(), "btn ghost"), button("처음으로", () => renderTitle(), "btn ghost")]),
+  ]);
 }
 
 function renderChoice(): void {

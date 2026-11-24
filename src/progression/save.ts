@@ -1,6 +1,6 @@
-import { CAMPAIGN, META } from "../data/index.ts";
-import { buyNode, canBuyNode, isUnlocked, nextCost } from "./meta.ts";
-import type { MetaProfile } from "./meta.ts";
+import { CAMPAIGN, CHARACTERS, META } from "../data/index.ts";
+import { buyNode, canBuyNode, costFor, isUnlocked, metaNode, nextCost, nodeForCharacter, nodesFor } from "./meta.ts";
+import type { MetaBook, MetaProfile } from "./meta.ts";
 import { emptyRunStats, emptyTotals, refreshUnlocks, RUN_STAT_KEYS } from "./unlocks.ts";
 import type { RunStats, RunTotals } from "./unlocks.ts";
 
@@ -14,8 +14,48 @@ import type { RunStats, RunTotals } from "./unlocks.ts";
  * 캐릭터 해금(unlocked, totals, bests)은 버전 1 안에서 나중에 붙인 필드다. 이 필드가 없는 예전 세이브는
  * 기록으로 판정해 열어 준다: 조건을 이미 채운 캐릭터, 해본 적 있는 캐릭터(characters[id].runs > 0)는 열린다.
  * 누적 기록(totals)은 예전 세이브에 없으니 0부터 센다 (클리어 스테이지·런 수 조건은 예전 기록으로 판정된다).
+ *
+ * 버전 2 (11/24): 영구 강화가 캐릭터별 트리가 됐다 (meta: 캐릭터 id → 프로필). 코인 지갑은 공용.
+ * 버전 1 세이브의 공용 트리는 쓴 코인을 전부 지갑으로 돌려주고 비운다 (캐릭터별로 다시 고르게).
+ * 돌려준 코인은 metaRefund에 남겨 화면이 한 번 안내하고 0으로 지운다 (acknowledgeRefund).
  */
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
+
+/**
+ * 버전 1 세이브의 공용 트리 비용 (11/24 캐릭터별로 바꾸기 직전, 8845 코인 트리). 환불 계산에만 쓴다.
+ * 여기 없는 노드(더 예전 트리에만 있던 것)는 돌려줄 값을 알 수 없어 0으로 본다. 넘친 레벨은 표의 길이로 깎는다.
+ */
+const LEGACY_COSTS: Record<string, number[]> = {
+  sturdy: [80, 110, 145, 190],
+  fleece: [160, 225],
+  lick: [125, 170, 225],
+  second_chance: [405, 720],
+  strength: [80, 110, 145, 190],
+  focus: [135, 180, 235],
+  shock: [125, 170, 225],
+  reach: [135, 190],
+  first_move: [540],
+  chalk: [65, 90, 125],
+  boots: [115, 160, 215],
+  quick_rack: [90, 125, 170],
+  keen_eye: [205, 290],
+  thrift: [65, 90, 125, 170],
+  crook: [100, 145],
+  purse: [90, 125, 170],
+  clover: [135, 190],
+  haggle: [135, 190],
+  regular: [450],
+};
+
+/** 버전 1 공용 트리에 쓴 코인 (환불액) */
+export function legacyRefund(raw: unknown): number {
+  let sum = 0;
+  for (const [id, lv] of Object.entries(record(raw))) {
+    const costs = LEGACY_COSTS[id] ?? [];
+    sum += costs.slice(0, count(lv)).reduce((a, b) => a + b, 0);
+  }
+  return sum;
+}
 
 export interface CharacterRecord {
   runs: number;
@@ -27,7 +67,10 @@ export interface CharacterRecord {
 export interface SaveData {
   version: typeof SAVE_VERSION;
   coins: number;
-  meta: MetaProfile;
+  /** 캐릭터 id → 그 캐릭터의 영구 강화 트리 */
+  meta: MetaBook;
+  /** 캐릭터별 트리로 바뀌며 돌려받은 코인 (아직 안내하지 않았으면 > 0) */
+  metaRefund: number;
   runs: number;
   wins: number;
   bestStage: number;
@@ -49,7 +92,7 @@ export interface RunResult extends Partial<RunStats> {
 }
 
 export function newSave(): SaveData {
-  const s: SaveData = { version: SAVE_VERSION, coins: 0, meta: {}, runs: 0, wins: 0, bestStage: 0, characters: {}, unlocked: [], totals: emptyTotals(), bests: emptyRunStats() };
+  const s: SaveData = { version: SAVE_VERSION, coins: 0, meta: {}, metaRefund: 0, runs: 0, wins: 0, bestStage: 0, characters: {}, unlocked: [], totals: emptyTotals(), bests: emptyRunStats() };
   return { ...s, unlocked: refreshUnlocks(s) };
 }
 
@@ -79,39 +122,59 @@ export function recordRun(save: SaveData, r: RunResult): SaveData {
   return { ...next, unlocked: refreshUnlocks(next) };
 }
 
-/** 영구 강화 노드 한 레벨을 코인으로 산다. 코인이 모자라거나 잠겨 있으면 오류. */
-export function spendOnMeta(save: SaveData, id: string): SaveData {
-  const cost = nextCost(save.meta, id);
-  if (cost === null) throw new Error(`${id}: 이미 최대`);
-  if (!isUnlocked(save.meta, id)) throw new Error(`${id}: 아직 잠김`);
-  if (save.coins < cost) throw new Error(`${id}: 코인이 모자람 (${save.coins} < ${cost})`);
-  return { ...save, coins: save.coins - cost, meta: buyNode(save.meta, id) };
+/** 캐릭터의 트리 (없으면 빈 트리) */
+export function profileOf(save: SaveData, characterId: string): MetaProfile {
+  return save.meta[characterId] ?? {};
 }
 
-/** 시뮬용: 살 수 있는 가장 싼 노드부터 코인이 떨어질 때까지 산다 */
-export function botSpend(save: SaveData): SaveData {
+/** 캐릭터 트리의 노드 한 레벨을 공용 코인으로 산다. 코인이 모자라거나 잠겨 있거나 다른 캐릭터 전용이면 오류. */
+export function spendOnMeta(save: SaveData, characterId: string, id: string): SaveData {
+  if (!nodeForCharacter(metaNode(id), characterId)) throw new Error(`${id}: ${characterId} 전용 노드가 아님`);
+  const profile = profileOf(save, characterId);
+  const c = costFor(save.meta, characterId, id);
+  if (c === null) throw new Error(`${id}: 이미 최대`);
+  if (!isUnlocked(profile, id)) throw new Error(`${id}: 아직 잠김`);
+  if (save.coins < c.cost) throw new Error(`${id}: 코인이 모자람 (${save.coins} < ${c.cost})`);
+  return { ...save, coins: save.coins - c.cost, meta: { ...save.meta, [characterId]: buyNode(profile, id) } };
+}
+
+/** 시뮬용: 그 캐릭터 트리에서 살 수 있는 가장 싼 노드부터 코인이 떨어질 때까지 산다 (공유 할인 반영) */
+export function botSpend(save: SaveData, characterId: string): SaveData {
   let s = save;
   for (;;) {
-    const options = META.nodes
-      .filter((n) => canBuyNode(s.meta, n.id, s.coins))
-      .map((n) => ({ id: n.id, cost: nextCost(s.meta, n.id) as number }))
+    const profile = profileOf(s, characterId);
+    const options = nodesFor(characterId)
+      .map((n) => ({ id: n.id, cost: costFor(s.meta, characterId, n.id)?.cost ?? null }))
+      .filter((o): o is { id: string; cost: number } => o.cost !== null && canBuyNode(profile, o.id, s.coins, o.cost))
       .sort((a, b) => a.cost - b.cost);
     const pick = options[0];
     if (!pick) return s;
-    s = spendOnMeta(s, pick.id);
+    s = spendOnMeta(s, characterId, pick.id);
   }
 }
 
-/** 트리를 얼마나 채웠는지 (쓴 코인 ÷ 전체 비용) */
-export function treeProgress(save: SaveData): number {
+/** 캐릭터 트리를 얼마나 채웠는지 (산 레벨의 정가 ÷ 트리 전체 정가) */
+export function treeProgress(save: SaveData, characterId: string): number {
   let spent = 0;
   let total = 0;
-  for (const n of META.nodes) {
-    const lv = save.meta[n.id] ?? 0;
+  const profile = profileOf(save, characterId);
+  for (const n of nodesFor(characterId)) {
+    const lv = profile[n.id] ?? 0;
     total += n.costs.reduce((a, b) => a + b, 0);
     spent += n.costs.slice(0, lv).reduce((a, b) => a + b, 0);
   }
   return total > 0 ? spent / total : 1;
+}
+
+/** 모든 캐릭터 트리의 평균 진행 (제목 화면 요약) */
+export function allTreesProgress(save: SaveData): number {
+  const ids = Object.keys(CHARACTERS);
+  return ids.reduce((a, id) => a + treeProgress(save, id), 0) / Math.max(1, ids.length);
+}
+
+/** 환불 안내를 보여 줬다 */
+export function acknowledgeRefund(save: SaveData): SaveData {
+  return save.metaRefund > 0 ? { ...save, metaRefund: 0 } : save;
 }
 
 export function serializeSave(save: SaveData): string {
@@ -122,15 +185,15 @@ function count(v: unknown): number {
   return typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0;
 }
 
-/** 현재 트리에 맞게 프로필을 고친다 (없어진 노드·넘친 레벨·선행 조건 위반 제거) */
-function repairProfile(raw: unknown): { meta: MetaProfile; dropped: string[] } {
+/** 현재 트리에 맞게 캐릭터 프로필을 고친다 (없어진 노드·다른 캐릭터 전용·넘친 레벨·선행 조건 위반 제거) */
+function repairProfile(raw: unknown, characterId: string): { meta: MetaProfile; dropped: string[] } {
   const dropped: string[] = [];
   const meta: MetaProfile = {};
   const src = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
   for (const [id, lv] of Object.entries(src)) {
     const node = META.nodes.find((n) => n.id === id);
     const n = count(lv);
-    if (!node) {
+    if (!node || !nodeForCharacter(node, characterId)) {
       dropped.push(id);
       continue;
     }
@@ -161,8 +224,22 @@ export function parseSave(text: string): ParseResult {
   }
   if (!raw || typeof raw !== "object") return { ok: false, error: "객체가 아님" };
   const o = raw as Record<string, unknown>;
-  if (o.version !== SAVE_VERSION) return { ok: false, error: `알 수 없는 버전: ${String(o.version)}` };
-  const { meta, dropped } = repairProfile(o.meta);
+  if (o.version !== SAVE_VERSION && o.version !== 1) return { ok: false, error: `알 수 없는 버전: ${String(o.version)}` };
+  // 버전 1: 공용 트리 → 쓴 코인을 돌려주고 캐릭터별 트리는 빈 채로 시작
+  const legacy = o.version === 1 ? legacyRefund(o.meta) : 0;
+  const meta: MetaBook = {};
+  const dropped: string[] = [];
+  if (o.version === SAVE_VERSION) {
+    for (const [ch, p] of Object.entries(record(o.meta))) {
+      if (!CHARACTERS[ch]) {
+        dropped.push(...Object.keys(record(p)).map((id) => `${ch}:${id}`));
+        continue;
+      }
+      const r = repairProfile(p, ch);
+      if (Object.keys(r.meta).length > 0) meta[ch] = r.meta;
+      dropped.push(...r.dropped.map((id) => `${ch}:${id}`));
+    }
+  }
   const characters: Record<string, CharacterRecord> = {};
   if (o.characters && typeof o.characters === "object") {
     for (const [id, c] of Object.entries(o.characters as Record<string, unknown>)) {
@@ -172,8 +249,9 @@ export function parseSave(text: string): ParseResult {
   }
   const save: SaveData = {
     version: SAVE_VERSION,
-    coins: count(o.coins),
+    coins: count(o.coins) + legacy,
     meta,
+    metaRefund: count(o.metaRefund) + legacy,
     runs: count(o.runs),
     wins: count(o.wins),
     bestStage: Math.min(CAMPAIGN.length, count(o.bestStage)),
