@@ -1,5 +1,5 @@
 {
-  "_note": "캐릭터 해금 (src/progression/unlocks.ts). start는 처음부터 열림, 나머지는 any 중 하나를 채우면 열린다. kind best = 한 판 최고, total = 모든 판 누적. 근거와 측정: docs/2026-11-24-해금.md",
+  "_note": "캐릭터 해금 (src/progression/unlocks.ts). start는 처음부터 열림, 나머지는 any 중 하나를 채우면 열린다. kind best = 한 판 최고, total = 모든 판 누적. 근거와 측정: docs/2026-11-24-해금.md, 11/24 기본 난이도 재조정은 docs/2026-11-24-영구강화.md (첫 판에 스테이지 11~15까지 가는 일이 많아 '스테이지 N 클리어'는 팔레에 너무 일찍 열림)",
   "start": ["olly"],
   "characters": {
     "shepherd": {
@@ -8,18 +8,17 @@
     },
     "cue": {
       "any": [
-        { "kind": "total", "stat": "cushionPops", "n": 150 },
-        { "kind": "total", "stat": "threeCushions", "n": 20 },
-        { "kind": "total", "stat": "runs", "n": 8 }
+        { "kind": "total", "stat": "cushionPops", "n": 250 },
+        { "kind": "total", "stat": "threeCushions", "n": 30 },
+        { "kind": "total", "stat": "runs", "n": 6 }
       ],
-      "text": "쿠션 팝 누적 150번 또는 3쿠션 팝 누적 20번 (또는 8판 하기)"
+      "text": "쿠션 팝 누적 250번 또는 3쿠션 팝 누적 30번 (또는 6판 하기)"
     },
     "pale": {
       "any": [
-        { "kind": "best", "stat": "reached", "n": 10 },
-        { "kind": "total", "stat": "poppedEnemies", "n": 40000 }
+        { "kind": "total", "stat": "poppedEnemies", "n": 30000 }
       ],
-      "text": "스테이지 10 클리어 또는 적 누적 40000마리 터뜨리기"
+      "text": "적 누적 30000마리 터뜨리기"
     }
   }
 }

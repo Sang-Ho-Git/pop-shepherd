@@ -26,13 +26,16 @@ describe("캐릭터 해금", () => {
     expect(newSave().unlocked).toEqual(["olly"]);
   });
 
-  it("스테이지 5를 클리어하면 양치기가, 10을 클리어하면 팔레가 열린다 (어느 캐릭터로든)", () => {
+  it("스테이지 5를 클리어하면 양치기가, 적을 누적으로 많이 터뜨리면 팔레가 열린다 (어느 캐릭터로든)", () => {
     let s = recordRun(newSave(), run("olly", 4));
     expect(s.unlocked).toEqual(["olly"]);
     const before = s;
     s = recordRun(s, run("olly", 5));
     expect(newlyUnlocked(before, s)).toEqual(["shepherd"]);
-    s = recordRun(s, run("shepherd", 10));
+    const need = UNLOCKS.characters.pale!.any.find((c) => c.stat === "poppedEnemies")!.n;
+    s = recordRun(s, run("shepherd", 15, { poppedEnemies: need - 1 }));
+    expect(s.unlocked).not.toContain("pale");
+    s = recordRun(s, run("shepherd", 1, { poppedEnemies: 1 }));
     expect(s.unlocked).toContain("pale");
   });
 
