@@ -10,7 +10,7 @@
  *   --ball             색 공 규칙
  *   --contact-mul k    측정용: 모든 스테이지의 접촉 피해 배율에 k를 곱한다 (메모리에서만, 데이터는 그대로).
  *                      기본 난이도를 올리기 전에 '첫 판 완주 약 20%' 근사로 해금 런 번호를 재는 데 썼다 (k=1.5, 색 공 규칙).
- * 기획 목표: 트리 전체를 채우는 데 15~20런.
+ * 기획 목표 (11/24): 트리 전체를 채우는 데 25~40런 (약 32). 여러 시퀀스 통계는 tools/meta-curve.ts seq.
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { runCampaign } from "../src/sim/campaign.ts";
