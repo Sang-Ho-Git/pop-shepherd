@@ -24,6 +24,8 @@ export interface Carry {
 
 export interface StageResult {
   stage: string;
+  /** 회오리 칼날에 지워진 적 (색 공 규칙, 점수 없음) */
+  bladeVanished: number;
   cleared: boolean;
   survived: number;
   /** 시작 / 끝 체력 비율 */
@@ -213,6 +215,7 @@ export function runCampaign(seed: number, characterId: string, stages: string[] 
       revived: g.player.revives < revivesStart,
       elitesSpawned: s.elitesSpawned,
       elitesKilled: s.elitesKilled,
+      bladeVanished: s.bladeVanished,
       bossTime: s.bossKilled > 0 && g.stage!.boss ? s.bossKilledAt - g.stage!.boss.at : null,
       chests: s.chestsOpened,
       damageTaken: s.damageTaken,

@@ -91,5 +91,15 @@
       "aim_assist": 40
     },
     "note": "색 공이 조준 방향 둘레의 같은 색 무리 쪽으로 꺾인다 (레벨당 ±40°, 5레벨이면 완전 자동). 색 공 규칙 전용"
+  },
+  "swift_hooves": {
+    "id": "swift_hooves",
+    "name": "가벼운 발굽",
+    "maxLevel": 5,
+    "implemented": true,
+    "perLevel": {
+      "move_speed": 0.08
+    },
+    "note": "이동 속도 +8% / 레벨 (뒤 스테이지의 빠른 양을 따돌리는 선택지)"
   }
 }

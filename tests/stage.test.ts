@@ -17,32 +17,30 @@ function gameOn(st: StageDef) {
   return g;
 }
 
-describe("스테이지 클리어 (생존형, 마무리 시간)", () => {
-  it("시간이 끝나면 마무리 시간이 시작되고, 소환이 멈춘다", () => {
+describe("스테이지 클리어 (생존형, 11/24부터 마무리 시간 없음)", () => {
+  it("시간이 끝나면 바로 클리어한다 (마무리 시간 없음, 마무리 배너도 없음)", () => {
+    expect(RULES.stage.wrapUpSeconds).toBe(0);
     const st = { ...stage("stage01"), duration: 2 };
     const g = createGame({ seed: 1, character: character("shepherd"), enemyDefs: ENEMIES, stage: st });
     const events = run(g, 2 * RULES.tickHz + 1);
-    expect(g.phase).toBe("wrapup");
-    expect(events.some((e) => e.type === "wrapup-start")).toBe(true);
-    const spawned = g.stats.spawned;
-    run(g, 5 * RULES.tickHz);
-    expect(g.stats.spawned).toBe(spawned);
+    expect(g.phase).toBe("cleared");
+    expect(events.some((e) => e.type === "wrapup-start")).toBe(false);
+    expect(g.time).toBeCloseTo(2, 1);
   });
 
-  it("마무리 시간의 팝은 경험치 +50%이고, 따로 센다", () => {
+  it("클리어 때 남은 일반 적 경험치의 clearXpRatio를 받는다 (마무리 경험치 대신)", () => {
     const g = gameOn(shortStage(1));
-    run(g, RULES.tickHz + 1);
-    expect(g.phase).toBe("wrapup");
-    const a = put(g, "red", 440, 400);
-    put(g, "red", 500, 400);
-    put(g, "red", 528, 400);
-    launch(a, 1, 0, 600);
-    const p = pops(run(g, 10));
-    expect(p[0]?.xp).toBeCloseTo(3 * (1 + RULES.stage.wrapUpXpBonus));
-    expect(g.stats.wrapUpPopped).toBe(3);
+    const a = put(g, "red", 200, 200);
+    const b = put(g, "blue", 300, 300);
+    const want = (a.xp + b.xp) * RULES.stage.clearXpRatio;
+    const before = g.stats.xp;
+    const events = run(g, RULES.tickHz + 2);
+    expect(g.phase).toBe("cleared");
+    expect(g.stats.xp - before).toBeCloseTo(want);
+    expect(events.find((e) => e.type === "stage-clear")).toMatchObject({ vanished: 2, xp: want });
   });
 
-  it("마무리 시간이 끝나면 남은 적이 사라지고 클리어. 이후 진행은 멈춘다", () => {
+  it("클리어하면 남은 적이 사라진다. 이후 진행은 멈춘다", () => {
     const g = gameOn(shortStage(1));
     put(g, "red", 200, 200);
     put(g, "blue", 300, 300);

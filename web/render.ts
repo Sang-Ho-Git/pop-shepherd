@@ -137,6 +137,26 @@ function drawEnemy(ctx: CanvasRenderingContext2D, v: View, e: Enemy, time: numbe
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.stroke();
+  if ((e.slowT ?? 0) > 0) {
+    // 회오리 둔화: 하늘색 서리 테
+    ctx.strokeStyle = "rgba(170,225,255,0.85)";
+    ctx.lineWidth = Math.max(1.5, 3 * v.scale);
+    ctx.setLineDash([4 * v.scale, 3 * v.scale]);
+    ctx.beginPath();
+    ctx.arc(x, y, r + 4 * v.scale, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  if ((e.bladeHits ?? 0) > 0 && e.rank === "normal") {
+    // 회오리에 맞은 횟수: 머리 위 작은 점 (다 차면 사라진다)
+    ctx.fillStyle = "rgba(230,245,255,0.95)";
+    const n = e.bladeHits ?? 0;
+    for (let k = 0; k < n; k++) {
+      ctx.beginPath();
+      ctx.arc(x + (k - (n - 1) / 2) * 6 * v.scale, y - r - 6 * v.scale, 2.2 * v.scale, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
   if (e.trait === "spiky") {
     // 가시: 무기로 밀리지 않는다는 표시
     ctx.fillStyle = INK;
@@ -378,16 +398,24 @@ export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: F
   for (const e of g.enemies) if (e.rank === "normal") drawEnemy(ctx, v, e, time);
   for (const e of g.enemies) if (e.rank !== "normal") drawEnemy(ctx, v, e, time);
 
-  // 회오리 칼날
+  // 회오리 칼날: 지나간 자리에 바람 꼬리. 색 공 규칙에서 이번 바퀴 cap을 다 쓰면 무뎌져 흐려진다
   const p = g.player;
   for (const w of g.weapons) {
     if (w.def.behavior !== "orbit") continue;
     const radius = (w.level.params.radius ?? 80) * p.stats.area;
     const blades = w.level.params.blades ?? 1;
+    const dull = g.ballMode && (w.bite ?? 0) >= (w.level.params.cap ?? 3);
+    const [cx, cy] = toScreen(v, p.x, p.y);
     for (let k = 0; k < blades; k++) {
       const a = (w.angle ?? 0) + (k / blades) * Math.PI * 2;
+      ctx.strokeStyle = dull ? "rgba(200,240,255,0.12)" : "rgba(200,240,255,0.35)";
+      ctx.lineWidth = BLADE_RADIUS * p.stats.area * v.scale * 0.5;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius * v.scale, a - 0.9, a);
+      ctx.stroke();
       const [x, y] = toScreen(v, p.x + Math.cos(a) * radius, p.y + Math.sin(a) * radius);
-      ctx.fillStyle = "rgba(200,240,255,0.85)";
+      ctx.fillStyle = dull ? "rgba(200,240,255,0.3)" : "rgba(200,240,255,0.9)";
       ctx.beginPath();
       ctx.arc(x, y, BLADE_RADIUS * p.stats.area * v.scale * 0.6, 0, Math.PI * 2);
       ctx.fill();

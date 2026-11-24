@@ -166,12 +166,23 @@ export const RULES = {
     cushionBonus: [0, 0.3, 0.6, 1.2],
     /** 공 색 고르기: 근처에 같은 색끼리 닿은 짝 하나당 가중치 */
     pairWeight: 3,
+    /**
+     * 색 공 규칙의 회오리 (11/24): 튕기지 않고 둔화·누적 삭제. minPeriod = 회전 주기 하한 (s, 무적 오라 방지),
+     * rehit = 같은 적을 다시 칠 수 있기까지 (s), legacy = 예전처럼 튕기기 (비교 실험용)
+     */
+    orbit: { minPeriod: 0.6, rehit: 0.8, legacy: false },
     /** 모자라서 붙은 공 젤리가 멈춰 있는 시간 (s) */
     stickStun: 1.5,
   },
   /** 드롭 (보물 상자, 골드 주머니) */
   drops: { pickupRange: 70, goldLifetime: 20, chestPicksElite: 1, chestPicksBoss: 3, chestHealFrac: 0.3 },
-  stage: { wrapUpSeconds: 10, wrapUpXpBonus: 0.5, betweenHeal: 0 },
+  /**
+   * 스테이지 클리어: 목표(시간·보스·엘리트)를 이루면 바로 클리어하고 남은 적은 사라진다.
+   * wrapUpSeconds: 예전 "마무리 시간" (소환이 멈추고 팝 경험치 +wrapUpXpBonus). 11/24에 0으로 없앰 —
+   *   시간제한 스테이지에서 10초 추가는 플레이 시간만 늘린다는 피드백. 마무리 경험치(스테이지 경험치의 약 8%)는
+   *   clearXpRatio로 대신 준다: 클리어 때 남은 일반 적 경험치 × clearXpRatio.
+   */
+  stage: { wrapUpSeconds: 0, wrapUpXpBonus: 0.5, clearXpRatio: 0.5, betweenHeal: 0 },
 
   /**
    * 2.1 런 안 성장. 레벨 L에서 L+1까지 필요한 경험치 = base + growth × (L - 1).
@@ -183,6 +194,8 @@ export const RULES = {
     count: 3,
     weaponSlots: 6,
     passiveSlots: 6,
+    /** 봇: 이 스테이지부터 이동 속도 패시브(가벼운 발굽)를 진화 짝만큼 높게 친다 */
+    botSpeedFrom: 8,
     weights: { weaponUp: 35, passiveUp: 25, newWeapon: 20, newPassive: 20 },
     fillerHealFrac: 0.3,
     /** Lv5 이상 무기의 진화 짝 패시브 카드 가중치 배율 */

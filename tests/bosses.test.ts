@@ -127,7 +127,7 @@ describe("처치형 스테이지", () => {
     return { ...stage("stage05"), duration: 10, spawn: [{ from: 0, to: 10, interval: 9999 }], boss: { at: 1, kind: "wool_giant" } };
   }
 
-  it("보스는 정해진 시각에 나오고, 쓰러뜨려야 마무리 시간이 시작된다 (시간이 지나도 계속)", () => {
+  it("보스는 정해진 시각에 나오고, 쓰러뜨려야 클리어한다 (시간이 지나도 계속)", () => {
     const g = createGame({ seed: 1, character: character("shepherd"), enemyDefs: ENEMIES, stage: bossStage() });
     g.spawnTimer = 9999;
     // 규칙만 본다: 졸개에게 맞아 죽지 않게
@@ -142,15 +142,13 @@ describe("처치형 스테이지", () => {
     popRedsAt(g, boss.x, boss.y - 80);
     run(g, 10);
     expect(g.stats.bossKilled).toBe(1);
-    expect(g.phase).toBe("wrapup");
-    run(g, RULES.stage.wrapUpSeconds * RULES.tickHz + 2);
+    // 11/24: 마무리 시간 없이 바로 클리어. 남은 상자와 골드는 자동으로 줍는다
     expect(g.phase).toBe("cleared");
-    // 마무리 끝에 남은 상자와 골드는 자동으로 줍는다
     expect(g.stats.chestsOpened).toBe(1);
     expect(g.golds).toHaveLength(0);
   });
 
-  it("엘리트형은 나온 엘리트를 다 쓰러뜨리면 마무리 시간", () => {
+  it("엘리트형은 나온 엘리트를 다 쓰러뜨리면 클리어", () => {
     const st: StageDef = { ...stage("stage10"), spawn: [{ from: 0, to: 270, interval: 9999 }], elites: [{ at: 0, kind: "chief_jelly" }, { at: 0, kind: "chameleon" }] };
     const g = createGame({ seed: 1, character: character("shepherd"), enemyDefs: ENEMIES, stage: st });
     g.spawnTimer = 9999;
@@ -168,7 +166,7 @@ describe("처치형 스테이지", () => {
     }
     run(g, 10);
     expect(g.stats.elitesKilled).toBe(2);
-    expect(g.phase).toBe("wrapup");
+    expect(g.phase).toBe("cleared");
   });
 });
 

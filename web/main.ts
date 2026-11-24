@@ -15,7 +15,7 @@ import { buy, openShop, reroll } from "../src/progression/shop.ts";
 import type { ShopState } from "../src/progression/shop.ts";
 import { carryOf, startStage } from "../src/sim/campaign.ts";
 import type { Carry } from "../src/sim/campaign.ts";
-import { weaponLevel, MAX_LEVEL } from "../src/weapons/weapons.ts";
+import { makeWeapon, weaponLevel, MAX_LEVEL } from "../src/weapons/weapons.ts";
 import type { CharacterDef } from "../src/core/types.ts";
 import { computeView, drawWorld, PALETTE } from "./render.ts";
 import type { Aim, Fx, View } from "./render.ts";
@@ -412,6 +412,7 @@ function renderShop(): void {
   rr.disabled = st.freeRerolls <= 0 && g.player.gold < SHOP.rerollCost;
   show([
     el("p", "eyebrow", `스테이지 ${run.stageIndex + 1} 클리어`),
+    ...(g.stats.vanished > 0 ? [el("p", "small", `남은 적 ${g.stats.vanished}마리가 흩어지며 경험치 +${Math.round(g.stats.clearXp)}`)] : []),
     el("h2", "", "정비 상점"),
     el("p", "lede", `골드 ${Math.floor(g.player.gold)} · 체력 ${Math.ceil(g.player.hp)}/${g.player.maxHp}`),
     el("p", "small", `남은 골드는 런이 끝나면 영구 강화 코인이 된다 (지금 끝나면 코인 +${runCoins(0, 0, g.player.gold).fromGold})`),
@@ -695,6 +696,16 @@ function handleEvents(game: Game): void {
       case "stage-clear":
         sfx.clear();
         break;
+      case "blade-vanish": {
+        // 회오리에 여러 번 맞아 사라진 적: 터지는 팝과 구별되게 회색 연기만 (점수 없음)
+        fx.push({ kind: "ring", x: e.x, y: e.y, t: 0, life: 0.4, color: "rgba(220,225,230,0.7)", radius: 22 });
+        for (let k = 0; k < 5; k++) {
+          const a = Math.random() * Math.PI * 2;
+          const sp = 25 + Math.random() * 30;
+          fx.push({ kind: "spark", x: e.x, y: e.y, t: 0, life: 0.6 + Math.random() * 0.3, color: "rgba(200,205,212,0.8)", radius: 5 + Math.random() * 4, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 20 });
+        }
+        break;
+      }
       case "wind-start": {
         const dir = Math.abs(e.dx) > Math.abs(e.dy) ? (e.dx > 0 ? "→" : "←") : e.dy > 0 ? "↓" : "↑";
         banner = { text: `돌풍 ${dir}`, sub: "날아가는 공과 양이 바람에 휜다", t: 1.6 };
@@ -731,7 +742,7 @@ function handleEvents(game: Game): void {
         banner = { text: "2단계", sub: "보스가 거칠어졌다", t: 2 };
         break;
       case "wrapup-start":
-        banner = { text: "마무리", sub: "15초 동안 경험치 +50%", t: 2.5 };
+        banner = { text: "마무리", sub: `${RULES.stage.wrapUpSeconds}초 동안 경험치 +${Math.round(RULES.stage.wrapUpXpBonus * 100)}%`, t: 2.5 };
         break;
       case "evolve":
         banner = { text: `${weaponName(e.weapon)} 진화`, sub: "", t: 2.5 };
@@ -946,8 +957,18 @@ interface PopDebug {
   result: { won: boolean; reached: number; level: number } | null;
   runs: number;
   log: string[];
+  /** 점검용: 지금 판에 무기를 준다 (스크린샷용, 예: give("whirlwind", 6, "A")) */
+  give: (id: string, lv: number | "evo", branch?: string | null) => void;
 }
-const dbg: PopDebug = { screen: "", stage: 0, time: 0, hp: 0, maxHp: 0, level: 0, enemies: 0, balls: 0, fps: 0, result: null, runs: 0, log: [] };
+const dbg: PopDebug = {
+  screen: "", stage: 0, time: 0, hp: 0, maxHp: 0, level: 0, enemies: 0, balls: 0, fps: 0, result: null, runs: 0, log: [],
+  give: (id, lv, branch = null) => {
+    const def = WEAPONS[id];
+    if (!g || !def) return;
+    g.weapons = g.weapons.filter((w) => w.def.id !== id);
+    g.weapons.push(makeWeapon(def, lv, branch));
+  },
+};
 (globalThis as { __pop?: PopDebug }).__pop = dbg;
 let fpsAcc = 0;
 let fpsN = 0;
