@@ -192,8 +192,11 @@ async function flow(): Promise<RunLog[]> {
     const reached = Number(/클리어 (\d+)/.exec(text)?.[1] ?? 0);
     log(`run${i} ${ch} 클리어 ${reached} · 코인 +${coinsShown} (보유 ${after.coins})${fresh.length ? ` · 새로 열림 ${fresh.join(",")}` : ""}`);
     // 영구 강화: 가장 싼 노드부터
-    await press(p, new RegExp(`^${NAME[ch]} 영구 강화$`));
+    const advertised = Number(/(\d+)개 살 수 있음/.exec(text)?.[1] ?? 0);
+    await press(p, new RegExp(`^${NAME[ch]} 영구 강화( · \\d+개 살 수 있음)?$`));
     await waitScreen(p, "meta", 5000);
+    const enabledNodes = await p.$$eval("button.node:not(:disabled)", (bs: HTMLButtonElement[]) => bs.length);
+    if (enabledNodes !== advertised) issue(`run${i} 결과 화면 "${advertised}개 살 수 있음" ≠ 영구 강화 화면 ${enabledNodes}개`);
     const bought: string[] = [];
     for (let k = 0; k < 60; k++) {
       const pick = await p.$$eval("button.node:not(:disabled)", (bs: HTMLButtonElement[]) => {

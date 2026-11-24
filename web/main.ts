@@ -334,7 +334,7 @@ function finishRun(won: boolean): void {
     el("p", "coins", run.dev ? "시험 판이라 기록과 코인에 넣지 않았다" : `코인 +${coins}`),
     ...(run.dev ? [] : [el("p", "small", `${rc.fromGold > 0 ? `남은 골드 ${Math.floor(goldLeft)} → 코인 ${rc.fromGold} · ` : ""}보유 ${save.coins}`)]),
     ...fresh.map((id) => el("p", "unlock-new", `새로 열림: ${CHAR_NAME[id] ?? id}`)),
-    row([button(`${name} 영구 강화`, () => renderMeta(played)), button(fresh.length > 0 ? "캐릭터 고르기" : "다시 하기", () => renderSelect(), "btn ghost")]),
+    row([button(`${name} 영구 강화${affordable(played) > 0 ? ` · ${affordable(played)}개 살 수 있음` : ""}`, () => renderMeta(played)), button(fresh.length > 0 ? "캐릭터 고르기" : "다시 하기", () => renderSelect(), "btn ghost")]),
   ]);
   run = null;
 }
@@ -477,6 +477,15 @@ function refundNotice(): HTMLElement[] {
   save = acknowledgeRefund(save);
   writeSave(store, save);
   return [el("p", "notice", `영구 강화가 캐릭터별 트리로 바뀌어, 쓴 코인 ${n}을 모두 돌려받았다. 캐릭터마다 다시 골라 보자.`)];
+}
+
+/** 지금 코인으로 바로 살 수 있는 노드 수 (결과 화면 버튼에 알려 준다) */
+function affordable(ch: string): number {
+  const profile = profileOf(save, ch);
+  return nodesFor(ch).filter((n) => {
+    const c = costFor(save.meta, ch, n.id);
+    return c !== null && isUnlocked(profile, n.id) && c.cost <= save.coins;
+  }).length;
 }
 
 /** 영구 강화 화면에서 보고 있는 캐릭터 */
