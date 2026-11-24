@@ -114,6 +114,11 @@ export const sfx = {
   levelUp(): void {
     [0, 2, 4].forEach((s, i) => tone(comboPitch(s + 5), 0.18, "triangle", 0.25, undefined, i * 0.07));
   },
+  /** 보스 공격 예고: 낮게 두 번 */
+  warn(): void {
+    tone(220, 0.12, "square", 0.12, 200);
+    tone(220, 0.12, "square", 0.12, 200, 0.16);
+  },
   boss(): void {
     tone(98, 0.9, "sawtooth", 0.18, 73);
   },

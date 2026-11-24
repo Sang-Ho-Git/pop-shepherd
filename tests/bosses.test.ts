@@ -99,26 +99,139 @@ describe("엘리트·보스: 행동", () => {
     expect(e.color).not.toBe("red");
   });
 
-  it("양털 거인: 6초마다 졸개 6마리(두 색), 체력 절반 아래면 2단계에서 돌진한다", () => {
+  it("대장 젤리는 내려찍기 예고를 플레이어 자리에 깔고, 예고 동안 멈춰 선다", () => {
+    const g = emptyGame();
+    const e = spawnEnemy(g, "chief_jelly", "blue", g.player.x + 500, g.player.y);
+    const events = run(g, (ENEMIES.chief_jelly!.params!.atkFirst! + 0.1) * RULES.tickHz);
+    expect(events.some((x) => x.type === "telegraph" && x.act === "slam")).toBe(true);
+    const h = g.hazards[0]!;
+    expect(h.kind).toBe("circle");
+    expect(Math.hypot(h.x - g.player.x, h.y - g.player.y)).toBeLessThan(1);
+    const x0 = e.x;
+    run(g, 10);
+    expect(e.x).toBe(x0);
+  });
+});
+
+/** 바위 넷이 있는 스테이지 5 지형, 일반 소환 없음 (보스는 직접 놓는다) */
+function rockGame() {
+  const st: StageDef = { ...stage("stage05"), spawn: [{ from: 0, to: 9999, interval: 9999 }], boss: { at: 9999, kind: "wool_giant" } };
+  const g = createGame({ seed: 1, character: character("shepherd"), enemyDefs: ENEMIES, stage: st });
+  g.spawnTimer = 9999;
+  return g;
+}
+
+describe("보스 패턴: 읽고 피하기", () => {
+  it("예고가 끝나는 순간 경고 안에 있으면 맞고, 밖으로 나가면 맞지 않는다", () => {
+    const hitWhen = (leave: boolean) => {
+      const g = emptyGame();
+      const e = spawnEnemy(g, "wool_giant", "red", g.player.x + 600, g.player.y);
+      e.boss!.atkCd = 0;
+      run(g, 1);
+      const h = g.hazards.find((x) => x.act === "slam")!;
+      expect(h).toBeDefined();
+      const hp = g.player.hp;
+      const ticks = Math.ceil(h.total * RULES.tickHz) + 2;
+      run(g, ticks, { moveX: 0, moveY: leave ? 1 : 0, whistle: false });
+      return hp - g.player.hp;
+    };
+    expect(hitWhen(false)).toBeGreaterThan(0);
+    expect(hitWhen(true)).toBe(0);
+  });
+
+  it("양털 거인의 패턴은 내려찍기 → 털뭉치 부채꼴 → 돌진 차례, 부채꼴은 탄을 쏜다", () => {
     const g = emptyGame();
     g.player.hp = g.player.maxHp = 1e9;
-    const e = special(g, "wool_giant", "red", 1600, 700);
-    run(g, 6 * RULES.tickHz + 1);
-    const minions = g.enemies.filter((x) => x.kind === "jelly");
-    expect(minions).toHaveLength(6);
-    expect(new Set(minions.map((x) => x.color)).size).toBe(2);
-    e.hp = e.maxHp * 0.4;
-    e.speed = 45;
-    for (const m of minions) m.dead = true;
-    const events = run(g, 1);
-    expect(events.some((x) => x.type === "boss-phase")).toBe(true);
-    // 8초 쿨다운 + 1초 예고 뒤 돌진 속도
-    let fastest = 0;
-    for (let t = 0; t < 10 * RULES.tickHz; t++) {
-      run(g, 1);
-      fastest = Math.max(fastest, Math.hypot(e.vx, e.vy));
-    }
-    expect(fastest).toBeGreaterThan(e.speed * 2);
+    spawnEnemy(g, "wool_giant", "red", g.player.x + 600, g.player.y);
+    const acts = run(g, 14 * RULES.tickHz)
+      .filter((x) => x.type === "telegraph")
+      .map((x) => (x as { act: string }).act);
+    expect(acts.slice(0, 3)).toEqual(["slam", "fan", "dash"]);
+    // 내려찍은 자리에 약점 색 양 (약점 팝 재료)
+    expect(g.enemies.filter((x) => x.kind === "jelly" && x.color === "red").length).toBeGreaterThan(0);
+  });
+
+  it("부채꼴 예고가 끝나면 털뭉치 탄이 날아가고, 맞으면 아프다", () => {
+    const g = emptyGame();
+    const e = spawnEnemy(g, "wool_giant", "red", g.player.x + 300, g.player.y);
+    e.speed = 0;
+    e.boss!.atkN = 1; // 다음 패턴: 부채꼴
+    e.boss!.atkCd = 0;
+    run(g, 1);
+    expect(g.hazards[0]!.kind).toBe("cone");
+    const hp = g.player.hp;
+    const events = run(g, 2 * RULES.tickHz);
+    expect(events.some((x) => x.type === "hazard-hit" && x.act === "fan")).toBe(true);
+    expect(g.player.hp).toBeLessThan(hp);
+  });
+
+  it("돌진하다 바위에 박으면 그로기: 멈추고, 곁의 팝 피해가 2배, 닿아도 아프지 않다", () => {
+    const g = rockGame();
+    // 바위(525, 338) 너머에 보스, 플레이어는 바위 이쪽
+    g.player.x = 380;
+    g.player.y = 338;
+    const e = spawnEnemy(g, "wool_giant", "blue", 800, 338);
+    e.speed = 0;
+    e.boss!.atkN = 2; // 다음 패턴: 돌진
+    e.boss!.atkCd = 0;
+    const events = run(g, 3 * RULES.tickHz, { moveX: 0, moveY: 0, whistle: false });
+    expect(events.some((x) => x.type === "groggy" && x.why === "crash")).toBe(true);
+    expect(e.boss!.groggy).toBeGreaterThan(0);
+    const hp = e.hp;
+    popRedsAt(g, e.x, e.y - 80);
+    run(g, 10);
+    expect(hp - e.hp).toBeCloseTo(3 * RULES.boss.popDamagePerEnemy * RULES.boss.groggyMul);
+  });
+});
+
+describe("보스 파훼: 약점 색 공과 보호막", () => {
+  function throwAt(g: ReturnType<typeof emptyGame>, color: "red" | "blue", x: number, y: number, bounces = 0) {
+    g.balls = [{ x: x - 120, y, vx: 900, vy: 0, color, travel: 0, bounces, lastHit: -1 }];
+  }
+
+  it("머리 위 약점 색 공을 맞히면 최대 체력 × weakFrac, 쿠션을 거치면 더 크고, 약점 색이 바뀐다", () => {
+    const dmg = (color: "red" | "blue", bounces: number) => {
+      const g = emptyGame();
+      g.ballMode = true;
+      const e = special(g, "wool_giant", "red", 1800, 400);
+      throwAt(g, color, e.x, e.y, bounces);
+      run(g, 12);
+      return { d: e.maxHp - e.hp, weak: e.boss!.weak, max: e.maxHp };
+    };
+    const frac = ENEMIES.wool_giant!.params!.weakFrac!;
+    const plain = dmg("red", 0);
+    expect(plain.d).toBeCloseTo(plain.max * frac);
+    expect(plain.weak).not.toBe("red");
+    expect(dmg("red", 2).d).toBeCloseTo(plain.max * frac * (1 + 2 * RULES.boss.weakCushionBonus));
+    // 약점이 아닌 색은 맞고 튕길 뿐
+    expect(dmg("blue", 0).d).toBe(0);
+  });
+
+  it("무지개 양치기: 체력 2/3 아래면 보호막. 팝 피해가 없고, 쿠션 공으로 다 깎으면 그로기", () => {
+    const g = emptyGame();
+    g.ballMode = true;
+    g.player.hp = g.player.maxHp = 1e9;
+    const e = special(g, "rainbow_shepherd", "red", 1800, 400);
+    e.hp = e.maxHp * 0.6;
+    const ev = run(g, 1);
+    expect(ev.some((x) => x.type === "shield-up")).toBe(true);
+    const need = e.boss!.shield;
+    expect(need).toBe(ENEMIES.rainbow_shepherd!.params!.shieldNeed);
+    // 쿠션 없는 공은 보호막을 깎지 못한다
+    throwAt(g, "red", e.x, e.y, 0);
+    run(g, 12);
+    expect(e.boss!.shield).toBe(need);
+    // 보호막 동안 곁의 팝은 피해가 없다
+    const hp = e.hp;
+    popRedsAt(g, e.x, e.y - 80);
+    run(g, 10);
+    expect(e.hp).toBe(hp);
+    // 3쿠션 공 한 방
+    g.balls = [];
+    throwAt(g, "blue", e.x, e.y, 3);
+    const ev2 = run(g, 12);
+    expect(e.boss!.shield).toBe(0);
+    expect(ev2.some((x) => x.type === "groggy" && x.why === "shield")).toBe(true);
   });
 });
 

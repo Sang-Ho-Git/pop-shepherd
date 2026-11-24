@@ -2,6 +2,7 @@ import { RULES } from "../core/rules.ts";
 import type { Color, Enemy, Game, MatchColor } from "../core/types.ts";
 import { launch, MAX_ENEMY_RADIUS } from "../world/physics.ts";
 import { SHOP } from "../data/index.ts";
+import { specialDamageMul } from "./bosses.ts";
 
 /** 연쇄 단계 depth의 경험치 배율 */
 export function chainMultiplier(depth: number): number {
@@ -123,7 +124,8 @@ function dropGold(g: Game, x: number, y: number, amount: number, n: number): voi
 /**
  * 곁의 팝이 엘리트·보스에 주는 피해 (기획: 팝 피해).
  * 터진 적 수 × popDamagePerEnemy × 연쇄 배율, 약점 색(몸 색)이면 ×weakMul.
- * 돌갑옷은 앞쪽(플레이어를 보는 쪽) frontHalfDeg 안에서 터진 팝을 frontMul만 받는다.
+ * 돌갑옷은 앞쪽(플레이어를 보는 쪽) frontHalfDeg 안에서 터진 팝을 frontMul만 받는다 (그로기 중에는 앞뒤가 없다).
+ * 그로기면 ×groggyMul, 보호막이 있으면 피해가 없다.
  */
 export function hitSpecials(g: Game, cx: number, cy: number, radius: number, n: number, color: Color, depth: number): void {
   for (const e of g.enemies) {
@@ -135,13 +137,15 @@ export function hitSpecials(g: Game, cx: number, cy: number, radius: number, n: 
     let dmg = n * RULES.boss.popDamagePerEnemy * chainMultiplier(depth);
     if (color === e.color) dmg *= RULES.boss.weakMul;
     const prm = e.boss?.params;
-    if (prm?.frontHalfDeg !== undefined && d > 1e-9) {
+    if (prm?.frontHalfDeg !== undefined && d > 1e-9 && !(e.boss!.groggy > 0)) {
       const px = g.player.x - e.x;
       const py = g.player.y - e.y;
       const pl = Math.hypot(px, py);
       const cos = pl > 1e-9 ? (dx * px + dy * py) / (d * pl) : -1;
       if (cos >= Math.cos((prm.frontHalfDeg * Math.PI) / 180)) dmg *= prm.frontMul ?? 1;
     }
+    dmg *= specialDamageMul(e);
+    if (dmg <= 0) continue;
     e.hp -= dmg;
     g.stats.specialDamage += dmg;
     g.stats.specialHits++;
@@ -234,7 +238,7 @@ export function detonateBomb(g: Game, color: MatchColor, x = g.player.x, y = g.p
  */
 export function damage(g: Game, e: Enemy, amount: number): void {
   if (e.dead || amount <= 0) return;
-  e.hp -= amount * g.player.stats.direct_dmg;
+  e.hp -= amount * g.player.stats.direct_dmg * (e.rank !== "normal" ? specialDamageMul(e) : 1);
   g.stats.directHits++;
   if (e.hp > 0) return;
   if (e.rank !== "normal") return killSpecial(g, e);

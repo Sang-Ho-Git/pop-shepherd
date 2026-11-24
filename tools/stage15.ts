@@ -1,7 +1,7 @@
 /**
  * 마지막 스테이지만 빠르게: 시험 진입로 빌드(web/dev-builds.json, 봇 런의 실제 스테이지 15 시작 상태)로 스테이지 15를 여러 번 돌린다.
  *   node tools/stage15.ts [variant] [판 수] [스테이지 번호]
- * 체력은 넘어온 값 그대로 (가득 채우지 않음). 클리어율, 죽은 시각, 보스 남은 체력, 받은 피해(특수 적 비율)를 본다.
+ * 체력은 넘어온 값 그대로 (가득 채우지 않음). 클리어율, 죽은 시각, 보스 남은 체력, 보스전 시간(중앙값), 받은 피해(특수 적 비율)를 본다.
  */
 import { readFileSync } from "node:fs";
 import { step } from "../src/core/game.ts";
@@ -27,6 +27,7 @@ let total = 0;
 for (const ch of ["shepherd", "cue", "olly", "pale"]) {
   const one = builds[ch]![String(stageNo)]!;
   let won = 0, deathT = 0, deaths = 0, bossLeft = 0, special = 0, dmg = 0, bp = 0, cp = 0;
+  const bossT: number[] = [];
   for (let s = 0; s < n; s++) {
     const list = pool?.[ch];
     const carry = list && list.length ? list[s % list.length]! : one;
@@ -34,6 +35,7 @@ for (const ch of ["shepherd", "cue", "olly", "pale"]) {
     const limit = (g.stage!.clear ?? "survive") === "survive" ? g.stage!.duration + RULES.stage.wrapUpSeconds : RULES.boss.hardLimit;
     for (let t = 0; t < limit * RULES.tickHz && (g.phase === "play" || g.phase === "wrapup"); t++) step(g, botInput(g));
     if (g.phase === "cleared") won++;
+    if (g.stats.bossKilled && g.stage!.boss) bossT.push(g.stats.bossKilledAt - g.stage!.boss.at);
     else if (g.player.dead || g.player.hp <= 0) {
       deaths++;
       deathT += g.time;
@@ -46,6 +48,6 @@ for (const ch of ["shepherd", "cue", "olly", "pale"]) {
     dmg += g.stats.damageTaken;
   }
   total += won;
-  parts.push(`${ch} ${won}/${n}${deaths ? ` (죽음 ${(deathT / deaths).toFixed(0)}초, 보스 ${((100 * bossLeft) / deaths).toFixed(0)}% 남김)` : ""} 특수피해 ${((100 * special) / Math.max(1, dmg)).toFixed(0)}% 쿠션팝 ${((100 * cp) / Math.max(1, bp)).toFixed(0)}%`);
+  parts.push(`${ch} ${won}/${n}${deaths ? ` (죽음 ${(deathT / deaths).toFixed(0)}초, 보스 ${((100 * bossLeft) / deaths).toFixed(0)}% 남김)` : ""} ${bossT.length ? `보스전 중앙 ${bossT.sort((a, b) => a - b)[Math.floor(bossT.length / 2)]!.toFixed(0)}초 ` : ""}특수피해 ${((100 * special) / Math.max(1, dmg)).toFixed(0)}% 쿠션팝 ${((100 * cp) / Math.max(1, bp)).toFixed(0)}%`);
 }
 console.log(`${variant} 스테이지${stageNo}: ${total}/${n * 4} | ${parts.join(" · ")}`);
