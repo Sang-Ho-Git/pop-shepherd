@@ -938,15 +938,52 @@ function handleEvents(game: Game): void {
 
 /* ───────────────────────── HUD ───────────────────────── */
 
-function bar(label: string, frac: number, color: string, text: string): HTMLElement {
+interface BarRefs {
+  root: HTMLElement;
+  fill: HTMLElement;
+  label: HTMLElement;
+}
+function bar(label: string, frac: number, color: string, text: string): BarRefs {
   const b = el("div", "bar");
   const fill = el("div", "fill");
   fill.style.width = `${Math.max(0, Math.min(1, frac)) * 100}%`;
   fill.style.background = color;
-  b.append(fill, el("span", "label", `${label} ${text}`));
-  return b;
+  const lab = el("span", "label", `${label} ${text}`);
+  b.append(fill, lab);
+  return { root: b, fill, label: lab };
 }
 
+/** 바뀔 때만 DOM을 건드린다 (같은 값을 다시 넣어도 스타일 계산이 다시 돈다) */
+function setText(e: HTMLElement, t: string): void {
+  if (e.textContent !== t) e.textContent = t;
+}
+function setBar(b: BarRefs, frac: number, text: string, color?: string): void {
+  const w = `${Math.max(0, Math.min(1, frac)) * 100}%`;
+  if (b.fill.style.width !== w) b.fill.style.width = w;
+  // style.background는 rgb()로 바뀌어 읽히므로 넣은 값을 따로 기억해 비교한다
+  if (color && b.fill.dataset.c !== color) {
+    b.fill.dataset.c = color;
+    b.fill.style.background = color;
+  }
+  setText(b.label, text);
+}
+
+/**
+ * HUD는 구조(무기 목록, 보스 막대, 색 공 칸)가 바뀔 때만 새로 만들고, 그 밖에는 글자·막대 길이만 바꾼다.
+ * 예전에는 10Hz마다 통째로 다시 만들어 폰에서 스타일·배치 계산이 프레임을 가끔 늦췄다 (docs/2026-11-24-성능.md). 보이는 것은 같다.
+ */
+interface HudRefs {
+  sig: string;
+  hp: BarRefs;
+  goal: HTMLElement;
+  gold: HTMLElement;
+  boss: BarRefs | null;
+  lv: BarRefs;
+  whistle: HTMLElement;
+  cur: HTMLElement | null;
+  next: HTMLElement | null;
+}
+let hudRefs: HudRefs | null = null;
 let hudTick = 0;
 function renderHud(game: Game): void {
   hudTick++;
@@ -962,31 +999,55 @@ function renderHud(game: Game): void {
     goal = boss ? `보스 ${Math.ceil(Math.max(0, boss.hp))}/${boss.maxHp}` : `보스 등장까지 ${Math.max(0, Math.ceil((st.boss?.at ?? 0) - game.time))}초`;
   } else if (st.clear === "elites") goal = `엘리트 ${game.stats.elitesKilled}/${st.elites?.length ?? 0}`;
   else goal = `${Math.floor(Math.max(0, st.duration - game.time) / 60)}:${String(Math.floor(Math.max(0, st.duration - game.time) % 60)).padStart(2, "0")}`;
-  const top = el("div", "top");
-  top.append(
-    bar("체력", p.hp / p.maxHp, "#ff6b6b", `${Math.ceil(Math.max(0, p.hp))}/${p.maxHp}`),
-    el("div", "goal", goal),
-    el("div", "gold", `골드 ${Math.floor(p.gold)}`),
-  );
   const boss = game.enemies.find((e) => e.rank === "boss");
-  const bottom = el("div", "bottom");
-  if (boss) bottom.append(bar("보스", boss.hp / boss.maxHp, PALETTE[boss.color === "rainbow" ? "yellow" : boss.color], ""));
-  bottom.append(bar(`Lv${p.level}`, (game.stats.xp - lvFrom) / Math.max(1, lvTo - lvFrom), "#9fe3ff", ""));
-  const ws = el("div", "weapons");
-  for (const w of game.weapons) ws.append(el("span", "w", `${w.def.name} ${w.level.lv === "evo" ? "진화" : `Lv${w.level.lv}${w.level.branch ?? ""}`}`));
-  ws.append(el("span", "w whistle-cd", p.whistleCd > 0 ? `휘슬 ${Math.ceil(p.whistleCd)}초` : "휘슬 준비"));
-  if (game.ball) {
-    const ball = el("span", "w balls");
-    const dot = (c: string, label: string): HTMLElement => {
-      const s = el("span", "dot", label);
-      s.style.setProperty("--c", PALETTE[c as keyof typeof PALETTE]);
-      return s;
-    };
-    ball.append(el("span", "", "공"), dot(game.ball.current, ""), el("span", "", "다음"), dot(game.ball.next, ""));
-    ws.append(ball);
+  const weaponTexts = game.weapons.map((w) => `${w.def.name} ${w.level.lv === "evo" ? "진화" : `Lv${w.level.lv}${w.level.branch ?? ""}`}`);
+  const sig = `${boss ? "B" : ""}|${game.ball ? "ball" : ""}|${weaponTexts.join(",")}`;
+  const hpText = `${Math.ceil(Math.max(0, p.hp))}/${p.maxHp}`;
+  const lvFrac = (game.stats.xp - lvFrom) / Math.max(1, lvTo - lvFrom);
+  const bossColor = boss ? PALETTE[boss.color === "rainbow" ? "yellow" : boss.color] : "";
+  const whistleText = p.whistleCd > 0 ? `휘슬 ${Math.ceil(p.whistleCd)}초` : "휘슬 준비";
+  const goldText = `골드 ${Math.floor(p.gold)}`;
+  if (!hudRefs || hudRefs.sig !== sig || !hud.firstChild) {
+    const top = el("div", "top");
+    const hp = bar("체력", p.hp / p.maxHp, "#ff6b6b", hpText);
+    const goalEl = el("div", "goal", goal);
+    const goldEl = el("div", "gold", goldText);
+    top.append(hp.root, goalEl, goldEl);
+    const bottom = el("div", "bottom");
+    const bossBar = boss ? bar("보스", boss.hp / boss.maxHp, bossColor, "") : null;
+    if (bossBar) bottom.append(bossBar.root);
+    const lv = bar(`Lv${p.level}`, lvFrac, "#9fe3ff", "");
+    bottom.append(lv.root);
+    const ws = el("div", "weapons");
+    for (const t of weaponTexts) ws.append(el("span", "w", t));
+    const whistle = el("span", "w whistle-cd", whistleText);
+    ws.append(whistle);
+    let cur: HTMLElement | null = null;
+    let next: HTMLElement | null = null;
+    if (game.ball) {
+      const ball = el("span", "w balls");
+      cur = el("span", "dot", "");
+      next = el("span", "dot", "");
+      ball.append(el("span", "", "공"), cur, el("span", "", "다음"), next);
+      ws.append(ball);
+    }
+    bottom.append(ws);
+    hud.replaceChildren(top, bottom);
+    hudRefs = { sig, hp, goal: goalEl, gold: goldEl, boss: bossBar, lv, whistle, cur, next };
   }
-  bottom.append(ws);
-  hud.replaceChildren(top, bottom);
+  const r = hudRefs;
+  setBar(r.hp, p.hp / p.maxHp, `체력 ${hpText}`);
+  setText(r.goal, goal);
+  setText(r.gold, goldText);
+  if (r.boss && boss) setBar(r.boss, boss.hp / boss.maxHp, "보스 ", bossColor);
+  setBar(r.lv, lvFrac, `Lv${p.level} `);
+  setText(r.whistle, whistleText);
+  if (game.ball && r.cur && r.next) {
+    const c = PALETTE[game.ball.current as keyof typeof PALETTE];
+    const n = PALETTE[game.ball.next as keyof typeof PALETTE];
+    if (r.cur.style.getPropertyValue("--c") !== c) r.cur.style.setProperty("--c", c);
+    if (r.next.style.getPropertyValue("--c") !== n) r.next.style.setProperty("--c", n);
+  }
 }
 
 /* ───────────────────────── 루프 ───────────────────────── */

@@ -34,6 +34,8 @@ interface Row {
   fps: number;
   gapMedian: number;
   gapP95: number;
+  /** 20ms보다 늦은 프레임 비율 (%) — p95는 16.7ms 배수로만 움직여 거칠다 */
+  slowPct: number;
   sim: number;
   draw: number;
   hud: number;
@@ -103,6 +105,7 @@ async function one(scene: string): Promise<Row> {
     fps: Math.round((perf.frames / seconds) * 10) / 10,
     gapMedian: Math.round(pct(perf.gaps, 0.5) * 10) / 10,
     gapP95: Math.round(pct(perf.gaps, 0.95) * 10) / 10,
+    slowPct: Math.round((perf.gaps.filter((x: number) => x > 20).length / Math.max(1, perf.gaps.length)) * 1000) / 10,
     sim: Math.round((perf.sim / f) * 100) / 100,
     draw: Math.round((perf.draw / f) * 100) / 100,
     hud: Math.round((perf.hud / f) * 100) / 100,
@@ -120,7 +123,7 @@ for (const s of scenes) {
   const r = await one(s);
   rows.push(r);
   console.log(
-    `${s.padEnd(16)} fps ${String(r.fps).padStart(5)} · 간격 중앙 ${r.gapMedian}ms p95 ${r.gapP95}ms · 프레임당 sim ${r.sim} draw ${r.draw} hud ${r.hud} = ${r.total}ms (최대 ${r.maxTotal}) · 틱/프레임 ${r.stepsPerFrame} · 적 ${r.enemies} 공 ${r.balls} · 해상도 ${r.renderScale}`,
+    `${s.padEnd(16)} fps ${String(r.fps).padStart(5)} · 간격 중앙 ${r.gapMedian}ms p95 ${r.gapP95}ms · 20ms 넘은 프레임 ${r.slowPct}% · 프레임당 sim ${r.sim} draw ${r.draw} hud ${r.hud} = ${r.total}ms (최대 ${r.maxTotal}) · 틱/프레임 ${r.stepsPerFrame} · 적 ${r.enemies} 공 ${r.balls} · 해상도 ${r.renderScale}`,
   );
 }
 await browser.close();
