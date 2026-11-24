@@ -1,7 +1,8 @@
 /// <reference lib="dom" />
 /**
  * 메타 흐름 실시간 점검: 웹 빌드를 실제 브라우저(Playwright)에서 새 세이브로 여러 판 이어서 한다.
- *   npm run build:web && node tools/metaflow.ts --runs 6 --out <폴더> [--speed 8] [--phone] [--legacy]
+ *   npm run build:web && node tools/metaflow.ts --runs 6 --out <폴더> [--speed 8] [--phone] [--legacy] [--rotate]
+ *   --rotate: 가장 최근 캐릭터 대신 열린 캐릭터를 번갈아 고른다
  *
  * 한 판마다: 제목 → 시작 → 캐릭터 선택(가장 최근에 열린 캐릭터) → 판(봇, #auto-rec) → 결과 화면
  *   → "<캐릭터> 영구 강화" → 살 수 있는 가장 싼 노드부터 코인이 떨어질 때까지 실제 버튼으로 산다 → 캐릭터 고르기.
@@ -32,6 +33,7 @@ const out = arg("out", "metaflow-out");
 const speed = Number(arg("speed", "8"));
 const phone = process.argv.includes("--phone");
 const legacyOnly = process.argv.includes("--legacy");
+const rotate = process.argv.includes("--rotate");
 mkdirSync(out, { recursive: true });
 
 const NAME: Record<string, string> = { shepherd: "양치기", cue: "큐", olly: "올리", pale: "팔레" };
@@ -149,8 +151,8 @@ async function flow(): Promise<RunLog[]> {
     const t0 = Date.now();
     await press(p, /^시작$/);
     const before = (await readSave(p))!;
-    // 가장 최근에 열린 캐릭터 (새로 연 캐릭터를 바로 써 보는 사람)
-    const ch = before.unlocked[before.unlocked.length - 1] as string;
+    // 가장 최근에 열린 캐릭터 (새로 연 캐릭터를 바로 써 보는 사람). --rotate면 열린 캐릭터를 번갈아 (다른 캐릭터 강화가 새지 않는지)
+    const ch = (rotate ? before.unlocked[(i - 1) % before.unlocked.length] : before.unlocked[before.unlocked.length - 1]) as string;
     if (i === 1 || before.unlocked.length !== prevUnlocked.length) await shot(p, `select-run${i}`);
     // 잠긴 캐릭터 카드는 꺼져 있어야 한다
     const disabled = await p.$$eval("button.char", (bs: HTMLButtonElement[]) => bs.filter((b) => b.disabled).length);
