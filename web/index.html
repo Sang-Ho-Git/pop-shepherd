@@ -134,7 +134,13 @@
     width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--plank-edge); background: rgba(43,33,24,0.8);
     font-family: var(--display); font-size: 14px; color: var(--cream);
   }
-  @media (hover: hover) and (pointer: fine) { #whistle, #swap { display: none; } }
+  /* 터치 화면의 일시정지 (키보드가 없으면 Esc를 못 누른다) */
+  #pausebtn {
+    position: fixed; right: max(18px, env(safe-area-inset-right, 0px)); top: calc(64px + env(safe-area-inset-top, 0px));
+    width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--plank-edge); background: rgba(43,33,24,0.8);
+    font-size: 14px; color: var(--cream); letter-spacing: -2px;
+  }
+  @media (hover: hover) and (pointer: fine) { #whistle, #swap, #pausebtn { display: none; } }
   @media (prefers-reduced-motion: reduce) { .btn:active:not(:disabled) { transform: none; } }
 </style>
 
@@ -142,6 +148,7 @@
 <div id="hud" hidden></div>
 <button id="whistle" type="button" hidden>휘슬</button>
 <button id="swap" type="button" hidden>바꾸기</button>
+<button id="pausebtn" type="button" aria-label="일시정지" hidden>❚❚</button>
 <p id="hint" hidden></p>
 <div id="overlay" hidden></div>
 <!--BUNDLE-->

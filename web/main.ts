@@ -680,6 +680,13 @@ $("swap").addEventListener("pointerdown", (e) => {
   e.preventDefault();
   swapTap = true;
 });
+$("pausebtn").addEventListener("click", () => {
+  if (screen === "play" && !paused && !choiceShown) renderPause();
+});
+// 다른 앱으로 넘어가면 멈춘다 (돌아왔을 때 바로 맞지 않게)
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && screen === "play" && !paused && !choiceShown && !auto) renderPause();
+});
 $("whistle").addEventListener("pointerdown", (e) => {
   e.preventDefault();
   whistleTap = true;
@@ -1057,6 +1064,7 @@ function frame(now: number): void {
   hud.hidden = screen !== "play";
   $("whistle").hidden = screen !== "play";
   $("swap").hidden = screen !== "play" || !g?.ball;
+  $("pausebtn").hidden = screen !== "play" || paused || choiceShown;
   requestAnimationFrame(frame);
 }
 
