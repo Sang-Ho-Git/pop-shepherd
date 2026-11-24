@@ -116,7 +116,8 @@ export function tickBosses(g: Game): void {
       g.events.push({ type: "boss-phase", id: e.id, phase: 2 });
     }
     // 보호막: 체력 비율 shieldAt1·shieldAt2 아래로 처음 내려가면
-    if (p.shieldNeed && b.shield <= 0) {
+    // 그로기 동안에는 치지 않는다 (그로기 보상을 지우지 않게, 그로기가 끝나면 친다)
+    if (p.shieldNeed && b.shield <= 0 && b.groggy <= 0) {
       const crossed = [p.shieldAt1, p.shieldAt2].filter((m) => m !== undefined && e.hp < e.maxHp * m).length;
       if (crossed > b.shields) {
         b.shields = crossed;

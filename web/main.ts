@@ -998,14 +998,25 @@ function frame(now: number): void {
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
     if (banner && screen === "play") {
+      // 바쁜 화면 위에서도 읽히게: 어두운 띠를 깔고, 부제가 화면보다 넓으면 " · "에서 줄을 나눈다 (휴대폰 세로)
       ctx.textAlign = "center";
       ctx.globalAlpha = Math.min(1, banner.t * 2);
+      const cy = canvas.height * 0.3;
+      const subFont = `${Math.round(22 * v.scale)}px "Gowun Dodum", sans-serif`;
+      ctx.font = subFont;
+      let lines = banner.sub ? [banner.sub] : [];
+      if (banner.sub && ctx.measureText(banner.sub).width > canvas.width * 0.9) lines = banner.sub.split(" · ");
+      const lh = 30 * v.scale;
+      const top = cy - 50 * v.scale;
+      const h = 66 * v.scale + lines.length * lh;
+      ctx.fillStyle = "rgba(8,17,14,0.62)";
+      ctx.fillRect(0, top, canvas.width, h);
       ctx.fillStyle = "#fff3c4";
       ctx.font = `${Math.round(48 * v.scale)}px Jua, "Gowun Dodum", sans-serif`;
-      ctx.fillText(banner.text, canvas.width / 2, canvas.height * 0.3);
-      ctx.font = `${Math.round(22 * v.scale)}px "Gowun Dodum", sans-serif`;
-      ctx.fillStyle = "#cfe8dd";
-      ctx.fillText(banner.sub, canvas.width / 2, canvas.height * 0.3 + 38 * v.scale);
+      ctx.fillText(banner.text, canvas.width / 2, cy);
+      ctx.font = subFont;
+      ctx.fillStyle = "#e4f4ec";
+      lines.forEach((l, i) => ctx.fillText(l, canvas.width / 2, cy + 38 * v.scale + i * lh));
       ctx.globalAlpha = 1;
     }
     if (screen === "play") renderHud(g);
