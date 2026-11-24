@@ -269,7 +269,7 @@ function botMove(g: Game): Input {
       const lx = lure.x - p.x;
       const ly = lure.y - p.y;
       const ld = Math.hypot(lx, ly);
-      if (ld > 12) return { moveX: lx / ld + ax * 0.6 + wx, moveY: ly / ld + ay * 0.6 + wy, whistle };
+      if (ld > 12) return { moveX: lx / ld + ax * 1.2 + wx, moveY: ly / ld + ay * 1.2 + wy, whistle };
       return { moveX: ax, moveY: ay, whistle };
     }
     const dx = p.x - boss.x;
@@ -303,13 +303,15 @@ function botMove(g: Game): Input {
 
 /**
  * 돌진 유인 자리: 보스의 다음 공격이 돌진이고 곧(3초 안) 시작하면, 돌진 거리 안의 바위 중 보스에 가장 가까운 것을 골라
- * 그 바위의 보스 쪽 바로 앞 (바위 테두리 + 70px). 보스가 그쪽으로 달려오면 옆으로 피하고(dodge) 보스는 바위에 박는다.
+ * 그 바위의 보스 쪽 바로 앞 (바위 테두리 + 80px). 돌진 2초 전부터, 유인 자리가 보스에서 반지름 + 240px 넘게 떨어졌을 때만. 보스가 그쪽으로 달려오면 옆으로 피하고(dodge) 보스는 바위에 박는다.
  * 돌진 예고가 이미 깔렸거나 그로기면 null.
  */
 export function lureSpot(g: Game, boss: Enemy): { x: number; y: number } | null {
   if (!BOT.lure) return null;
   const b = boss.boss;
-  if (!b || b.groggy > 0 || b.dashLeft > 0 || nextAttack(boss) !== "dash" || b.atkCd > 3) return null;
+  if (!b || b.groggy > 0 || b.dashLeft > 0 || nextAttack(boss) !== "dash" || b.atkCd > 2) return null;
+  // 체력이 낮으면 유인하지 않는다 (바위에 등을 대면 잡몹에 몰리기 쉽다)
+  if (g.player.hp < g.player.maxHp * 0.4) return null;
   if (g.hazards.some((h) => h.owner === boss.id)) return null;
   const reach = (b.params.dashLen ?? 600) + boss.radius;
   let best: { x: number; y: number } | null = null;
@@ -319,15 +321,27 @@ export function lureSpot(g: Game, boss: Enemy): { x: number; y: number } | null 
     const dy = boss.y - rk.y;
     const d = Math.hypot(dx, dy);
     // 바위 테두리까지 돌진이 닿아야 하고, 유인 자리가 보스 몸에 붙지 않을 만큼은 떨어져 있어야 한다
-    if (d - rk.r > reach * 0.85 || d - rk.r < boss.radius + 140 || d >= bestD) continue;
-    const gap = rk.r + 70;
+    const gap = rk.r + 80;
+    // 유인 자리가 보스 몸에서 충분히 떨어져 있어야 한다 (기다리는 동안 보스도 걸어온다)
+    if (d - rk.r > reach * 0.85 || d - gap < boss.radius + 240 || d >= bestD) continue;
     const x = rk.x + (dx / d) * gap;
     const y = rk.y + (dy / d) * gap;
     if (x < 40 || y < 40 || x > g.arena.w - 40 || y > g.arena.h - 40) continue;
+    // 가는 길이 보스 몸 곁을 지나면 안 된다 (유인하러 가다 부딪힌다: 11/24 측정에서 몸통 피해 3배)
+    if (segDist(boss.x, boss.y, g.player.x, g.player.y, x, y) < boss.radius + g.player.radius + 80) continue;
     best = { x, y };
     bestD = d;
   }
   return best;
+}
+
+/** 점 (px, py)에서 선분 (ax, ay)-(bx, by)까지 거리 */
+function segDist(px: number, py: number, ax: number, ay: number, bx: number, by: number): number {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const l2 = dx * dx + dy * dy;
+  const t = l2 < 1e-9 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / l2));
+  return Math.hypot(px - ax - t * dx, py - ay - t * dy);
 }
 
 /** 킥으로 날렸을 때 같은 색 줄에 꽂힐 적 (줄에 같은 색이 가장 많은 것, 동률이면 가까운 것) */
