@@ -28,6 +28,7 @@ function scaleArena(f: number): void {
 
 /** 11/24 난이도 실험: 환경 변수 RAMP="spd=0.08,hp=0.3,cap=0.2,int=0.1,from=6,to=14,s15spd=0"
  * 스테이지 from~to에 (k-from+1)/(to-from+1) 비율로 늘려 to에서 1+값이 되게 한다.
+ * k13con=-0.1 처럼 k<스테이지><spd|hp|con>으로 한 스테이지만 더 곱할 수 있다.
  * con: 접촉 피해 배율, spd: 적 속도, hp: 적 체력, cap: 적 상한, int: 소환 간격을 1/(1+값)으로 줄임 */
 function ramp(): void {
   const o: Record<string, number> = { spd: 0, hp: 0, cap: 0, int: 0, from: 6, to: 14, s15spd: 0, s15hp: 0, s15int: 0, con: 0, s15con: 0 };
@@ -45,8 +46,11 @@ function ramp(): void {
     const cap = k === 15 ? 0 : o.cap! * f;
     const con = k === 15 ? o.s15con! : o.con! * f;
     st.contactMul = r2((st.contactMul ?? 1) * (1 + con));
+    const ex = (n: string) => 1 + (o[`k${k}${n}`] ?? 0);
+    st.contactMul = r2(st.contactMul! * ex("con"));
+    st.enemyHpMul = r2(st.enemyHpMul * ex("hp"));
     for (const ph of st.spawn) {
-      ph.speedMul = r2((ph.speedMul ?? 1) * (1 + spd));
+      ph.speedMul = r2((ph.speedMul ?? 1) * (1 + spd) * ex("spd"));
       ph.interval = r2(ph.interval / (1 + int));
     }
     st.enemyHpMul = r2(st.enemyHpMul * (1 + hp));
