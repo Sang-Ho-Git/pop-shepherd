@@ -107,6 +107,28 @@ export const VARIANTS: Record<string, () => void> = {
     for (const c of Object.values(CHARACTERS)) c.startWeapon = "reflect_wall";
     (RULES.wall as { ballPass: boolean }).ballPass = true;
   },
+  /**
+   * 스테이지 4 손잡이 (11/24 밤): 환경 변수 ST4="spd=0.94,int=1.1,cap=75,noCham=1,con=1.36"
+   * spd: 마지막 구간 속도 배율에 곱, spdAll: 모든 구간, int: 소환 간격에 곱, cap: 적 상한, noCham: 85초 카멜레온 빼기, con: 접촉 배율
+   */
+  st4: () => {
+    const o: Record<string, number> = {};
+    for (const kv of (process.env.ST4 ?? "").split(",").filter(Boolean)) {
+      const [k, v] = kv.split("=");
+      o[k!] = Number(v);
+    }
+    const st = STAGES.stage04!;
+    const r2 = (x: number) => Math.round(x * 100) / 100;
+    st.spawn.forEach((ph, i) => {
+      const last = i === st.spawn.length - 1;
+      ph.speedMul = r2((ph.speedMul ?? 1) * (o.spdAll ?? 1) * (last ? (o.spd ?? 1) : 1));
+      ph.interval = r2(ph.interval * (o.int ?? 1));
+    });
+    if (o.cap) st.maxAlive = o.cap;
+    if (o.con) st.contactMul = o.con;
+    if (o.noCham) st.elites = (st.elites ?? []).filter((e) => e.kind !== "chameleon");
+    if (process.env.RAMP) ramp();
+  },
   /** 반사벽 예전 동작 비교: 벽이 여러 세트 남음 + 지속 6~7초 */
   wallOld: () => {
     (RULES.wall as { oneSet: boolean }).oneSet = false;

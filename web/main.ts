@@ -160,6 +160,11 @@ let g: Game | null = null;
 let paused = false;
 let fx: Fx[] = [];
 let banner: { text: string; sub: string; t: number } | null = null;
+/** 클리어 뒤 상점으로 넘어가기 전 잠깐 (s): 마무리 시간이 없어져 0:00에서 곧바로 상점이 덮이던 것을 클리어 배너·흩어지는 연출로 받친다 */
+const CLEAR_HOLD = 1.3;
+let clearHold = 0;
+/** 마지막 틱 전의 적 목록 (클리어하면 g.enemies가 비므로, 사라지는 자리를 그리려고) */
+let prevEnemies: Game["enemies"] = [];
 let shop: ShopState | null = null;
 let choiceShown = false;
 let hitFlash = 0;
@@ -745,9 +750,21 @@ function handleEvents(game: Game): void {
       case "chest-open":
         sfx.chest();
         break;
-      case "stage-clear":
+      case "stage-clear": {
         sfx.clear();
+        clearHold = CLEAR_HOLD;
+        banner = { text: "스테이지 클리어", sub: e.vanished > 0 ? `남은 양 ${e.vanished}마리가 흩어진다 · 경험치 +${Math.round(e.xp)}` : "", t: CLEAR_HOLD + 0.2 };
+        // 남은 적은 흰 연기로 흩어진다 (터지는 팝과 구별, 많으면 일부만)
+        const left = prevEnemies.filter((x) => !x.dead);
+        const stride = Math.max(1, Math.ceil(left.length / 120));
+        for (let k = 0; k < left.length; k += stride) {
+          const x = left[k]!;
+          fx.push({ kind: "ring", x: x.x, y: x.y, t: 0, life: 0.5 + Math.random() * 0.4, color: "rgba(235,240,245,0.75)", radius: x.radius + 10 });
+          const a = Math.random() * Math.PI * 2;
+          fx.push({ kind: "spark", x: x.x, y: x.y, t: 0, life: 0.8, color: x.color === "rainbow" ? "#ffffff" : PALETTE[x.color] + "aa", radius: x.radius * 0.6, vx: Math.cos(a) * 40, vy: Math.sin(a) * 40 - 30 });
+        }
         break;
+      }
       case "blade-vanish": {
         // 회오리에 여러 번 맞아 사라진 적: 터지는 팝과 구별되게 회색 연기만 (점수 없음)
         fx.push({ kind: "ring", x: e.x, y: e.y, t: 0, life: 0.4, color: "rgba(220,225,230,0.7)", radius: 22 });
@@ -922,6 +939,7 @@ function frame(now: number): void {
       let n = 0;
       const maxSteps = 5 * (auto?.speed ?? 1);
       while (acc >= DT && n < maxSteps) {
+        prevEnemies = g.enemies;
         step(g, readInput());
         handleEvents(g);
         acc -= DT;
@@ -932,7 +950,10 @@ function frame(now: number): void {
     }
     if (g.choices.length > 0 && !choiceShown && !paused) renderChoice();
     if (g.choices.length === 0 && !paused) {
-      if (g.phase === "cleared") endStage();
+      if (g.phase === "cleared") {
+        if (clearHold > 0) clearHold -= dt;
+        else endStage();
+      }
       else if (g.phase === "failed" || g.player.dead) finishRun(false);
     }
   }
@@ -1049,11 +1070,14 @@ interface PopDebug {
   /** 보스·엘리트 공격 예고 수, 보스 상태 (스크린샷 시점 고르기용): "" | "walk" | "groggy" | "shield" */
   hazards: number;
   boss: string;
+  /** 반사벽 중 가장 빨리 사라지는 벽의 남은 시간 (없으면 −1), 게임 단계 (스크린샷 시점 고르기용) */
+  wallT: number;
+  phase: string;
   /** 점검용: 지금 판에 무기를 준다 (스크린샷용, 예: give("whirlwind", 6, "A")) */
   give: (id: string, lv: number | "evo", branch?: string | null) => void;
 }
 const dbg: PopDebug = {
-  screen: "", stage: 0, time: 0, hp: 0, maxHp: 0, level: 0, enemies: 0, balls: 0, fps: 0, result: null, runs: 0, log: [], hazards: 0, boss: "",
+  screen: "", stage: 0, time: 0, hp: 0, maxHp: 0, level: 0, enemies: 0, balls: 0, fps: 0, result: null, runs: 0, log: [], hazards: 0, boss: "", wallT: -1, phase: "",
   give: (id, lv, branch = null) => {
     const def = WEAPONS[id];
     if (!g || !def) return;
@@ -1102,6 +1126,8 @@ function autoTick(dt: number): void {
     dbg.enemies = g.enemies.filter((e) => !e.dead).length;
     dbg.balls = g.balls.length;
     dbg.hazards = g.hazards.length;
+    dbg.wallT = g.walls.length ? Math.min(...g.walls.map((w) => w.t)) : -1;
+    dbg.phase = g.phase;
     const bs = g.enemies.find((e) => e.rank === "boss" && !e.dead)?.boss;
     dbg.boss = !bs ? "" : bs.groggy > 0 ? "groggy" : bs.shield > 0 ? "shield" : "walk";
   }
