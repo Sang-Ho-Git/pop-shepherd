@@ -84,6 +84,8 @@ export function applyMeta(ch: CharacterDef, profile: MetaProfile): { character: 
     if (e.regen) s.regen += e.regen * lv;
     if (e.chain_radius) s.chain_radius += e.chain_radius * lv;
     if (e.aim_assist) s.aim_assist += e.aim_assist * lv;
+    if (e.area) s.area += e.area * lv;
+    if (e.luck) s.luck += e.luck * lv;
     if (e.startGold) sp.startGold += e.startGold * lv;
     if (e.ballCooldown) sp.ballCooldownCut += e.ballCooldown * lv;
     if (e.cushionBonus) sp.cushionBonusUp += e.cushionBonus * lv;

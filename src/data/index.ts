@@ -94,6 +94,8 @@ export interface MetaEffect {
   regen?: number;
   chain_radius?: number;
   aim_assist?: number;
+  area?: number;
+  luck?: number;
   /** 런 시작 골드 */
   startGold?: number;
   /** 색 공 쿨다운 감소 비율 */
