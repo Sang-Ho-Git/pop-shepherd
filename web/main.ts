@@ -370,7 +370,10 @@ function renderTitle(): void {
       ...refundNotice(),
       el("p", "small", `기록: ${save.runs}런 · 완주 ${save.wins} · 최고 ${save.bestStage}스테이지`),
       el("p", "small", `영구 강화 · ${CHAR_ORDER.filter((id) => CHARACTERS[id] && isCharacterUnlocked(save, id)).map((id) => `${CHAR_NAME[id] ?? id} ${Math.round(treeProgress(save, id) * 100)}%`).join(" · ")}`),
-      el("p", "small keys", `이동 WASD/방향키 · ${ballMode ? "조준 마우스 · 던지기 클릭 · 공 바꾸기 오른쪽 클릭/Q · " : ""}휘슬 Space · 일시정지 Esc · 카드 1/2/3`),
+      // 터치 화면이면 손가락 조작을 알려 준다 (폰에서 WASD·마우스 안내가 나오던 것)
+      el("p", "small keys", COARSE
+        ? `이동 누르고 끌기 · ${ballMode ? "던지기 톡 · 공 바꾸기 '바꾸기' 버튼 · " : ""}휘슬 '휘슬' 버튼`
+        : `이동 WASD/방향키 · ${ballMode ? "조준 마우스 · 던지기 클릭 · 공 바꾸기 오른쪽 클릭/Q · " : ""}휘슬 Space · 일시정지 Esc · 카드 1/2/3`),
     ],
     "panel title",
   );
