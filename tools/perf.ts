@@ -42,6 +42,8 @@ interface Row {
   stepsPerFrame: number;
   enemies: number;
   balls: number;
+  /** 측정이 끝났을 때 그리기 해상도 (느린 기기에서 낮아진다) */
+  renderScale: number;
 }
 
 const pct = (xs: number[], p: number): number => {
@@ -72,6 +74,7 @@ async function one(scene: string): Promise<Row> {
     balls.push(d.b);
   }
   const perf = await p.evaluate(() => JSON.parse(JSON.stringify((globalThis as Any).__pop.perf)));
+  const renderScale = await p.evaluate(() => (globalThis as Any).__pop.renderScale ?? 0);
   if (profile) {
     const { profile: prof } = await cdp.send("Profiler.stop");
     // 함수별 self 시간 (샘플 수 × 간격)
@@ -108,6 +111,7 @@ async function one(scene: string): Promise<Row> {
     stepsPerFrame: Math.round((perf.steps / f) * 100) / 100,
     enemies: Math.round(enemies.reduce((a, b) => a + b, 0) / enemies.length),
     balls: Math.round(balls.reduce((a, b) => a + b, 0) / balls.length),
+    renderScale,
   };
 }
 
@@ -116,7 +120,7 @@ for (const s of scenes) {
   const r = await one(s);
   rows.push(r);
   console.log(
-    `${s.padEnd(16)} fps ${String(r.fps).padStart(5)} · 간격 중앙 ${r.gapMedian}ms p95 ${r.gapP95}ms · 프레임당 sim ${r.sim} draw ${r.draw} hud ${r.hud} = ${r.total}ms (최대 ${r.maxTotal}) · 틱/프레임 ${r.stepsPerFrame} · 적 ${r.enemies} 공 ${r.balls}`,
+    `${s.padEnd(16)} fps ${String(r.fps).padStart(5)} · 간격 중앙 ${r.gapMedian}ms p95 ${r.gapP95}ms · 프레임당 sim ${r.sim} draw ${r.draw} hud ${r.hud} = ${r.total}ms (최대 ${r.maxTotal}) · 틱/프레임 ${r.stepsPerFrame} · 적 ${r.enemies} 공 ${r.balls} · 해상도 ${r.renderScale}`,
   );
 }
 await browser.close();

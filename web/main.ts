@@ -34,7 +34,8 @@ const $ = <T extends HTMLElement>(id: string): T => {
   return el as T;
 };
 const canvas = $<HTMLCanvasElement>("game");
-const ctx = canvas.getContext("2d")!;
+// 불투명 캔버스: 모든 픽셀을 매 프레임 칠하므로 투명도가 필요 없다 (합성할 때 섞기를 건너뛴다)
+const ctx = canvas.getContext("2d", { alpha: false })!;
 const overlay = $<HTMLDivElement>("overlay");
 const hud = $<HTMLDivElement>("hud");
 const store = browserStore("pop-shepherd-save-v1");
@@ -218,6 +219,8 @@ function startRun(characterId: string): void {
 /** 처음 하는 사람을 위한 안내 (스테이지 1, 처음 세 판). 시각(초)에 맞춰 하나씩 띄운다 */
 /** 터치 화면인지 (안내 문구를 손가락 조작으로) */
 const COARSE = typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches;
+/** 줄인 움직임 설정 (매 프레임 matchMedia를 새로 만들지 않게 한 번만) */
+const REDUCED_MOTION = typeof matchMedia === "function" ? matchMedia("(prefers-reduced-motion: reduce)") : null;
 
 const HINTS_BALL: [number, string][] = [
   [1, COARSE ? "화면을 톡 치면 그곳으로 색 공을 던진다. 누르고 끌면 움직인다" : "마우스로 조준하고 클릭하면 색 공을 던진다"],
@@ -988,8 +991,45 @@ function renderHud(game: Game): void {
 
 /* ───────────────────────── 루프 ───────────────────────── */
 
+/**
+ * 그리기 해상도 (캔버스 픽셀 / CSS 픽셀). 처음에는 기기 배율(최대 2)이고, 느린 기기에서만 낮춘다.
+ * 폰 성능 점검(tools/perf.ts, CPU 4배 감속)에서 병목은 시뮬·그리기 코드가 아니라 캔버스 픽셀 수였다:
+ * 해상도 2 → 24fps, 1.5 → 41, 1.25 → 49, 1 → 58. 그래서 판 중 프레임 간격 중앙값이 20ms(50fps 아래)를 넘으면
+ * 0.25씩 낮추고, 한 번 느렸던 해상도로는 다시 올리지 않는다 (오르내림 없이 한 번 자리 잡는다).
+ * 빠른 기기에서는 해상도가 그대로라 화면이 전과 같다. 시뮬(결정론)에는 영향이 없다.
+ */
+const MAX_RENDER_SCALE = Math.min(2, window.devicePixelRatio || 1);
+let renderScale = MAX_RENDER_SCALE;
+const slowScales = new Set<number>();
+let gapWindow: number[] = [];
+let fastWindows = 0;
+
+function adaptResolution(gap: number): void {
+  if (gap > 250) return; // 탭 전환 등 (실제 느림이 아님)
+  gapWindow.push(gap);
+  if (gapWindow.length < 90) return;
+  const sorted = [...gapWindow].sort((a, b) => a - b);
+  const median = sorted[sorted.length >> 1]!;
+  gapWindow = [];
+  if (median > 20 && renderScale > 1) {
+    slowScales.add(renderScale);
+    renderScale = Math.max(1, renderScale - 0.25);
+    fastWindows = 0;
+    resize();
+  } else if (median <= 17.5) {
+    // 충분히 빠르면 (이전에 느렸던 적 없는 해상도로만) 천천히 올린다
+    fastWindows++;
+    const up = Math.min(MAX_RENDER_SCALE, renderScale + 0.25);
+    if (fastWindows >= 4 && up > renderScale && !slowScales.has(up)) {
+      renderScale = up;
+      fastWindows = 0;
+      resize();
+    }
+  } else fastWindows = 0;
+}
+
 function resize(): void {
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const dpr = renderScale;
   canvas.width = Math.round(canvas.clientWidth * dpr);
   canvas.height = Math.round(canvas.clientHeight * dpr);
 }
@@ -1012,7 +1052,10 @@ function perfReset(): void {
 
 function frame(now: number): void {
   const t0 = performance.now();
-  if (g && screen === "play" && !paused) perf.gaps.push(now - last);
+  if (g && screen === "play" && !paused) {
+    perf.gaps.push(now - last);
+    adaptResolution(now - last);
+  }
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
   let tSim = 0;
@@ -1069,7 +1112,7 @@ function frame(now: number): void {
     // 보이는 월드 크기를 시뮬에 알려 준다: 적이 화면 밖에서 나타나고, 폭탄은 보이는 범위를 지운다
     g.view = { w: Math.max(RULES.view.w * 0.5, canvas.width / v.scale), h: Math.max(RULES.view.h * 0.5, canvas.height / v.scale) };
     // 화면 흔들림: 팝·피격 때 잠깐 (줄인 움직임 설정이면 끈다)
-    const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const calm = REDUCED_MOTION?.matches ?? false;
     const sv = calm || shake <= 0 ? v : { ...v, ox: v.ox + (Math.random() - 0.5) * shake * v.scale, oy: v.oy + (Math.random() - 0.5) * shake * v.scale };
     if (g.ball && screen === "play") {
       aimTick++;
@@ -1189,6 +1232,8 @@ interface PopDebug {
   /** 보스·엘리트 공격 예고 수, 보스 상태 (스크린샷 시점 고르기용): "" | "walk" | "groggy" | "shield" */
   hazards: number;
   boss: string;
+  /** 그리기 해상도 (느린 기기에서 낮아진다) */
+  renderScale: number;
   /** 지금 판의 캐릭터와 능력치 (영구 강화가 실제로 붙었는지 확인용) */
   player: { character: string; maxHp: number; revives: number; gold: number; stats: Record<string, number> } | null;
   /** 반사벽 중 가장 빨리 사라지는 벽의 남은 시간 (없으면 −1), 게임 단계 (스크린샷 시점 고르기용) */
@@ -1198,7 +1243,7 @@ interface PopDebug {
   give: (id: string, lv: number | "evo", branch?: string | null) => void;
 }
 const dbg: PopDebug = {
-  screen: "", stage: 0, time: 0, hp: 0, maxHp: 0, level: 0, enemies: 0, balls: 0, fps: 0, result: null, runs: 0, log: [], hazards: 0, boss: "", player: null, wallT: -1, phase: "",
+  screen: "", stage: 0, time: 0, hp: 0, maxHp: 0, level: 0, enemies: 0, balls: 0, fps: 0, result: null, runs: 0, log: [], hazards: 0, boss: "", player: null, renderScale: 0, wallT: -1, phase: "",
   give: (id, lv, branch = null) => {
     const def = WEAPONS[id];
     if (!g || !def) return;
@@ -1245,6 +1290,7 @@ function autoTick(dt: number): void {
     dbg.time = g.time;
     dbg.hp = g.player.hp;
     dbg.maxHp = g.player.maxHp;
+    dbg.renderScale = renderScale;
     dbg.level = g.player.level;
     dbg.player = { character: run?.character ?? "", maxHp: g.player.maxHp, revives: g.player.revives, gold: g.player.gold, stats: { ...g.player.stats } };
     dbg.enemies = g.enemies.filter((e) => !e.dead).length;
