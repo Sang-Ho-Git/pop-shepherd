@@ -43,7 +43,25 @@ export function spawnEnemy(g: Game, kind: string, color: Color, x: number, y: nu
     wetT: 0,
     maxHp: def.hp * hpMul,
     boss: def.ai
-      ? { ai: def.ai, params: def.params ?? {}, phase: 1, summonT: 0, shiftT: 0, dashCd: def.params?.dashEvery ?? 0, windup: 0, dashT: 0, dashX: 0, dashY: 0, blastT: 0 }
+      ? {
+          ai: def.ai,
+          params: def.params ?? {},
+          phase: 1,
+          summonT: 0,
+          shiftT: 0,
+          dashX: 0,
+          dashY: 0,
+          // 약점 색은 몸 색으로 시작한다 (회색 돌갑옷은 약점 공이 없다: 그로기 때만 맞힌다)
+          weak: color === "gray" || color === "rainbow" ? null : color,
+          groggy: 0,
+          shield: 0,
+          atkCd: def.params?.atkFirst ?? def.params?.atkEvery ?? 0,
+          atkN: 0,
+          dashLeft: 0,
+          dashDmg: 0,
+          shieldT: 0,
+          shields: 0,
+        }
       : null,
     dead: false,
   };

@@ -116,13 +116,25 @@ export const RULES = {
     popDamagePerEnemy: 12,
     weakMul: 2,
     /** 보스가 살아 있는 동안 일반 소환 간격 배율 */
-    spawnSlowdown: 2,
+    spawnSlowdown: 3,
     /** 소환한 졸개가 서는 거리 (보스 반지름 바깥) */
     summonGap: 30,
     /** 엘리트가 받는 출현 구간 속도 배율의 상한 (보스는 받지 않는다) */
     eliteSpeedCap: 1.3,
     /** 처치형 스테이지의 안전 시간 제한 (시뮬이 끝나지 않는 것을 막는다) */
     hardLimit: 900,
+    /** 그로기 동안 받는 피해 배율 (팝·약점 공 모두). 그로기 중에는 어느 색 공을 맞혀도 약점 직격으로 친다 */
+    groggyMul: 2,
+    /** 약점 공 직격 피해의 쿠션 보너스: 1 + 쿠션 수(최대 3) × 이 값 */
+    weakCushionBonus: 0.5,
+    /** 보호막은 이 시간이 지나면 저절로 풀린다 (그로기 없이). 못 깨도 판이 멈추지 않게 */
+    shieldTimeout: 25,
+    /** 공격 피해 배율 (기준: 적 params.hit × 스테이지 contactMul) */
+    attackMul: { slam: 1, dash: 1, fan: 0.45, splash: 0.9, tongue: 0.8 } as Record<string, number>,
+    /** 탄: 반지름, 속도(px/s), 수명(s) */
+    shotRadius: 11,
+    shotSpeed: 360,
+    shotLife: 2.2,
   },
   /**
    * 페인트 총 조정. 11/21 시뮬: 칠하고 밀어 넣으면 페인트 혼자 팝의 56~62%를 일으켜 플레이어 몫이 없었다.

@@ -1,6 +1,7 @@
 import type { Enemy, Game, Input, MatchColor } from "../core/types.ts";
 import { RULES } from "../core/rules.ts";
 import { readyClusters } from "../combat/ball.ts";
+import { inHazard } from "../combat/bosses.ts";
 
 /**
  * 자동 플레이 봇. 사람보다 서툴지만 매번 같은 방식으로 움직여서 수치 비교의 기준선이 된다.
@@ -9,11 +10,116 @@ import { readyClusters } from "../combat/ball.ts";
  * 2) 아니면 가까운 적을 피하면서 적 무리 둘레를 돈다 (카이팅).
  * 3) 둘러싸이거나 체력이 35% 아래면 휘슬.
  * 4) 450px 안의 색 폭탄(과 체력이 90% 아래면 우유병)은, 가까이 위협이 없고 폭탄 주변이 한산할 때만 킥보다 먼저 주우러 간다.
+ * 5) 보스·엘리트 공격: 바닥 경고·돌진 경로·날아오는 탄을 무엇보다 먼저 피한다 (dodge).
+ * 6) 색 공: 약점 색 공이면 보스에 바로 던지고, 보호막이면 울타리 쿠션으로 맞힌다 (bossShot).
  * 봇은 난수를 쓰지 않는다. 공간 해시는 지난 틱 기준이라 적 목록을 직접 훑는다.
  */
 export function botInput(g: Game): Input {
-  const move = botMove(g);
+  let move = botMove(g);
+  const d = dodge(g);
+  if (d) move = { ...move, moveX: d.x, moveY: d.y };
   return g.ballMode ? { ...move, ...botBall(g) } : move;
+}
+
+/**
+ * 피할 방향: 플레이어가 경고 안(여유 30px)이면 바깥으로, 돌진하는 몸의 길 위면 옆으로, 탄이 0.7초 안에 닿을 길이면 옆으로.
+ * 위험이 없으면 null.
+ */
+export function dodge(g: Game): { x: number; y: number } | null {
+  const p = g.player;
+  const pad = p.radius + 30;
+  let x = 0;
+  let y = 0;
+  const side = (ax: number, ay: number, ux: number, uy: number): void => {
+    // (ax, ay)를 지나는 u 방향 직선에서 플레이어가 있는 쪽 수직으로
+    const cross = (p.x - ax) * uy - (p.y - ay) * ux;
+    const s = cross >= 0 ? 1 : -1;
+    x += uy * s;
+    y += -ux * s;
+  };
+  for (const h of g.hazards) {
+    if (!inHazard(h, p.x, p.y, pad)) continue;
+    if (h.kind === "circle") {
+      const dx = p.x - h.x;
+      const dy = p.y - h.y;
+      const d = Math.hypot(dx, dy);
+      if (d < 1e-6) x += 1;
+      else {
+        x += dx / d;
+        y += dy / d;
+      }
+    } else side(h.x, h.y, Math.cos(h.ang), Math.sin(h.ang));
+  }
+  for (const e of g.enemies) {
+    const b = e.boss;
+    if (!b || e.dead || b.dashLeft <= 0) continue;
+    const v = Math.hypot(b.dashX, b.dashY) || 1;
+    const ux = b.dashX / v;
+    const uy = b.dashY / v;
+    const along = (p.x - e.x) * ux + (p.y - e.y) * uy;
+    if (along < -pad || along > b.dashLeft + pad) continue;
+    if (Math.abs((p.x - e.x) * uy - (p.y - e.y) * ux) > e.radius + pad) continue;
+    side(e.x, e.y, ux, uy);
+  }
+  for (const s of g.shots) {
+    const v = Math.hypot(s.vx, s.vy) || 1;
+    const ux = s.vx / v;
+    const uy = s.vy / v;
+    const along = (p.x - s.x) * ux + (p.y - s.y) * uy;
+    if (along < 0 || along > v * 0.7) continue;
+    if (Math.abs((p.x - s.x) * uy - (p.y - s.y) * ux) > s.r + p.radius + 12) continue;
+    side(s.x, s.y, ux, uy);
+  }
+  if (Math.abs(x) + Math.abs(y) < 1e-6) return null;
+  // 울타리에 막히지 않게: 벽 쪽으로 가는 성분은 반대로
+  const m = p.radius + 40;
+  if ((p.x < m && x < 0) || (p.x > g.arena.w - m && x > 0)) x = -x;
+  if ((p.y < m && y < 0) || (p.y > g.arena.h - m && y > 0)) y = -y;
+  return { x, y };
+}
+
+/**
+ * 엘리트·보스 노리기: 보호막이면 울타리 쿠션으로 몸을 맞힌다 (어느 색이든).
+ * 약점 색 공을 들었거나 그로기면 몸에 바로 던진다. 다음 공이 약점 색이면 바꾼다.
+ */
+function bossShot(g: Game): Pick<Input, "aimX" | "aimY" | "throwBall" | "swapBall"> | null {
+  const b = g.ball!;
+  const p = g.player;
+  const range = RULES.ball.range * 0.9;
+  let best: Enemy | null = null;
+  let bestD = Infinity;
+  for (const e of g.enemies) {
+    if (e.dead || !e.boss) continue;
+    const d = Math.hypot(e.x - p.x, e.y - p.y);
+    if (d < bestD) {
+      best = e;
+      bestD = d;
+    }
+  }
+  if (!best) return null;
+  const bs = best.boss!;
+  if (bs.shield > 0) {
+    const mirrors = [
+      { x: -best.x, y: best.y },
+      { x: 2 * g.arena.w - best.x, y: best.y },
+      { x: best.x, y: -best.y },
+      { x: best.x, y: 2 * g.arena.h - best.y },
+    ];
+    let m: { x: number; y: number } | null = null;
+    let md = RULES.ball.range * 0.8;
+    for (const c of mirrors) {
+      const d = Math.hypot(c.x - p.x, c.y - p.y);
+      if (d < md) {
+        m = c;
+        md = d;
+      }
+    }
+    return m ? { aimX: m.x, aimY: m.y, throwBall: true } : null;
+  }
+  if (bestD > range) return null;
+  if (bs.groggy > 0 || b.current === bs.weak) return { aimX: best.x, aimY: best.y, throwBall: true };
+  if (b.next === bs.weak) return { throwBall: false, swapBall: true };
+  return null;
 }
 
 /**
@@ -25,6 +131,8 @@ export function botBall(g: Game): Pick<Input, "aimX" | "aimY" | "throwBall" | "s
   if (!b || b.cd > 0) return { throwBall: false };
   const p = g.player;
   const range = RULES.ball.range * 0.9;
+  const shot = bossShot(g);
+  if (shot) return shot;
   const pick = (minSize: number): { x: number; y: number } | null => {
     let best: { x: number; y: number } | null = null;
     let bestD = range;

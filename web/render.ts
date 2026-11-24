@@ -183,12 +183,57 @@ function drawEnemy(ctx: CanvasRenderingContext2D, v: View, e: Enemy, time: numbe
     ctx.beginPath();
     ctx.arc(x, y, r + 3 * v.scale, 0, Math.PI * 2);
     ctx.stroke();
-    if (e.boss && e.boss.windup > 0) {
-      ctx.strokeStyle = `rgba(255,80,80,${0.5 + 0.5 * Math.sin(time * 30)})`;
+    const b = e.boss;
+    if (b && b.shield > 0) {
+      // 보호막: 무지개 띠 + 남은 쿠션 수만큼 점
+      ctx.lineWidth = 5 * v.scale;
+      const cols = ["#ff5a5f", "#ffd23f", "#3ccf7a", "#3d8bff"];
+      for (let k = 0; k < 4; k++) {
+        ctx.strokeStyle = cols[k]!;
+        ctx.beginPath();
+        const a0 = time * 2 + (k * Math.PI) / 2;
+        ctx.arc(x, y, r + 12 * v.scale, a0, a0 + Math.PI / 2);
+        ctx.stroke();
+      }
+      ctx.fillStyle = "#ffffff";
+      for (let k = 0; k < b.shield; k++) {
+        ctx.beginPath();
+        ctx.arc(x + (k - (b.shield - 1) / 2) * 14 * v.scale, y + r + 18 * v.scale, 4.5 * v.scale, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    if (b && b.groggy > 0) {
+      // 그로기: 머리 위로 도는 별 다섯 + 노란 테
+      ctx.strokeStyle = `rgba(255,236,120,${0.6 + 0.4 * Math.sin(time * 14)})`;
       ctx.lineWidth = 4 * v.scale;
       ctx.beginPath();
-      ctx.arc(x, y, r + 10 * v.scale, 0, Math.PI * 2);
+      ctx.arc(x, y, r + 8 * v.scale, 0, Math.PI * 2);
       ctx.stroke();
+      ctx.fillStyle = "#fff6b0";
+      for (let k = 0; k < 5; k++) {
+        const a = time * 4 + (k * Math.PI * 2) / 5;
+        ctx.beginPath();
+        ctx.arc(x + Math.cos(a) * r * 0.9, y - r - 6 * v.scale + Math.sin(a) * r * 0.25, Math.max(2, 3.5 * v.scale), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (b && b.weak) {
+      // 약점 색: 머리 위 공 표식 (그 색 공을 맞히면 큰 피해). 깜빡이는 테로 눈에 띄게
+      const wy = y - r - (e.rank === "elite" ? 26 : 22) * v.scale;
+      const wr = Math.max(7, (e.rank === "boss" ? 13 : 10) * v.scale);
+      ctx.fillStyle = PALETTE[b.weak];
+      ctx.beginPath();
+      ctx.arc(x, wy, wr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = `rgba(255,255,255,${0.55 + 0.45 * Math.sin(time * 6)})`;
+      ctx.lineWidth = Math.max(1.5, 2.5 * v.scale);
+      ctx.stroke();
+      glyph(ctx, b.weak, x, wy, wr);
+      ctx.fillStyle = INK;
+      ctx.beginPath();
+      ctx.moveTo(x - wr * 0.5, wy + wr + 1);
+      ctx.lineTo(x + wr * 0.5, wy + wr + 1);
+      ctx.lineTo(x, wy + wr * 1.6);
+      ctx.fill();
     }
     if (e.rank === "elite") {
       const w = r * 2;
@@ -197,6 +242,62 @@ function drawEnemy(ctx: CanvasRenderingContext2D, v: View, e: Enemy, time: numbe
       ctx.fillStyle = "#f1e3b5";
       ctx.fillRect(x - w / 2, y - r - 12 * v.scale, (w * Math.max(0, e.hp)) / e.maxHp, 5 * v.scale);
     }
+  }
+}
+
+/** 보스·엘리트 공격 예고: 바닥 빨간 영역이 차오른다 (가득 차면 판정). 탄은 털뭉치 */
+function drawHazards(ctx: CanvasRenderingContext2D, g: Game, v: View, time: number): void {
+  for (const h of g.hazards) {
+    const k = Math.max(0, Math.min(1, 1 - h.t / h.total));
+    const [x, y] = toScreen(v, h.x, h.y);
+    const pulse = 0.5 + 0.5 * Math.sin(time * 18);
+    ctx.save();
+    ctx.beginPath();
+    if (h.kind === "circle") ctx.arc(x, y, h.r * v.scale, 0, Math.PI * 2);
+    else if (h.kind === "line") {
+      ctx.translate(x, y);
+      ctx.rotate(h.ang);
+      ctx.rect(0, -h.r * v.scale, h.len * v.scale, h.r * 2 * v.scale);
+    } else {
+      ctx.moveTo(x, y);
+      ctx.arc(x, y, h.len * v.scale, h.ang - h.spread, h.ang + h.spread);
+      ctx.closePath();
+    }
+    ctx.fillStyle = `rgba(255,60,60,${0.12 + 0.1 * k})`;
+    ctx.fill();
+    ctx.strokeStyle = `rgba(255,90,90,${0.55 + 0.4 * pulse})`;
+    ctx.lineWidth = Math.max(2, 3 * v.scale);
+    ctx.setLineDash([10 * v.scale, 6 * v.scale]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // 차오르는 안쪽: 다 차면 터진다
+    ctx.beginPath();
+    if (h.kind === "circle") ctx.arc(x, y, h.r * v.scale * k, 0, Math.PI * 2);
+    else if (h.kind === "line") ctx.rect(0, -h.r * v.scale, h.len * v.scale * k, h.r * 2 * v.scale);
+    else {
+      ctx.moveTo(x, y);
+      ctx.arc(x, y, h.len * v.scale * k, h.ang - h.spread, h.ang + h.spread);
+      ctx.closePath();
+    }
+    ctx.fillStyle = `rgba(255,70,70,${0.28 + 0.2 * k})`;
+    ctx.fill();
+    ctx.restore();
+  }
+  for (const s of g.shots) {
+    const [x, y] = toScreen(v, s.x, s.y);
+    const r = s.r * v.scale;
+    ctx.fillStyle = "#f4efe4";
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = PALETTE[s.color];
+    ctx.lineWidth = Math.max(2, 3 * v.scale);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(255,80,80,0.9)";
+    ctx.lineWidth = Math.max(1, 1.5 * v.scale);
+    ctx.beginPath();
+    ctx.arc(x, y, r + 3 * v.scale, 0, Math.PI * 2);
+    ctx.stroke();
   }
 }
 
@@ -374,6 +475,8 @@ export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: F
       ctx.fill();
     }
   }
+  // 바닥 경고는 적 아래, 탄은 적 위에 (drawHazards가 둘 다 그리므로 경고 먼저)
+  drawHazards(ctx, g, v, time);
   // 적 (보스는 맨 위에)
   for (const e of g.enemies) if (e.rank === "normal") drawEnemy(ctx, v, e, time);
   for (const e of g.enemies) if (e.rank !== "normal") drawEnemy(ctx, v, e, time);

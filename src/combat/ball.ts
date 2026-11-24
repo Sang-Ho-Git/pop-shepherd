@@ -5,6 +5,7 @@ import { MAX_ENEMY_RADIUS } from "../world/physics.ts";
 import { spawnEnemy } from "./spawner.ts";
 import { findCluster, touching } from "./match.ts";
 import { popCluster } from "./pops.ts";
+import { weakBallHit } from "./bosses.ts";
 
 /**
  * 색 공 던지기 (실험 규칙, g.ballMode).
@@ -299,6 +300,8 @@ function resolveBallHit(g: Game, ball: Game["balls"][number], hitIdx: number): b
     g.events.push({ type: "ball-stick", id: e.id, x: e.x, y: e.y });
     return false;
   }
+  // 엘리트·보스: 약점 색 공 직격·보호막 깎기 (bosses.ts). 공을 썼으면 끝, 아니면 아래처럼 맞고 튕긴다
+  if (e.rank !== "normal" && weakBallHit(g, e, ball.color, ball.bounces, ball.x, ball.y)) return false;
   if (!same) {
     // 다른 색: 적은 살짝 밀기만 한다 (날리지 않는다: 날아간 적이 뒤의 같은 색에 부딪혀 터지는 일이 없게)
     const sp = Math.max(1e-6, Math.hypot(ball.vx, ball.vy));
