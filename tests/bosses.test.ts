@@ -235,6 +235,24 @@ describe("보스 파훼: 약점 색 공과 보호막", () => {
   });
 });
 
+describe("그로기의 우선", () => {
+  it("그로기가 되면 깔아 둔 예고가 취소되고, 그로기 동안에는 보호막을 치지 않는다 (끝나면 친다)", () => {
+    const g = emptyGame();
+    g.player.hp = g.player.maxHp = 1e9;
+    const e = special(g, "rainbow_shepherd", "red", g.player.x + 400, g.player.y);
+    e.boss!.atkCd = 0;
+    run(g, 1);
+    expect(g.hazards.length).toBeGreaterThan(0);
+    e.boss!.groggy = 2;
+    e.hp = e.maxHp * 0.6;
+    run(g, 2);
+    expect(g.hazards).toHaveLength(0);
+    expect(e.boss!.shield).toBe(0);
+    run(g, 2 * RULES.tickHz);
+    expect(e.boss!.shield).toBe(ENEMIES.rainbow_shepherd!.params!.shieldNeed);
+  });
+});
+
 describe("처치형 스테이지", () => {
   function bossStage(): StageDef {
     return { ...stage("stage05"), duration: 10, spawn: [{ from: 0, to: 10, interval: 9999 }], boss: { at: 1, kind: "wool_giant" } };

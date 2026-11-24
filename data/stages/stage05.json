@@ -63,7 +63,7 @@
   ],
   "clear": "boss",
   "boss": {
-    "at": 35,
+    "at": 15,
     "kind": "wool_giant"
   },
   "mix": {
