@@ -60,12 +60,26 @@ function setBallMode(on: boolean): void {
 
 const CHAR_ORDER = ["olly", "shepherd", "cue", "pale"];
 const CHAR_NAME: Record<string, string> = { shepherd: "양치기", cue: "큐", olly: "올리", pale: "팔레" };
+/** 캐릭터 소개. 숫자는 쓰지 않는다 (능력치 줄이 data/characters.json에서 만든다: 예전에 소개의 체력·쿨다운이 데이터와 어긋났다) */
 const CHAR_BLURB: Record<string, string> = {
-  olly: "목동. 체력 130, 방어 2. 올가미로 떨어진 양을 짝에게 끌어다 붙인다. 처음이라면 올리.",
-  shepherd: "튼튼한 기준 캐릭터. 체력 120, 방어 1, 속도 110%. 킥으로 이동 방향의 적을 정확히 날린다.",
-  cue: "당구사. 속도 120%, 날리는 힘 125%. 조준선이 늘 보이고 3쿠션까지 꺾여 보인다. 쿠션에서 속도를 덜 잃고, 공끼리 맞은 것도 쿠션으로 친다.",
-  pale: "화가. 쿨다운 −10%, 연쇄 반경 120%. 페인트 총으로 옆 무리의 색을 칠한다.",
+  olly: "목동. 튼튼하고 단단하다. 올가미로 떨어진 양을 짝에게 끌어다 붙인다. 처음이라면 올리.",
+  shepherd: "튼튼한 기준 캐릭터. 킥으로 이동 방향의 적을 정확히 날린다.",
+  cue: "당구사. 조준선이 늘 보이고 3쿠션까지 꺾여 보인다. 쿠션에서 속도를 덜 잃고, 공끼리 맞은 것도 쿠션으로 친다.",
+  pale: "화가. 터질 때 연쇄가 멀리 번진다. 페인트 총으로 옆 무리의 색을 칠한다.",
 };
+/** 기본값(1, 쿨다운은 0)과 다른 능력치 (선택 화면의 둘째 능력치 줄) */
+const STAT_NAME: [keyof CharacterDef["stats"], string][] = [
+  ["knock_power", "날리는 힘"],
+  ["area", "무기 범위"],
+  ["chain_radius", "연쇄 반경"],
+  ["pickup", "줍는 거리"],
+  ["direct_dmg", "직격 피해"],
+];
+function statExtras(s: CharacterDef["stats"]): string {
+  const parts = STAT_NAME.filter(([k]) => s[k] !== 1).map(([k, n]) => `${n} ${Math.round(s[k] * 100)}%`);
+  if (s.cooldown !== 0) parts.push(`쿨다운 ${s.cooldown > 0 ? "−" : "+"}${Math.round(Math.abs(s.cooldown) * 100)}%`);
+  return parts.join(" · ");
+}
 
 function el(tag: string, cls = "", text = ""): HTMLElement {
   const e = document.createElement(tag);
@@ -384,6 +398,8 @@ function renderSelect(): void {
       const s = ch.stats;
       b.append(el("strong", "", `${open ? "" : "🔒 "}${CHAR_NAME[id] ?? id}`), el("span", "weapon", `시작 무기 · ${weaponName(ch.startWeapon)}`), el("span", "", CHAR_BLURB[id] ?? ""));
       b.append(el("span", "stats", `체력 ${s.max_hp} · 방어 ${s.armor} · 속도 ${Math.round(s.move_speed * 100)}%`));
+      const extra = statExtras(s);
+      if (extra) b.append(el("span", "stats", extra));
       if (open) {
         const rec = save.characters[id];
         if (rec) b.append(el("span", "rec", `${rec.runs}런 · 완주 ${rec.wins} · 최고 ${rec.bestStage}`));
