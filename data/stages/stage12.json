@@ -10,14 +10,14 @@
   ],
   "grayRatio": 0.1,
   "maxAlive": 188,
-  "enemyHpMul": 1.7,
-  "contactMul": 3.3,
+  "enemyHpMul": 1.96,
+  "contactMul": 3.56,
   "spawn": [
     {
       "from": 0.0,
       "to": 25.0,
       "interval": 1.23,
-      "speedMul": 2.79,
+      "speedMul": 2.55,
       "colors": [
         "red",
         "blue",
@@ -28,7 +28,7 @@
       "from": 25.0,
       "to": 50.0,
       "interval": 1.06,
-      "speedMul": 2.93,
+      "speedMul": 2.68,
       "colors": [
         "red",
         "blue",
@@ -40,7 +40,7 @@
       "from": 50.0,
       "to": 75.0,
       "interval": 0.9,
-      "speedMul": 3.06,
+      "speedMul": 2.8,
       "colors": [
         "red",
         "blue",
@@ -52,7 +52,7 @@
       "from": 75.0,
       "to": 100.0,
       "interval": 0.73,
-      "speedMul": 3.21,
+      "speedMul": 2.93,
       "colors": [
         "red",
         "blue",
@@ -64,7 +64,7 @@
       "from": 100.0,
       "to": 125,
       "interval": 0.57,
-      "speedMul": 3.35,
+      "speedMul": 3.06,
       "colors": [
         "red",
         "blue",

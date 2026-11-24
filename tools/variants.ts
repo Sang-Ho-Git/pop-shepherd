@@ -29,12 +29,17 @@ function scaleArena(f: number): void {
 /** 11/24 난이도 실험: 환경 변수 RAMP="spd=0.08,hp=0.3,cap=0.2,int=0.1,from=6,to=14,s15spd=0"
  * 스테이지 from~to에 (k-from+1)/(to-from+1) 비율로 늘려 to에서 1+값이 되게 한다.
  * k13con=-0.1 처럼 k<스테이지><spd|hp|con>으로 한 스테이지만 더 곱할 수 있다.
+ * pale.cooldown=0: 캐릭터 능력치, spdFrom=0.45,spdTo=0.3: 속도 램프 바꾸기.
  * kick: 색 공 규칙 킥 쿨다운 배율 (0이면 그대로), con: 접촉 피해 배율, spd: 적 속도, hp: 적 체력, cap: 적 상한, int: 소환 간격을 1/(1+값)으로 줄임 */
 function ramp(): void {
   const o: Record<string, number> = { spd: 0, hp: 0, cap: 0, int: 0, from: 6, to: 14, s15spd: 0, s15hp: 0, s15int: 0, con: 0, s15con: 0 };
   for (const kv of (process.env.RAMP ?? "").split(",").filter(Boolean)) {
     const [k, v] = kv.split("=");
-    o[k!] = Number(v);
+    // pale.chain_radius=1 처럼 점이 있으면 캐릭터 능력치
+    if (k!.includes(".")) {
+      const [c, st] = k!.split(".");
+      (CHARACTERS[c!]!.stats as unknown as Record<string, number>)[st!] = Number(v);
+    } else o[k!] = Number(v);
   }
   const r2 = (x: number) => Math.round(x * 100) / 100;
   if (o.kick) (RULES.ball as { kickCooldownMul: number }).kickCooldownMul = o.kick;
@@ -48,10 +53,12 @@ function ramp(): void {
     const con = k === 15 ? o.s15con! : o.con! * f;
     st.contactMul = r2((st.contactMul ?? 1) * (1 + con));
     const ex = (n: string) => 1 + (o[`k${k}${n}`] ?? 0);
+    // spdFrom/spdTo: 지금 데이터의 속도 램프(1+spdFrom·f)를 1+spdTo·f로 바꾼다
+    const resc = k < 15 && o.spdFrom ? (1 + o.spdTo! * f) / (1 + o.spdFrom * f) : 1;
     st.contactMul = r2(st.contactMul! * ex("con"));
     st.enemyHpMul = r2(st.enemyHpMul * ex("hp"));
     for (const ph of st.spawn) {
-      ph.speedMul = r2((ph.speedMul ?? 1) * (1 + spd) * ex("spd"));
+      ph.speedMul = r2((ph.speedMul ?? 1) * (1 + spd) * ex("spd") * resc);
       ph.interval = r2(ph.interval / (1 + int));
     }
     st.enemyHpMul = r2(st.enemyHpMul * (1 + hp));
