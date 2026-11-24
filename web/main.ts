@@ -971,9 +971,23 @@ let acc = 0;
 let clock = 0;
 const DT = 1 / RULES.tickHz;
 
+/**
+ * 프레임 시간 측정 (성능 점검용, window.__pop.perf). sim = 시뮬 틱(step+이벤트), draw = 월드 그리기,
+ * hud = HUD DOM, gap = 앞 프레임과의 간격(브라우저 그리기 포함). __pop.perfReset()으로 0부터.
+ */
+const perf = { frames: 0, steps: 0, sim: 0, draw: 0, hud: 0, total: 0, maxTotal: 0, gaps: [] as number[] };
+function perfReset(): void {
+  Object.assign(perf, { frames: 0, steps: 0, sim: 0, draw: 0, hud: 0, total: 0, maxTotal: 0, gaps: [] });
+}
+
 function frame(now: number): void {
+  const t0 = performance.now();
+  if (g && screen === "play" && !paused) perf.gaps.push(now - last);
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
+  let tSim = 0;
+  let tDraw = 0;
+  let tHud = 0;
   clock += dt;
   if (g && screen === "play") {
     if (hitStop > 0) hitStop = Math.max(0, hitStop - dt);
@@ -981,6 +995,7 @@ function frame(now: number): void {
       acc += dt * (auto?.speed ?? 1);
       let n = 0;
       const maxSteps = 5 * (auto?.speed ?? 1);
+      const s0 = performance.now();
       while (acc >= DT && n < maxSteps) {
         step(g, readInput());
         handleEvents(g);
@@ -988,6 +1003,8 @@ function frame(now: number): void {
         n++;
         if (g.choices.length > 0 || g.phase === "cleared" || g.phase === "failed") break;
       }
+      tSim = performance.now() - s0;
+      perf.steps += n;
       if (n >= maxSteps) acc = 0;
     }
     if (g.choices.length > 0 && !choiceShown && !paused) renderChoice();
@@ -1039,7 +1056,9 @@ function frame(now: number): void {
         aimCache.cushions = cue ? 3 : 1;
       }
     } else aimCache = null;
+    const d0 = performance.now();
     drawWorld(ctx, g, sv, fx, clock, aimCache);
+    tDraw = performance.now() - d0;
     if (hitFlash > 0) {
       ctx.fillStyle = `rgba(255,60,60,${hitFlash})`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1055,7 +1074,9 @@ function frame(now: number): void {
       ctx.fillText(banner.sub, canvas.width / 2, canvas.height * 0.3 + 38 * v.scale);
       ctx.globalAlpha = 1;
     }
+    const h0 = performance.now();
     if (screen === "play") renderHud(g);
+    tHud = performance.now() - h0;
   } else {
     // 메뉴 배경: 천천히 흘러가는 양 떼
     ctx.fillStyle = "#0e1f1a";
@@ -1074,6 +1095,15 @@ function frame(now: number): void {
   $("whistle").hidden = screen !== "play";
   $("swap").hidden = screen !== "play" || !g?.ball;
   $("pausebtn").hidden = screen !== "play" || paused || choiceShown;
+  if (g && screen === "play" && !paused) {
+    const total = performance.now() - t0;
+    perf.frames++;
+    perf.sim += tSim;
+    perf.draw += tDraw;
+    perf.hud += tHud;
+    perf.total += total;
+    perf.maxTotal = Math.max(perf.maxTotal, total);
+  }
   requestAnimationFrame(frame);
 }
 
@@ -1129,6 +1159,7 @@ const dbg: PopDebug = {
   },
 };
 (globalThis as { __pop?: PopDebug }).__pop = dbg;
+Object.assign(dbg, { perf, perfReset });
 let fpsAcc = 0;
 let fpsN = 0;
 
