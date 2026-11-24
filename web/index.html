@@ -110,7 +110,8 @@
   .bar { position: relative; height: 18px; max-width: 360px; width: 100%; background: rgba(0,0,0,0.55); border: 2px solid rgba(244,239,225,0.35); border-radius: 9px; overflow: hidden; }
   #hud .bottom .bar { max-width: none; }
   .bar .fill { position: absolute; inset: 0 auto 0 0; }
-  .bar .label { position: relative; padding-left: 8px; font-size: 12px; line-height: 14px; font-variant-numeric: tabular-nums; text-shadow: 0 1px 0 #000; }
+  /* 블록으로: 줄 상자가 부모 글자 크기를 따라 커져 글자가 막대 아래로 밀려 잘리던 것 (폰에서 잘 보였다) */
+  .bar .label { position: relative; display: block; padding-left: 8px; font-size: 12px; line-height: 14px; white-space: nowrap; font-variant-numeric: tabular-nums; text-shadow: 0 1px 0 #000; }
   .weapons { display: flex; flex-wrap: wrap; gap: 6px; }
   .weapons .w { font-size: 12px; background: rgba(0,0,0,0.5); border-radius: 6px; padding: 2px 8px; }
   .weapons .whistle-cd { color: var(--sky); }

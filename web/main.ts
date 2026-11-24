@@ -330,7 +330,9 @@ function finishRun(won: boolean): void {
     el("h1", "", won ? "목장을 지켰다" : "양 떼에 묻혔다"),
     el("p", "lede", `${name} · Lv${g.player.level} · 클리어 ${reached}/${CAMPAIGN.length} · 터뜨린 적 ${run.popped}`),
     el("p", "small", `가장 긴 연쇄 ${run.bestChain}${g.ball ? ` · 쿠션 팝 ${run.cushionPops} · 3쿠션 이상 ${run.threeCushions}` : ""}`),
-    el("p", "coins", run.dev ? "시험 판이라 기록과 코인에 넣지 않았다" : `코인 +${coins}${rc.fromGold > 0 ? `  (남은 골드 ${Math.floor(goldLeft)} → ${rc.fromGold})` : ""}  · 보유 ${save.coins}`),
+    // 코인 줄은 짧게, 내역은 따로 (폰에서 "보유"가 두 줄로 갈라지던 것)
+    el("p", "coins", run.dev ? "시험 판이라 기록과 코인에 넣지 않았다" : `코인 +${coins}`),
+    ...(run.dev ? [] : [el("p", "small", `${rc.fromGold > 0 ? `남은 골드 ${Math.floor(goldLeft)} → 코인 ${rc.fromGold} · ` : ""}보유 ${save.coins}`)]),
     ...fresh.map((id) => el("p", "unlock-new", `새로 열림: ${CHAR_NAME[id] ?? id}`)),
     row([button(`${name} 영구 강화`, () => renderMeta(played)), button(fresh.length > 0 ? "캐릭터 고르기" : "다시 하기", () => renderSelect(), "btn ghost")]),
   ]);

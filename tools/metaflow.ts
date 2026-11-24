@@ -222,7 +222,7 @@ async function flow(): Promise<RunLog[]> {
       won: text.includes("런 완주"),
       coinsShown,
       coinsSaved: after.coins - before.coins,
-      goldNote: /남은 골드 [\d.]+ → \d+/.exec(text)?.[0] ?? "",
+      goldNote: /남은 골드 [\d.]+ → 코인 \d+/.exec(text)?.[0] ?? "",
       unlocked: end.unlocked,
       bought,
       coinsLeft: end.coins,
