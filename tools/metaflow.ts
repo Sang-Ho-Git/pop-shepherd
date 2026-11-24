@@ -17,7 +17,7 @@ import { createRequire } from "node:module";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { CHARACTERS } from "../src/data/index.ts";
 import { applyMeta } from "../src/progression/meta.ts";
-import { parseSave } from "../src/progression/save.ts";
+import { newSave, parseSave } from "../src/progression/save.ts";
 import type { SaveData } from "../src/progression/save.ts";
 
 // 플레이라이트는 전역에 설치된 것을 쓴다 (프로젝트 의존성에 넣지 않음)
@@ -62,7 +62,7 @@ async function open(hash = ""): Promise<{ ctx: Page; p: Page }> {
 
 async function readSave(p: Page): Promise<SaveData | null> {
   const text = await p.evaluate((k: string) => localStorage.getItem(k), KEY);
-  if (text === null) return null;
+  if (text === null) return newSave(); // 아직 한 번도 저장하지 않은 새 세이브
   const r = parseSave(text);
   return r.ok ? r.save : null;
 }
