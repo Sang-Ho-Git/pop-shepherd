@@ -75,6 +75,7 @@ async function press(p: Page, name: string | RegExp): Promise<void> {
   else await b.click();
 }
 
+const shotOnce = new Set<string>();
 async function waitScreen(p: Page, screen: string, timeoutMs: number, progress = false): Promise<boolean> {
   const t0 = Date.now();
   let next = 60_000;
@@ -84,6 +85,15 @@ async function waitScreen(p: Page, screen: string, timeoutMs: number, progress =
       return { screen: x.screen, stage: x.stage, time: x.time, fps: x.fps, level: x.level };
     });
     if (d.screen === screen) return true;
+    // 판 안의 메뉴(정비 상점, 레벨업 카드)도 한 번씩 찍는다 (폰 레이아웃 확인)
+    if (progress && d.screen === "shop" && !shotOnce.has("shop")) {
+      shotOnce.add("shop");
+      await shot(p, "shop");
+    }
+    if (progress && d.screen === "play" && !shotOnce.has("choice") && (await p.$("#overlay:not([hidden]) button.card"))) {
+      shotOnce.add("choice");
+      await shot(p, "levelup");
+    }
     if (progress && Date.now() - t0 > next) {
       next += 60_000;
       log(`    … ${Math.round((Date.now() - t0) / 1000)}초: 스테이지 ${d.stage} ${Math.round(d.time)}초 Lv${d.level} · ${d.fps}fps`);
