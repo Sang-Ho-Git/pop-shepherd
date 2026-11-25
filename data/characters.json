@@ -4,7 +4,7 @@
     "name": "양치기 (튼튼함)",
     "startWeapon": "kick",
     "stats": {
-      "max_hp": 140,
+      "max_hp": 135,
       "move_speed": 1.1,
       "knock_power": 1,
       "cooldown": 0,
@@ -27,7 +27,7 @@
     "name": "큐 (당구사)",
     "startWeapon": "kick",
     "stats": {
-      "max_hp": 110,
+      "max_hp": 125,
       "move_speed": 1.2,
       "knock_power": 1.25,
       "cooldown": 0,
