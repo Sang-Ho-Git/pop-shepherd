@@ -132,6 +132,16 @@ function hideOverlay(): void {
 
 /* ───────────────────────── 카드 설명 ───────────────────────── */
 
+/** 상자 보상 라벨(cardLabel) → 화면 이름 */
+function rewardName(label: string): string {
+  if (label === "heal") return "체력 회복";
+  const [kind, id] = label.split(":");
+  if (!id) return label;
+  if (kind === "weaponUp" || kind === "newWeapon") return `${weaponName(id)} 강화`;
+  if (kind === "passiveUp" || kind === "newPassive") return `${PASSIVES[id]?.name ?? id} 강화`;
+  return label;
+}
+
 function weaponName(id: string): string {
   return WEAPONS[id]?.name ?? id;
 }
@@ -591,7 +601,10 @@ function renderChoice(): void {
     }),
     "cards",
   );
-  show([el("p", "eyebrow", ch.kind === "chest" ? "보물 상자" : `레벨 ${ch.level}`), el("h2", "", ch.kind === "chest" ? "상자에서 하나" : "하나를 고른다"), cards]);
+  // 한꺼번에 오른 레벨업이 몇 번 더 남았는지 (보스 경험치 등)
+  let more = 0;
+  while (ch.kind === "levelup" && g.stats.xp >= xpTotalFor(g.player.level + 1 + more)) more++;
+  show([el("p", "eyebrow", ch.kind === "chest" ? "보물 상자" : `레벨 ${ch.level}${more > 0 ? ` · 레벨업 ${more}번 더` : ""}`), el("h2", "", ch.kind === "chest" ? "상자에서 하나" : "하나를 고른다"), cards]);
 }
 
 function renderBranch(i: number): void {
@@ -823,13 +836,19 @@ function handleEvents(game: Game): void {
       case "ball-throw":
         sfx.throwBall();
         break;
-      case "chest-open":
+      case "chest-open": {
+        // 11/25: 상자는 창 없이 바로 열린다. 받은 보상을 플레이어 머리 위에 줄줄이 띄운다
         sfx.chest();
+        const p = game.player;
+        const lines = [...e.evolved.map((id) => `${weaponName(id)} 진화!`), ...e.picked.map(rewardName)];
+        lines.forEach((text, k) => fx.push({ kind: "text", x: p.x, y: p.y + 70 + k * 28, t: 0, life: 2.8, color: k < e.evolved.length ? "#ffcf5a" : "#fff3c4", text: `상자: ${text}` }));
         break;
+      }
       case "stage-clear": {
         sfx.clear();
         clearHold = CLEAR_HOLD;
-        banner = { text: "스테이지 클리어", sub: e.vanished > 0 ? `남은 양 ${e.vanished}마리가 흩어진다 · 경험치 +${Math.round(e.xp)}` : "", t: CLEAR_HOLD + 0.2 };
+        const clearKind = game.stage?.clear ?? "survive";
+        banner = { text: clearKind === "boss" ? "보스 처치!" : clearKind === "elites" ? "엘리트 전부 처치!" : "스테이지 클리어", sub: e.vanished > 0 ? `남은 양 ${e.vanished}마리가 흩어진다 · 경험치 +${Math.round(e.xp)}` : "", t: CLEAR_HOLD + 0.2 };
         // 남은 적은 흰 연기로 흩어진다 (터지는 팝과 구별, 많으면 일부만)
         const left = prevEnemies.filter((x) => !x.dead);
         const stride = Math.max(1, Math.ceil(left.length / 120));
@@ -996,7 +1015,7 @@ function renderHud(game: Game): void {
   if (game.phase === "wrapup") goal = `마무리 ${Math.max(0, Math.ceil(game.wrapUpAt + RULES.stage.wrapUpSeconds - game.time))}초`;
   else if (st.clear === "boss") {
     const boss = game.enemies.find((e) => e.rank === "boss");
-    goal = boss ? `보스 ${Math.ceil(Math.max(0, boss.hp))}/${boss.maxHp}` : `보스 등장까지 ${Math.max(0, Math.ceil((st.boss?.at ?? 0) - game.time))}초`;
+    goal = boss ? `보스 ${Math.ceil(Math.max(0, boss.hp))}/${boss.maxHp}` : game.stats.bossKilled > 0 ? "보스 처치" : `보스 등장까지 ${Math.max(0, Math.ceil((st.boss?.at ?? 0) - game.time))}초`;
   } else if (st.clear === "elites") goal = `엘리트 ${game.stats.elitesKilled}/${st.elites?.length ?? 0}`;
   else goal = `${Math.floor(Math.max(0, st.duration - game.time) / 60)}:${String(Math.floor(Math.max(0, st.duration - game.time) % 60)).padStart(2, "0")}`;
   const boss = game.enemies.find((e) => e.rank === "boss");
@@ -1162,11 +1181,13 @@ function frame(now: number): void {
       perf.steps += n;
       if (n >= maxSteps) acc = 0;
     }
-    if (g.choices.length > 0 && !choiceShown && !paused) renderChoice();
+    // 클리어(보스 처치 포함) 연출이 끝난 뒤에 레벨업 창을 띄운다: 보스 바가 남아 보이는데 창부터 뜨고 고르면 갑자기 클리어되던 문제 (11/25)
+    if (g.phase === "cleared" && clearHold > 0 && !paused) clearHold -= dt;
+    const holding = g.phase === "cleared" && clearHold > 0;
+    if (g.choices.length > 0 && !choiceShown && !paused && !holding) renderChoice();
     if (g.choices.length === 0 && !paused) {
       if (g.phase === "cleared") {
-        if (clearHold > 0) clearHold -= dt;
-        else endStage();
+        if (!holding) endStage();
       }
       else if (g.phase === "failed" || g.player.dead) finishRun(false);
     }

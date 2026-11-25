@@ -34,11 +34,8 @@ export function openChest(g: Game, chest: Chest): { evolved: string[]; picked: s
       cards.push(owned[i] as Card);
       owned.splice(i, 1);
     }
-    if (g.manualChoices) {
-      g.choices.push({ kind: "chest", cards });
-      picked.push("(선택)");
-      continue;
-    }
+    // 11/25: 화면 모드에서도 상자는 창을 띄우지 않고 바로 연다 (3장 중 봇 점수가 가장 높은 것).
+    // 보스 상자 3픽 + 보스 경험치 레벨업이 한꺼번에 창을 연달아 띄웠다 (실플레이 피드백). 보상은 화면에 목록으로 보여 준다.
     const card = cards[(g.chooseCard ?? botChooseCard)(cards, g)] ?? (cards[0] as Card);
     applyCard(g, card);
     picked.push(cardLabel(card));

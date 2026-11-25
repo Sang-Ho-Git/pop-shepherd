@@ -436,12 +436,19 @@ function advancePhase(g: Game): void {
     g.stats.vanished = vanished;
     g.phase = "cleared";
     g.events.push({ type: "stage-clear", vanished, xp });
+    // 클리어 경험치·보스 경험치로 오른 레벨업을 지금 처리한다 (예전에는 다음 스테이지 시작 직후에 창이 떴다)
+    if (g.leveling) checkLevelUp(g);
   }
 }
 
 export function step(g: Game, input: Input): void {
   g.events = [];
-  if (g.player.dead || g.phase === "cleared" || g.phase === "failed") return;
+  if (g.player.dead || g.phase === "failed") return;
+  // 클리어한 뒤에도 쌓인 레벨업은 처리한다 (클리어 경험치로 오른 레벨을 상점 전에 고르게. 화면 모드는 한 장씩)
+  if (g.phase === "cleared") {
+    if (g.leveling && g.choices.length === 0) checkLevelUp(g);
+    return;
+  }
   // 사람이 고를 선택지가 남아 있으면 멈춘다 (화면 모드)
   if (g.choices.length > 0) return;
 
