@@ -19,7 +19,7 @@ import { weakBallHit } from "./bosses.ts";
  * 길잡이 별(aim_assist)이 있으면 던질 때 조준 방향 둘레의 같은 색 무리 쪽으로 꺾어 준다.
  */
 
-/** 공 색 고르기: 플레이어 근처(600px) 색마다, 같은 색끼리 닿은 짝이 많을수록 더 자주 */
+/** 공 색 고르기: 플레이어 근처(600px) 색마다, 같은 색끼리 닿은 짝이 많을수록 더 자주. 근처에 없는 색은 absentWeight */
 export function rollBallColor(g: Game): MatchColor {
   const colors: MatchColor[] = g.stage?.colors.length ? [...g.stage.colors] : [...MATCH_COLORS];
   const p = g.player;
@@ -28,6 +28,8 @@ export function rollBallColor(g: Game): MatchColor {
     const mine = near.filter((e) => e.color === c);
     let pairs = 0;
     for (let i = 0; i < mine.length; i++) for (let j = i + 1; j < mine.length; j++) if (touching(mine[i]!, mine[j]!)) pairs++;
+    // 11/24: 근처에 그 색 일반 적이 하나도 없으면 거의 안 나오게 (쏠 데가 없는 공을 연달아 들고 몰리던 문제, 실시간 점검)
+    if (mine.length === 0) return RULES.ball.absentWeight;
     return 1 + mine.length + pairs * RULES.ball.pairWeight;
   });
   return g.rng.weighted(colors, w);

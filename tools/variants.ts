@@ -134,6 +134,10 @@ export const VARIANTS: Record<string, () => void> = {
     if (o.noCham) st.elites = (st.elites ?? []).filter((e) => e.kind !== "chameleon");
     if (process.env.RAMP) ramp();
   },
+  /** 공 색: 근처에 없는 색도 예전처럼 가중치 1 */
+  absentBall1: () => {
+    (RULES.ball as { absentWeight: number }).absentWeight = 1;
+  },
   /** 반사벽 예전 동작 비교: 벽이 여러 세트 남음 + 지속 6~7초 */
   wallOld: () => {
     (RULES.wall as { oneSet: boolean }).oneSet = false;

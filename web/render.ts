@@ -322,27 +322,72 @@ function drawHazards(ctx: CanvasRenderingContext2D, g: Game, v: View, time: numb
   }
 }
 
+/**
+ * 풀밭(바탕색 + 바둑판)을 경기장 크기로 한 번 그려 둔 그림. 배율이 바뀔 때만 다시 그린다.
+ * 너무 크면(고해상도 데스크톱, 800만 픽셀 넘음) 만들지 않고 예전처럼 칸마다 칠한다.
+ */
+let grassCache: { canvas: HTMLCanvasElement; key: string } | null = null;
+function grassImage(aw: number, ah: number, tile: number, scale: number): HTMLCanvasElement | null {
+  const w = Math.ceil(aw * scale);
+  const h = Math.ceil(ah * scale);
+  if (w * h > 8_000_000 || typeof document === "undefined") return null;
+  const key = `${aw}x${ah}@${scale}`;
+  if (grassCache?.key === key) return grassCache.canvas;
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const x = c.getContext("2d", { alpha: false });
+  if (!x) return null;
+  x.fillStyle = GRASS_A;
+  x.fillRect(0, 0, w, h);
+  x.fillStyle = GRASS_B;
+  for (let i = 0; i < aw / tile; i++) {
+    for (let j = 0; j < ah / tile; j++) {
+      if ((i + j) % 2) continue;
+      x.fillRect(i * tile * scale, j * tile * scale, tile * scale + 0.5, tile * scale + 0.5);
+    }
+  }
+  grassCache = { canvas: c, key };
+  return c;
+}
+
 export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: Fx[], time: number, aim: Aim | null = null): void {
   const cw = ctx.canvas.width;
   const ch = ctx.canvas.height;
-  ctx.fillStyle = "#08110e";
-  ctx.fillRect(0, 0, cw, ch);
   // 풀밭: 바둑판 무늬 (움직임이 보이게)
   const tile = 80;
   const [ax, ay] = toScreen(v, 0, 0);
   const [bx, by] = toScreen(v, g.arena.w, g.arena.h);
-  ctx.fillStyle = GRASS_A;
-  ctx.fillRect(ax, ay, bx - ax, by - ay);
-  ctx.fillStyle = GRASS_B;
-  const x0 = Math.max(0, Math.floor((v.camX - cw / v.scale / 2) / tile));
-  const x1 = Math.min(g.arena.w / tile, Math.ceil((v.camX + cw / v.scale / 2) / tile));
-  const y0 = Math.max(0, Math.floor((v.camY - ch / v.scale / 2) / tile));
-  const y1 = Math.min(g.arena.h / tile, Math.ceil((v.camY + ch / v.scale / 2) / tile));
-  for (let i = x0; i < x1; i++) {
-    for (let j = y0; j < y1; j++) {
-      if ((i + j) % 2) continue;
-      const [sx, sy] = toScreen(v, i * tile, j * tile);
-      ctx.fillRect(sx, sy, tile * v.scale + 0.5, tile * v.scale + 0.5);
+  // 바깥 어둠은 울타리 밖 띠만 칠한다 (예전에는 화면 전체를 먼저 칠했다: 폰에서는 캔버스 픽셀이 병목이라 전체 칠하기 한 번이 크다)
+  ctx.fillStyle = "#08110e";
+  if (ay > 0) ctx.fillRect(0, 0, cw, Math.ceil(ay));
+  if (by < ch) ctx.fillRect(0, Math.floor(by), cw, ch - Math.floor(by));
+  if (ax > 0) ctx.fillRect(0, 0, Math.ceil(ax), ch);
+  if (bx < cw) ctx.fillRect(Math.floor(bx), 0, cw - Math.floor(bx), ch);
+  const grass = grassImage(g.arena.w, g.arena.h, tile, v.scale);
+  if (grass) {
+    // 미리 그려 둔 풀밭에서 보이는 부분만 복사 (매 프레임 바둑판 칸 수십 개를 칠하지 않게)
+    const dx = Math.round(ax);
+    const dy = Math.round(ay);
+    const sx = Math.max(0, -dx);
+    const sy = Math.max(0, -dy);
+    const sw = Math.min(grass.width - sx, cw - Math.max(0, dx));
+    const sh = Math.min(grass.height - sy, ch - Math.max(0, dy));
+    if (sw > 0 && sh > 0) ctx.drawImage(grass, sx, sy, sw, sh, Math.max(0, dx), Math.max(0, dy), sw, sh);
+  } else {
+    ctx.fillStyle = GRASS_A;
+    ctx.fillRect(ax, ay, bx - ax, by - ay);
+    ctx.fillStyle = GRASS_B;
+    const x0 = Math.max(0, Math.floor((v.camX - cw / v.scale / 2) / tile));
+    const x1 = Math.min(g.arena.w / tile, Math.ceil((v.camX + cw / v.scale / 2) / tile));
+    const y0 = Math.max(0, Math.floor((v.camY - ch / v.scale / 2) / tile));
+    const y1 = Math.min(g.arena.h / tile, Math.ceil((v.camY + ch / v.scale / 2) / tile));
+    for (let i = x0; i < x1; i++) {
+      for (let j = y0; j < y1; j++) {
+        if ((i + j) % 2) continue;
+        const [sx, sy] = toScreen(v, i * tile, j * tile);
+        ctx.fillRect(sx, sy, tile * v.scale + 0.5, tile * v.scale + 0.5);
+      }
     }
   }
   // 울타리
@@ -500,7 +545,13 @@ export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: F
   // 바닥 경고는 적 아래, 탄은 적 위에 (drawHazards가 둘 다 그리므로 경고 먼저)
   drawHazards(ctx, g, v, time);
   // 적 (보스는 맨 위에)
-  for (const e of g.enemies) if (e.rank === "normal") drawEnemy(ctx, v, e, time);
+  // 화면 밖 적은 건너뛴다 (폰 세로 화면은 경기장의 1/3쯤만 보인다). 잔상·가시·표식이 닿는 여유를 두어 보이는 것은 그대로
+  const onScreen = (e: Enemy): boolean => {
+    const [x, y] = toScreen(v, e.x, e.y);
+    const m = (e.radius * 2.2 + 40 + Math.hypot(e.vx, e.vy) * 0.06) * v.scale;
+    return x > -m && y > -m && x < cw + m && y < ch + m;
+  };
+  for (const e of g.enemies) if (e.rank === "normal" && onScreen(e)) drawEnemy(ctx, v, e, time);
   for (const e of g.enemies) if (e.rank !== "normal") drawEnemy(ctx, v, e, time);
 
   // 회오리 칼날: 지나간 자리에 바람 꼬리. 색 공 규칙에서 이번 바퀴 cap을 다 쓰면 무뎌져 흐려진다

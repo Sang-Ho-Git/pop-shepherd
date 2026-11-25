@@ -1,0 +1,48 @@
+{
+  "throttle": 4,
+  "seconds": 20,
+  "rows": [
+    {
+      "scene": "auto-cue-s4",
+      "fps": 32.5,
+      "gapMedian": 33.3,
+      "gapP95": 50,
+      "sim": 1.32,
+      "draw": 0.81,
+      "hud": 0.11,
+      "total": 2.74,
+      "maxTotal": 14,
+      "stepsPerFrame": 1.9,
+      "enemies": 41,
+      "balls": 0
+    },
+    {
+      "scene": "auto-olly-s14",
+      "fps": 23.2,
+      "gapMedian": 49.9,
+      "gapP95": 66.7,
+      "sim": 2.06,
+      "draw": 1.48,
+      "hud": 0.15,
+      "total": 4.14,
+      "maxTotal": 34,
+      "stepsPerFrame": 2.45,
+      "enemies": 37,
+      "balls": 1
+    },
+    {
+      "scene": "auto-pale-s15",
+      "fps": 37.1,
+      "gapMedian": 33.3,
+      "gapP95": 50,
+      "sim": 1.59,
+      "draw": 1.44,
+      "hud": 0.11,
+      "total": 3.64,
+      "maxTotal": 21,
+      "stepsPerFrame": 1.54,
+      "enemies": 34,
+      "balls": 1
+    }
+  ]
+}
