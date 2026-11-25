@@ -133,6 +133,8 @@ export interface Enemy {
   chainT: number;
   /** 이번 발사에서 울타리에 튕긴 횟수 (쿠션샷 판정) */
   wallBounces: number;
+  /** 같이 소환된 짝의 무리 번호 (첫 마리 id). RULES.cohesion.mode가 "flock"일 때 같이 걷는다 */
+  groupId?: number;
   /** 플레이어 무기로 날린 적인지 (큐의 쓰리쿠션 판정용). 팝 충격파·휘슬·당구로 날아간 적은 false */
   shot: boolean;
   /** 무기 갈래가 이번 발사에 붙인 효과. 착지·기절하면 사라진다. */
@@ -172,7 +174,7 @@ export interface CharacterStats {
   heal_find: number;
   /** 골드 획득 배율 증가 (영구 강화 알뜰) */
   gold_find: number;
-  /** 무기로 날린 적이 울타리에서 속도를 잃지 않고 튕기는 횟수 (패시브 탄성) */
+  /** 무기로 날린 적이 울타리에서 속도를 덜 잃고(RULES.physics.elasticKeep) 튕기는 횟수 (패시브 탄성) */
   bounce: number;
   /** 짝마다 무지개 젤리가 함께 나올 확률 (패시브 무지개 잉크) */
   rainbow: number;

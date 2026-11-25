@@ -8,7 +8,7 @@ import { launch, WEAPON_LAUNCH } from "../src/world/physics.ts";
 import { emptyGame, put, run } from "./helpers.ts";
 
 describe("패시브 탄성·무지개 잉크", () => {
-  it("탄성: 무기로 날린 적은 울타리에서 처음 N번은 속도를 잃지 않는다", () => {
+  it("탄성: 무기로 날린 적은 울타리에서 처음 N번은 속도를 덜 잃는다 (elasticKeep, 잃지 않던 것은 11/25 피드백으로 줄임)", () => {
     const speedAfterWall = (lv: number) => {
       const g = emptyGame();
       for (let i = 0; i < lv; i++) addPassive(g, "elasticity");
@@ -17,8 +17,10 @@ describe("패시브 탄성·무지개 잉크", () => {
       run(g, 3);
       return e.vx;
     };
-    expect(speedAfterWall(0)).toBeLessThan(speedAfterWall(1) * 0.85);
-    expect(speedAfterWall(1)).toBeGreaterThan(0);
+    const keep = RULES.physics.elasticKeep / RULES.physics.wallRestitution;
+    expect(speedAfterWall(1) / speedAfterWall(0)).toBeCloseTo(keep, 2);
+    // 잃지 않는 건 아니다: 튕긴 뒤 속도가 날린 속도(900)보다 작다
+    expect(speedAfterWall(1)).toBeLessThan(900 * RULES.physics.elasticKeep + 1);
   });
 
   it("무지개 잉크: 짝 옆에 무지개 젤리가 함께 나온다", { timeout: 60_000 }, () => {

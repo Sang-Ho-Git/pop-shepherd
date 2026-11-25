@@ -1,6 +1,6 @@
 import { DT, RULES } from "./rules.ts";
 import { Rng } from "./rng.ts";
-import type { CharacterDef, EnemyDef, Game, Input, StageDef, WeaponInstance } from "./types.ts";
+import type { CharacterDef, Color, EnemyDef, Game, Input, StageDef, WeaponInstance } from "./types.ts";
 import { SpatialHash } from "../world/spatialHash.ts";
 import { collideRocks, integrate, MAX_ENEMY_RADIUS, separate } from "../world/physics.ts";
 import { resolveImpacts } from "../combat/impacts.ts";
@@ -212,7 +212,10 @@ function movePlayer(g: Game, input: Input): void {
 /** 평소 상태 적: 플레이어를 향해 걷고, 근처 같은 색 쪽으로 조금 끌린다 (1.3 같은 색 응집). */
 function chase(g: Game): void {
   const p = g.player;
-  const { radius: cr, speed: cs } = RULES.cohesion;
+  const { radius: cr, mode } = RULES.cohesion;
+  const flock = mode === "flock";
+  const cs = flock ? 0 : RULES.cohesion.speed;
+  const groups = flock ? flockCenters(g) : null;
   const buf: number[] = [];
   if (cs > 0) rebuildGrid(g);
   for (const e of g.enemies) {
@@ -225,6 +228,16 @@ function chase(g: Game): void {
     const away = e.trait === "runner" && d < RULES.traits.runnerFlee ? -1 : 1;
     const slowK = e.slowT ? 1 - (e.slowMul ?? 0) : 1;
     const sp = e.speed * (inStream(g, e.y) ? RULES.terrain.streamSlow : 1) * slowK;
+    // 무리로 걷기: 무리 중심에서 플레이어 쪽 방향을 다 같이 쓴다 (대형이 그대로 옮겨 간다)
+    const gc = groups && e.groupId !== undefined ? groups.get(e.groupId) : undefined;
+    if (gc && gc.n > 1) {
+      const gx = p.x - gc.x;
+      const gy = p.y - gc.y;
+      const gd = Math.hypot(gx, gy);
+      e.vx = gd < 1e-9 ? 0 : ((away * gx) / gd) * sp;
+      e.vy = gd < 1e-9 ? 0 : ((away * gy) / gd) * sp;
+      continue;
+    }
     e.vx = d < 1e-9 ? 0 : ((away * dx) / d) * sp;
     e.vy = d < 1e-9 ? 0 : ((away * dy) / d) * sp;
     if (cs <= 0 || e.speed <= 0 || e.color === "gray" || e.rank !== "normal") continue;
@@ -247,6 +260,35 @@ function chase(g: Game): void {
       e.vy += (sy / sl) * cs * slowK;
     }
   }
+}
+
+/**
+ * 무리로 걷기(cohesion.mode "flock")용 무리 중심. 걷는 중이고 무리 색(첫 마리 색)과 같은 적만 센다.
+ * 중심에서 flockLeave보다 멀거나 색이 바뀐 적은 무리를 떠난다 (groupId를 지운다).
+ */
+function flockCenters(g: Game): Map<number, { x: number; y: number; n: number }> {
+  const acc = new Map<number, { x: number; y: number; n: number; color: Color }>();
+  for (const e of g.enemies) {
+    if (e.dead || e.state !== "walk" || e.groupId === undefined) continue;
+    const a = acc.get(e.groupId);
+    if (!a) acc.set(e.groupId, { x: e.x, y: e.y, n: 1, color: e.color });
+    else if (a.color === e.color) {
+      a.x += e.x;
+      a.y += e.y;
+      a.n++;
+    } else e.groupId = undefined;
+  }
+  for (const a of acc.values()) {
+    a.x /= a.n;
+    a.y /= a.n;
+  }
+  const leave = RULES.cohesion.flockLeave;
+  for (const e of g.enemies) {
+    if (e.dead || e.state !== "walk" || e.groupId === undefined) continue;
+    const a = acc.get(e.groupId)!;
+    if ((e.x - a.x) ** 2 + (e.y - a.y) ** 2 > leave * leave) e.groupId = undefined;
+  }
+  return acc;
 }
 
 /** 1.1 휘슬: 대형 충격파. 연쇄 단계 0, 직접 피해 없음. */
