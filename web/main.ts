@@ -211,6 +211,9 @@ let clearHold = 0;
 let prevEnemies: Game["enemies"] = [];
 let shop: ShopState | null = null;
 let choiceShown = false;
+/** 보스를 쓰러뜨린 순간을 보여 주는 시간: 이 동안은 레벨업 카드를 띄우지 않는다 (처치와 카드가 같은 틱에 겹쳐 "카드를 고르니 갑자기 클리어"처럼 보이던 것) */
+let choiceHold = 0;
+let bossDown = "";
 let hitFlash = 0;
 let shake = 0;
 /** 히트스톱: 큰 팝·연쇄 때 아주 잠깐 시뮬을 멈춘다 (화면은 계속 그린다) */
@@ -942,8 +945,26 @@ function handleEvents(game: Game): void {
       case "telegraph":
         sfx.warn();
         break;
+      case "special-killed":
+        if (e.rank === "boss") {
+          bossDown = game.enemyDefs[e.kind]?.name ?? "보스";
+          // 죽은 보스는 이 틱 끝에 목록에서 빠지므로 자리는 같은 틱의 보물 상자(보스 자리)로 찾는다
+          const c = game.events.find((x) => x.type === "chest-drop" && x.kind === "boss");
+          if (c && c.type === "chest-drop") {
+            fx.push({ kind: "ring", x: c.x, y: c.y, t: 0, life: 0.9, color: "#ffcf5a", radius: 260 });
+            fx.push({ kind: "ring", x: c.x, y: c.y, t: 0, life: 0.6, color: "#fff6b0", radius: 150 });
+          }
+          shake = Math.min(22, shake + 14);
+          hitStop = Math.max(hitStop, 0.25);
+          choiceHold = 1.4;
+          sfx.clear();
+        }
+        break;
       case "wrapup-start":
-        banner = { text: "마무리", sub: `${RULES.stage.wrapUpSeconds}초 동안 경험치 +${Math.round(RULES.stage.wrapUpXpBonus * 100)}%`, t: 2.5 };
+        banner = bossDown
+          ? { text: `${bossDown} 쓰러뜨림!`, sub: `마무리 ${RULES.stage.wrapUpSeconds}초 · 경험치 +${Math.round(RULES.stage.wrapUpXpBonus * 100)}%`, t: 3 }
+          : { text: "마무리", sub: `${RULES.stage.wrapUpSeconds}초 동안 경험치 +${Math.round(RULES.stage.wrapUpXpBonus * 100)}%`, t: 2.5 };
+        bossDown = "";
         break;
       case "evolve":
         banner = { text: `${weaponName(e.weapon)} 진화`, sub: "", t: 2.5 };
@@ -1015,7 +1036,11 @@ function renderHud(game: Game): void {
   if (game.phase === "wrapup") goal = `마무리 ${Math.max(0, Math.ceil(game.wrapUpAt + RULES.stage.wrapUpSeconds - game.time))}초`;
   else if (st.clear === "boss") {
     const boss = game.enemies.find((e) => e.rank === "boss");
-    goal = boss ? `보스 ${Math.ceil(Math.max(0, boss.hp))}/${boss.maxHp}` : game.stats.bossKilled > 0 ? "보스 처치" : `보스 등장까지 ${Math.max(0, Math.ceil((st.boss?.at ?? 0) - game.time))}초`;
+    goal = boss
+      ? `보스 ${Math.ceil(Math.max(0, boss.hp))}/${boss.maxHp}`
+      : game.stats.bossKilled > 0
+        ? "보스 처치!"
+        : `보스 등장까지 ${Math.max(0, Math.ceil((st.boss?.at ?? 0) - game.time))}초`;
   } else if (st.clear === "elites") goal = `엘리트 ${game.stats.elitesKilled}/${st.elites?.length ?? 0}`;
   else goal = `${Math.floor(Math.max(0, st.duration - game.time) / 60)}:${String(Math.floor(Math.max(0, st.duration - game.time) % 60)).padStart(2, "0")}`;
   const boss = game.enemies.find((e) => e.rank === "boss");
@@ -1184,7 +1209,8 @@ function frame(now: number): void {
     // 클리어(보스 처치 포함) 연출이 끝난 뒤에 레벨업 창을 띄운다: 보스 바가 남아 보이는데 창부터 뜨고 고르면 갑자기 클리어되던 문제 (11/25)
     if (g.phase === "cleared" && clearHold > 0 && !paused) clearHold -= dt;
     const holding = g.phase === "cleared" && clearHold > 0;
-    if (g.choices.length > 0 && !choiceShown && !paused && !holding) renderChoice();
+    if (choiceHold > 0) choiceHold = Math.max(0, choiceHold - dt);
+    if (g.choices.length > 0 && !choiceShown && !paused && !holding && choiceHold <= 0) renderChoice();
     if (g.choices.length === 0 && !paused) {
       if (g.phase === "cleared") {
         if (!holding) endStage();

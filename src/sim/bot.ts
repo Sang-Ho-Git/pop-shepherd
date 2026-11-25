@@ -15,7 +15,11 @@ import { inHazard, nextAttack } from "../combat/bosses.ts";
  * 봇은 난수를 쓰지 않는다. 공간 해시는 지난 틱 기준이라 적 목록을 직접 훑는다.
  */
 /** 봇 동작 스위치 (비교 측정용: tools/variants.ts noLure) */
-export const BOT = { lure: true };
+export const BOT = {
+  lure: true,
+  /** 그로기면 어느 색 공이든 보스에 던진다 (false: 그로기를 모르는 사람처럼 평소대로 약점 색만) */
+  groggyPunish: true,
+};
 
 export function botInput(g: Game): Input {
   let move = botMove(g);
@@ -120,7 +124,7 @@ function bossShot(g: Game): Pick<Input, "aimX" | "aimY" | "throwBall" | "swapBal
     return m ? { aimX: m.x, aimY: m.y, throwBall: true } : null;
   }
   if (bestD > range) return null;
-  if (bs.groggy > 0 || b.current === bs.weak) return { aimX: best.x, aimY: best.y, throwBall: true };
+  if ((BOT.groggyPunish && bs.groggy > 0) || b.current === bs.weak) return { aimX: best.x, aimY: best.y, throwBall: true };
   if (b.next === bs.weak) return { throwBall: false, swapBall: true };
   return null;
 }

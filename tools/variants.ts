@@ -84,6 +84,11 @@ export const VARIANTS: Record<string, () => void> = {
   noLure: () => {
     BOT.lure = false;
   },
+  /** 11/25 보스: 그로기를 못 쓰는 사람 (유인 없음 + 그로기 때도 평소처럼 약점 색 공만) */
+  noGroggy: () => {
+    BOT.lure = false;
+    BOT.groggyPunish = false;
+  },
   /** 11/24 런 조정 비교: 회오리를 예전처럼 튕기게 */
   legacyOrbit: () => {
     (RULES.ball.orbit as { legacy: boolean }).legacy = true;

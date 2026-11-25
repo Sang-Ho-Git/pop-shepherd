@@ -134,7 +134,8 @@ export function hitSpecials(g: Game, cx: number, cy: number, radius: number, n: 
     const dy = cy - e.y;
     const d = Math.hypot(dx, dy);
     if (d > radius + e.radius) continue;
-    let dmg = n * RULES.boss.popDamagePerEnemy * chainMultiplier(depth);
+    // popMul: 보스별 팝 피해 배율 (그로기 없이도 곁의 팝으로 꾸준히 깎이게)
+    let dmg = n * RULES.boss.popDamagePerEnemy * chainMultiplier(depth) * (e.boss?.params.popMul ?? 1);
     if (color === e.color) dmg *= RULES.boss.weakMul;
     const prm = e.boss?.params;
     if (prm?.frontHalfDeg !== undefined && d > 1e-9 && !(e.boss!.groggy > 0)) {
