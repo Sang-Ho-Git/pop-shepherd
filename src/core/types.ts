@@ -150,6 +150,9 @@ export interface Enemy {
   /** 회오리(색 공 규칙) 둔화: 남은 시간 (s)과 줄이는 비율 (0.4 = 40% 느리게, 1 = 멈춤) */
   slowT?: number;
   slowMul?: number;
+  /** 같은 색 응집 끌림 벡터 (px/s, 틱마다 목표로 보간해 급하게 꺾이지 않게). RULES.cohesion.smooth일 때만 쓴다 */
+  cohX?: number;
+  cohY?: number;
   /** 회오리 칼날에 맞은 횟수 (색 공 규칙: strikes번이면 사라진다) */
   bladeHits?: number;
   boss: BossState | null;

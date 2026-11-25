@@ -1398,6 +1398,8 @@ function parseAuto(): AutoState | null {
     // 11/25 응집 시험안 화면 비교용: coh0 = 응집 없앰, flock = 짝이 무리로 함께 걷기
     else if (t === "coh0") (RULES.cohesion as { speed: number }).speed = 0;
     else if (t === "flock") (RULES.cohesion as { mode: string }).mode = "flock";
+    // 11/25 응집 가다듬기 전 동작 (전후 화면 비교용)
+    else if (t === "cohold") (RULES.cohesion as { smooth: boolean }).smooth = false;
   }
   return st;
 }

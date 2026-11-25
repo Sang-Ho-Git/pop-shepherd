@@ -215,6 +215,10 @@ export const VARIANTS: Record<string, () => void> = {
         if (pr.pierce && pr.pierce > 2) pr.pierce = 2;
       }
   },
+  /** 11/25 응집 가다듬기 전 동작 (부드럽게 끄기) */
+  cohOld: () => {
+    (RULES.cohesion as { smooth: boolean }).smooth = false;
+  },
   /** 11/25 응집 시험안 (a): 같은 색 응집 없앰 */
   cohNone: () => {
     (RULES.cohesion as { speed: number }).speed = 0;

@@ -241,8 +241,10 @@ function chase(g: Game): void {
     e.vx = d < 1e-9 ? 0 : ((away * dx) / d) * sp;
     e.vy = d < 1e-9 ? 0 : ((away * dy) / d) * sp;
     if (cs <= 0 || e.speed <= 0 || e.color === "gray" || e.rank !== "normal") continue;
+    const coh = RULES.cohesion;
     let sx = 0;
     let sy = 0;
+    let touching = false;
     g.grid.query(e.x, e.y, cr, buf);
     for (const j of buf) {
       const o = g.enemies[j];
@@ -251,14 +253,45 @@ function chase(g: Game): void {
       const oy = o.y - e.y;
       const od = Math.hypot(ox, oy);
       if (od > cr || od < 1e-9) continue;
-      sx += ox / od;
-      sy += oy / od;
+      if (coh.smooth) {
+        // 닿은 거리(두 반지름 + 여유)에서 ramp에 걸쳐 0 → 1로 세지는 거리 가중
+        const reach = e.radius + o.radius + RULES.physics.contactSlack;
+        if (od <= reach) {
+          touching = true;
+          continue;
+        }
+        const w = Math.min(1, (od - reach) / coh.ramp);
+        sx += (ox / od) * w;
+        sy += (oy / od) * w;
+      } else {
+        sx += ox / od;
+        sy += oy / od;
+      }
     }
+    if (!coh.smooth) {
+      const sl = Math.hypot(sx, sy);
+      if (sl > 1e-9) {
+        e.vx += (sx / sl) * cs * slowK;
+        e.vy += (sy / sl) * cs * slowK;
+      }
+      continue;
+    }
+    // 이미 같은 색과 닿아 있으면 끈다. 아니면 이웃들의 가중 합 (세기 최대 1)을 목표로
+    let tx = 0;
+    let ty = 0;
     const sl = Math.hypot(sx, sy);
-    if (sl > 1e-9) {
-      e.vx += (sx / sl) * cs * slowK;
-      e.vy += (sy / sl) * cs * slowK;
+    if (!touching && sl > 1e-9) {
+      const k = Math.min(1, sl) / sl;
+      tx = sx * k * cs;
+      ty = sy * k * cs;
     }
+    // 닿는 순간에는 보간 없이 바로 끈다 (안쪽으로 향하던 끌림이 남아 겹치지 않게)
+    const cx = touching ? 0 : (e.cohX ?? 0) + (tx - (e.cohX ?? 0)) * coh.blend;
+    const cy = touching ? 0 : (e.cohY ?? 0) + (ty - (e.cohY ?? 0)) * coh.blend;
+    e.cohX = cx;
+    e.cohY = cy;
+    e.vx += cx * slowK;
+    e.vy += cy * slowK;
   }
 }
 
