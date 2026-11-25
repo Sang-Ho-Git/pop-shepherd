@@ -606,7 +606,8 @@ function fireWall(g: Game, w: WeaponInstance, buf: number[]): number {
   const lv = w.level;
   const ahead = enemiesWithin(g, p.x, p.y, 350, buf).filter((e) => inCone(g, e, 70));
   if (ahead.length < 3) return -1;
-  const len = param(lv, "length") * p.stats.area;
+  // 범위 보너스는 최대 RULES.wall.areaCap배까지만 길이에 반영한다 (화면을 가로지르는 벽 방지)
+  const len = param(lv, "length") * Math.min(p.stats.area, RULES.wall.areaCap);
   const t = param(lv, "duration");
   const base = { t, weapon: w, boost: lv.params.boost ?? 1, aimAssist: !!lv.params.aimAssist, shock: lv.params.wallShock ?? 0 };
   const seg = (cx: number, cy: number, ang: number): Wall => ({

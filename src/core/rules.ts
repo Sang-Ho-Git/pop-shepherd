@@ -154,7 +154,8 @@ export const RULES = {
   /** 반사벽: 동시에 서 있는 벽 수 상한 (넘으면 오래된 벽부터 사라진다). 진화 만화경이 삼각형을 겹겹이 세워 화면을 덮던 문제 */
   /** front·ballPass: 비교 실험용 (front = 예전처럼 플레이어 앞에 세움, ballPass = 공이 벽을 지나감). 게임에서는 둘 다 false */
   /** oneSet: 새 벽을 세우면 같은 무기의 이전 벽을 치움 (11/24) */
-  wall: { maxActive: 99, oneSet: true, front: false, ballPass: false },
+  /** areaCap: 벽 길이에 반영하는 무기 범위(area) 보너스 상한 (11/25: 프리즘 렌즈·영구 강화·캐릭터 범위가 곱해져 만화경 한 장이 500px을 넘어 화면을 가로질렀다) */
+  wall: { maxActive: 99, oneSet: true, front: false, ballPass: false, areaCap: 1.2 },
   /** 일반 적 기믹 */
   traits: { runnerFlee: 220 },
   /** 맵 기믹: 개울 안 걷는 속도 배율, 안개 시야 반경 (화면) */
