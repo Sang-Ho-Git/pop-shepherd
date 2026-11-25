@@ -177,9 +177,12 @@ export function spawnGroup(g: Game, stage: StageDef): void {
     // 짝은 서로 닿게 (중심 거리 28) 접선 방향으로 나란히
     const tx = -Math.sin(ang) * 14;
     const ty = Math.cos(ang) * 14;
+    let group: number | undefined;
     for (let m = 0; m < RULES.spawn.pairSize && alive < stage.maxAlive; m++) {
       const s = m === 0 ? -1 : 1;
-      spawnEnemy(g, kind, color, px + tx * s, py + ty * s);
+      const e = spawnEnemy(g, kind, color, px + tx * s, py + ty * s);
+      group ??= e.id;
+      e.groupId = group;
       alive++;
     }
     // 무지개 잉크: 짝 옆에 어떤 색과도 이어지는 무지개 젤리 (짝과 닿지 않게 바깥쪽)

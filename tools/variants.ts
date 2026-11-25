@@ -174,6 +174,14 @@ export const VARIANTS: Record<string, () => void> = {
   hardC: () => harder(1.55, 1.1),
   /** 지금 쓰는 임시 난이도 (= hardB) */
   hard20: () => harder(1.4, 1.08),
+  /** 11/25 응집 시험안 (a): 같은 색 응집 없앰 */
+  cohNone: () => {
+    (RULES.cohesion as { speed: number }).speed = 0;
+  },
+  /** 11/25 응집 시험안 (b): 개별 끌림 대신 같이 소환된 짝이 무리로 함께 걷기 */
+  cohFlock: () => {
+    (RULES.cohesion as { mode: string }).mode = "flock";
+  },
   /** 스테이지 4 적 상한 112 → 85 */
   st4cap85: () => {
     STAGES.stage04!.maxAlive = 85;
