@@ -164,8 +164,8 @@ export function integrate(g: Game): void {
     const r = e.radius;
     if (e.state === "launched") {
       if (e.fx?.homing) home(g, e, e.fx.homing);
-      // 탄성: 무기로 날린 적은 처음 몇 번은 울타리에서 속도를 잃지 않는다. 핀볼은 늘.
-      const wallE = e.shot && (e.wallBounces < bounce || e.fx?.homing) ? 1 : wallE0;
+      // 탄성: 무기로 날린 적은 처음 몇 번은 울타리에서 속도를 덜 잃는다 (elasticKeep). 핀볼은 늘.
+      const wallE = e.shot && (e.wallBounces < bounce || e.fx?.homing) ? RULES.physics.elasticKeep : wallE0;
       let bounced = false;
       if (e.x < r) {
         e.x = r + (r - e.x);

@@ -172,7 +172,7 @@ export interface CharacterStats {
   heal_find: number;
   /** 골드 획득 배율 증가 (영구 강화 알뜰) */
   gold_find: number;
-  /** 무기로 날린 적이 울타리에서 속도를 잃지 않고 튕기는 횟수 (패시브 탄성) */
+  /** 무기로 날린 적이 울타리에서 속도를 덜 잃고(RULES.physics.elasticKeep) 튕기는 횟수 (패시브 탄성) */
   bounce: number;
   /** 짝마다 무지개 젤리가 함께 나올 확률 (패시브 무지개 잉크) */
   rainbow: number;
