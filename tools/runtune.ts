@@ -29,6 +29,14 @@ function summarize(rows: Row[]): void {
     const rate = (xs: Row[]) => (xs.length ? `${((100 * xs.filter((r) => r.won).length) / xs.length).toFixed(0)}%` : "-");
     console.log(`  ${id.padEnd(13)} 가진 런 ${String(has.length).padStart(3)} · 스테이지 8 이상 간 런 중 완주: 가짐 ${rate(late)} (${late.length}) / 없음 ${rate(lateNo)} (${lateNo.length})`);
   }
+  {
+    // 페인트 총 + 자석 토템 둘 다 가진 런 (스테이지 8 이상 간 런 기준)
+    const rate = (xs: Row[]) => (xs.length ? `${((100 * xs.filter((r) => r.won).length) / xs.length).toFixed(0)}%` : "-");
+    const l7 = rows.filter((r) => r.reached >= 7);
+    const hp = (r: Row) => r.weapons.includes("paint_gun"), hm = (r: Row) => r.weapons.includes("magnet_totem");
+    const g = (f: (r: Row) => boolean) => l7.filter(f);
+    console.log(`  페인트+자석 둘 다 ${rate(g((r) => hp(r) && hm(r)))} (${g((r) => hp(r) && hm(r)).length}) · 페인트만 ${rate(g((r) => hp(r) && !hm(r)))} (${g((r) => hp(r) && !hm(r)).length}) · 자석만 ${rate(g((r) => !hp(r) && hm(r)))} (${g((r) => !hp(r) && hm(r)).length}) · 둘 다 없음 ${rate(g((r) => !hp(r) && !hm(r)))} (${g((r) => !hp(r) && !hm(r)).length})`);
+  }
   const hv = rows.filter((r) => r.hooves > 0);
   console.log(`가벼운 발굽 가진 런 ${hv.length}/${n}, 평균 레벨 ${(hv.reduce((a, r) => a + r.hooves, 0) / Math.max(1, hv.length)).toFixed(1)}`);
   const wv = rows.filter((r) => r.weapons.includes("whirlwind"));
