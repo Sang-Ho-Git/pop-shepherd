@@ -1281,7 +1281,7 @@ function frame(now: number): void {
 
 /**
  * 자동 플레이: 주소가 #auto 로 시작하면 봇이 실제 화면에서 런을 한다 (조작·카드·갈래·상점 버튼까지 실제 UI로).
- * #auto-cue-s15-x4 처럼 캐릭터, 시작 스테이지(s), 속도 배율(x)을 붙일 수 있다. 시험 판이라 기록에 남지 않는다.
+ * #auto-cue-s15-x4 처럼 캐릭터, 시작 스테이지(s), 속도 배율(x)을 붙일 수 있다. -coh0 / -flock 은 응집 시험안(11/25). 시험 판이라 기록에 남지 않는다.
  * #auto-rec-x8 은 메타 흐름 점검용: 바로 시작하지 않고 제목 화면에서 기다린다. 메뉴(시작·캐릭터·영구 강화)는
  * 점검 도구(tools/metaflow.ts)가 실제 버튼으로 누르고, 판 안(카드·갈래·상점)만 봇이 한다. 이 판은 기록·코인에 남는다.
  * 점검 도구(Playwright)는 window.__pop 으로 상태를 읽는다.
@@ -1347,6 +1347,9 @@ function parseAuto(): AutoState | null {
     else if (/^s\d+$/.test(t)) st.stage = Number(t.slice(1));
     else if (t === "rec") st.rec = true;
     else if (/^x\d+$/.test(t)) st.speed = Math.max(1, Math.min(8, Number(t.slice(1))));
+    // 11/25 응집 시험안 화면 비교용: coh0 = 응집 없앰, flock = 짝이 무리로 함께 걷기
+    else if (t === "coh0") (RULES.cohesion as { speed: number }).speed = 0;
+    else if (t === "flock") (RULES.cohesion as { mode: string }).mode = "flock";
   }
   return st;
 }
