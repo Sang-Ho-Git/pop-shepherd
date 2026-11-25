@@ -1,5 +1,5 @@
 /**
- * 11/25 응집 시험안 화면 비교: 지금(pull) / 응집 없앰(coh0) / 무리로 걷기(flock)를 같은 판·같은 시점에 찍는다.
+ * 11/25 응집 시험안 화면 비교: 예전(pull) / 응집 없앰(coh0) / 무리로 걷기(flock)를 같은 판·같은 시점에 찍는다.
  *   npm run build:web && node tools/shot-cohesion.mjs [출력 폴더]
  * 자동 플레이(#auto)로 스테이지 7을 x2로 돌려 30초·60초에 찍는다.
  */
@@ -12,7 +12,10 @@ const out = process.argv[2] ?? "docs/shots";
 const page = fileURLToPath(new URL("../dist/pop-shepherd.html", import.meta.url));
 mkdirSync(out, { recursive: true });
 const browser = await chromium.launch();
-for (const [name, tok] of [["pull", ""], ["none", "-coh0"], ["flock", "-flock"]]) {
+// 11/25 가다듬기 전후: smooth(지금 기본) / old(-cohold, 예전 동작). 이름을 쉼표로 줄이면 그것만 찍는다 (예: node tools/shot-cohesion.mjs docs/shots smooth,old)
+const only = process.argv[3]?.split(",");
+const SHOTS = [["pull", "-cohold"], ["none", "-coh0"], ["flock", "-flock"], ["smooth", ""], ["old", "-cohold"]];
+for (const [name, tok] of SHOTS.filter(([n]) => !only || only.includes(n))) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
   const p = await ctx.newPage();
   const errors = [];
