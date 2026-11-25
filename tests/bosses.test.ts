@@ -165,7 +165,7 @@ describe("보스 패턴: 읽고 피하기", () => {
     expect(g.player.hp).toBeLessThan(hp);
   });
 
-  it("돌진하다 바위에 박으면 그로기: 멈추고, 곁의 팝 피해가 2배, 닿아도 아프지 않다", () => {
+  it("돌진하다 바위에 박으면 그로기: 멈추고, 곁의 팝 피해가 groggyMul배 (보스 팝 배율 포함), 닿아도 아프지 않다", () => {
     const g = rockGame();
     // 바위(525, 338) 너머에 보스, 플레이어는 바위 이쪽
     g.player.x = 380;
@@ -180,7 +180,7 @@ describe("보스 패턴: 읽고 피하기", () => {
     const hp = e.hp;
     popRedsAt(g, e.x, e.y - 80);
     run(g, 10);
-    expect(hp - e.hp).toBeCloseTo(3 * RULES.boss.popDamagePerEnemy * RULES.boss.groggyMul);
+    expect(hp - e.hp).toBeCloseTo(3 * RULES.boss.popDamagePerEnemy * (ENEMIES.wool_giant!.params!.popMul ?? 1) * RULES.boss.groggyMul);
   });
 });
 
