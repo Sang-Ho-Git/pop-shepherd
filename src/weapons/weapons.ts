@@ -241,7 +241,8 @@ export function dominantColor(enemies: Enemy[]): { color: MatchColor; count: num
 function fireZone(g: Game, w: WeaponInstance, buf: number[]): number {
   const p = g.player;
   const prm = w.level.params;
-  const radius = param(w.level, "radius") * p.stats.area;
+  // 범위 보너스는 최대 RULES.totem.areaCap배까지만 영역에 반영한다
+  const radius = param(w.level, "radius") * Math.min(p.stats.area, RULES.totem.areaCap);
   const inRange = enemiesWithin(g, p.x, p.y, radius, buf).filter((e) => e.rank === "normal");
   const minN = Math.max(2, param(w.level, "minTargets", 2));
   const counts = MATCH_COLORS.map((c) => ({ c, n: inRange.filter((e) => e.color === c).length }))

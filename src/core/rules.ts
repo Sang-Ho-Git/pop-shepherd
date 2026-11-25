@@ -156,6 +156,8 @@ export const RULES = {
   /** oneSet: 새 벽을 세우면 같은 무기의 이전 벽을 치움 (11/24) */
   /** areaCap: 벽 길이에 반영하는 무기 범위(area) 보너스 상한 (11/25: 프리즘 렌즈·영구 강화·캐릭터 범위가 곱해져 만화경 한 장이 500px을 넘어 화면을 가로질렀다) */
   wall: { maxActive: 99, oneSet: true, front: false, ballPass: false, areaCap: 1.2 },
+  /** 자석 토템 영역 반경에 반영하는 무기 범위(area) 보너스 상한 (11/25: 범위 보너스가 크면 영역이 화면 절반을 덮었다. 반사벽 wall.areaCap과 같은 값) */
+  totem: { areaCap: 1.2 },
   /** 일반 적 기믹 */
   traits: { runnerFlee: 220 },
   /** 맵 기믹: 개울 안 걷는 속도 배율, 안개 시야 반경 (화면) */
