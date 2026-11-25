@@ -1,6 +1,6 @@
 {
-  "_note": "영구 강화 트리 (11/24 캐릭터별, 난이도 17e461b 기준): 캐릭터마다 트리를 따로 산다 (캐릭터당 4915 코인, 한 캐릭터만 하면 약 22런). 공통 노드 19개 + 캐릭터 전용 노드 3개 (branch own, chars). 코인 지갑은 공용. 다른 캐릭터가 이미 산 공통 노드 레벨은 shareDiscount만큼 싸다. 노드마다 첫 레벨이 가장 비싸다 (배우는 값, 다음 레벨은 싸게 시작해 오른다): 초반 몇 런의 코인으로 살 수 있는 레벨 수를 줄여 초반 강화가 완주율을 크게 올리지 않게. 근거와 측정은 docs/2026-11-24-영구강화.md. 코인 = 클리어 스테이지 × perStage + 터뜨린 적 × perPoppedEnemy + 런이 끝날 때 남은 골드 × perGold.",
-  "coins": {"perStage": 7, "perPoppedEnemy": 0.007, "perGold": 0.025},
+  "_note": "영구 강화 트리 (11/24 캐릭터별, 난이도 17e461b 기준): 캐릭터마다 트리를 따로 산다 (캐릭터당 4915 코인, 한 캐릭터만 하면 약 22런). 공통 노드 19개 + 캐릭터 전용 노드 3개 (branch own, chars). 코인 지갑은 공용. 다른 캐릭터가 이미 산 공통 노드 레벨은 shareDiscount만큼 싸다. 노드마다 첫 레벨이 가장 비싸다 (배우는 값, 다음 레벨은 싸게 시작해 오른다): 초반 몇 런의 코인으로 살 수 있는 레벨 수를 줄여 초반 강화가 완주율을 크게 올리지 않게. 근거와 측정은 docs/2026-11-24-영구강화.md. 코인 (11/25) = 클리어한 스테이지마다 perStage + stageSquare × 스테이지 번호² + 완주 winBonus + 터뜨린 적 × perPoppedEnemy + 남은 골드 × perGold × (클리어 ÷ 전체)^goldDepthPow — 일찍 끝난 런은 적게, 깊이 간 런은 많이.",
+  "coins": {"perStage": 0, "stageSquare": 0.1, "winBonus": 60, "perPoppedEnemy": 0, "perGold": 0.035, "goldDepthPow": 1},
   "shareDiscount": 0.4,
   "nodes": [
     { "id": "sturdy", "branch": "survival", "name": "튼튼한 몸", "maxLevel": 4, "costs": [85, 45, 60, 80], "effect": {"max_hp_pct": 0.08}, "note": "체력 +8%" },

@@ -353,7 +353,8 @@ function finishRun(won: boolean): void {
     el("p", "small", `가장 긴 연쇄 ${run.bestChain}${g.ball ? ` · 쿠션 팝 ${run.cushionPops} · 3쿠션 이상 ${run.threeCushions}` : ""}`),
     // 코인 줄은 짧게, 내역은 따로 (폰에서 "보유"가 두 줄로 갈라지던 것)
     el("p", "coins", run.dev ? "시험 판이라 기록과 코인에 넣지 않았다" : `코인 +${coins}`),
-    ...(run.dev ? [] : [el("p", "small", `${rc.fromGold > 0 ? `남은 골드 ${Math.floor(goldLeft)} → 코인 ${rc.fromGold} · ` : ""}보유 ${save.coins}`)]),
+    // 코인 내역: 스테이지 보상(뒤 스테이지일수록 큼) · 완주 보너스 · 남은 골드(깊이 간 만큼 비율이 오름)
+    ...(run.dev ? [] : [el("p", "small", [`스테이지 ${rc.fromStages}`, ...(rc.fromWin > 0 ? [`완주 ${rc.fromWin}`] : []), ...(rc.fromPops > 0 ? [`터뜨린 적 ${rc.fromPops}`] : []), ...(rc.fromGold > 0 ? [`남은 골드 ${Math.floor(goldLeft)} → ${rc.fromGold}`] : []), `보유 ${save.coins}`].join(" · "))]),
     ...fresh.map((id) => el("p", "unlock-new", `새로 열림: ${CHAR_NAME[id] ?? id}`)),
     row([button(`${name} 영구 강화${affordable(played) > 0 ? ` · ${affordable(played)}개 살 수 있음` : ""}`, () => renderMeta(played)), button(fresh.length > 0 ? "캐릭터 고르기" : "다시 하기", () => renderSelect(), "btn ghost")]),
   ]);
@@ -482,7 +483,7 @@ function renderShop(): void {
     ...(g.stats.vanished > 0 ? [el("p", "small", `남은 적 ${g.stats.vanished}마리가 흩어지며 경험치 +${Math.round(g.stats.clearXp)}`)] : []),
     el("h2", "", "정비 상점"),
     el("p", "lede", `골드 ${Math.floor(g.player.gold)} · 체력 ${Math.ceil(g.player.hp)}/${g.player.maxHp}`),
-    el("p", "small", `남은 골드는 런이 끝나면 영구 강화 코인이 된다 (지금 끝나면 코인 +${runCoins(0, 0, g.player.gold).fromGold})`),
+    el("p", "small", `남은 골드는 런이 끝나면 영구 강화 코인이 된다. 멀리 갈수록 비율이 오른다 (지금 끝나면 코인 +${runCoins(run.stageIndex + 1, 0, g.player.gold).fromGold})`),
     items,
     row([rr, button(`스테이지 ${run.stageIndex + 2}로`, () => leaveShop())]),
   ]);

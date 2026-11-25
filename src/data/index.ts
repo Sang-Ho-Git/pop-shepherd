@@ -120,7 +120,21 @@ export interface MetaNode {
   note: string;
 }
 export interface MetaTree {
-  coins: { perStage: number; perPoppedEnemy: number; /** 런이 끝날 때 남은 골드 1당 코인 */ perGold?: number };
+  /**
+   * 런이 끝나고 받는 코인 (11/25 식): 스테이지 i 클리어 = perStage + stageSquare × i²,
+   * 완주 winBonus, 터뜨린 적 × perPoppedEnemy, 남은 골드 × perGold × (클리어 스테이지 ÷ 전체)^goldDepthPow.
+   * 일찍 끝난 런은 적게, 깊이 간 런은 많이 받는다.
+   */
+  coins: {
+    perStage: number;
+    stageSquare?: number;
+    winBonus?: number;
+    perPoppedEnemy: number;
+    /** 런이 끝날 때 남은 골드 1당 코인 (깊이 배율 전) */
+    perGold?: number;
+    /** 남은 골드 몫에 곱하는 (클리어 ÷ 전체 스테이지)의 지수 (0이면 깊이와 무관) */
+    goldDepthPow?: number;
+  };
   /** 다른 캐릭터가 이미 산 공통 노드 레벨의 할인율 (0.4 = 40% 싸게) */
   shareDiscount?: number;
   nodes: MetaNode[];

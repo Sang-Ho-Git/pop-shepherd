@@ -26,6 +26,8 @@ export interface RunRow {
   coins: number;
   coinsFromGold: number;
   goldLeft: number;
+  /** 터뜨린 적 (코인 식 맞추기용) */
+  popped: number;
 }
 export interface SeqRow extends RunRow {
   character: string;
@@ -39,7 +41,7 @@ parentPort!.on("message", (job: Job) => {
   if (job.kind === "run") {
     const meta = job.coins > 0 ? profileForCoins(job.coins, job.character) : undefined;
     const r = runCampaign(job.seed, job.character, CAMPAIGN, { ballMode, meta });
-    const row: RunRow = { won: r.won, reached: r.reached, coins: r.coins, coinsFromGold: r.coinsFromGold, goldLeft: r.goldLeft };
+    const row: RunRow = { won: r.won, reached: r.reached, coins: r.coins, coinsFromGold: r.coinsFromGold, goldLeft: r.goldLeft, popped: r.poppedEnemies };
     parentPort!.postMessage({ id: job.id, row });
     return;
   }
@@ -52,7 +54,7 @@ parentPort!.on("message", (job: Job) => {
     save = botSpend(recordRun(save, r), ch);
     earned += r.coins;
     const trees = Object.fromEntries(job.chars.map((c) => [c, treeProgress(save, c)]));
-    rows.push({ character: ch, won: r.won, reached: r.reached, coins: r.coins, coinsFromGold: r.coinsFromGold, goldLeft: r.goldLeft, trees, earned });
+    rows.push({ character: ch, won: r.won, reached: r.reached, coins: r.coins, coinsFromGold: r.coinsFromGold, goldLeft: r.goldLeft, popped: r.poppedEnemies, trees, earned });
     if (Object.values(trees).every((t) => t >= 1)) break;
   }
   parentPort!.postMessage({ id: job.id, rows });

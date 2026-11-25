@@ -1,5 +1,5 @@
 import type { CharacterDef } from "../core/types.ts";
-import { META } from "../data/index.ts";
+import { CAMPAIGN, META } from "../data/index.ts";
 import type { MetaNode } from "../data/index.ts";
 
 /**
@@ -130,22 +130,45 @@ export function applyMeta(ch: CharacterDef, profile: MetaProfile): { character: 
 
 /** 런이 끝나고 받는 코인과 그 내역 */
 export interface RunCoins {
-  /** 클리어 스테이지와 터뜨린 적에서 온 몫 */
+  /** 클리어한 스테이지 보상 (뒤 스테이지일수록 크다) */
+  fromStages: number;
+  /** 완주 보너스 */
+  fromWin: number;
+  /** 터뜨린 적 몫 */
+  fromPops: number;
+  /** 스테이지·완주·적 몫 합 */
   base: number;
-  /** 런이 끝날 때 남은 인게임 골드에서 온 몫 (완주·실패 모두) */
+  /** 런이 끝날 때 남은 인게임 골드에서 온 몫 (완주·실패 모두, 깊이 간 만큼 비율이 오른다) */
   fromGold: number;
   total: number;
 }
 
-export function runCoins(stagesCleared: number, poppedEnemies: number, goldLeft = 0): RunCoins {
-  const base = Math.round(META.coins.perStage * stagesCleared + META.coins.perPoppedEnemy * poppedEnemies);
-  const fromGold = Math.floor(Math.max(0, goldLeft) * (META.coins.perGold ?? 0));
-  return { base, fromGold, total: base + fromGold };
+/** 스테이지 i(1부터)를 클리어하면 받는 코인 (반올림 전) */
+export function stageCoins(i: number): number {
+  return META.coins.perStage + (META.coins.stageSquare ?? 0) * i * i;
+}
+
+/**
+ * 런 코인 (11/25 식): 일찍 끝난 런은 적게, 깊이 간 런·완주·남은 골드를 많이.
+ * @param totalStages 캠페인 스테이지 수 (완주·깊이 판정)
+ */
+export function runCoins(stagesCleared: number, poppedEnemies: number, goldLeft = 0, totalStages = CAMPAIGN.length): RunCoins {
+  const c = META.coins;
+  const n = Math.max(0, Math.floor(stagesCleared));
+  let st = 0;
+  for (let i = 1; i <= n; i++) st += stageCoins(i);
+  const fromStages = Math.round(st);
+  const fromWin = n >= totalStages ? (c.winBonus ?? 0) : 0;
+  const fromPops = Math.round((c.perPoppedEnemy ?? 0) * Math.max(0, poppedEnemies));
+  const depth = totalStages > 0 ? Math.min(1, n / totalStages) : 1;
+  const fromGold = Math.floor(Math.max(0, goldLeft) * (c.perGold ?? 0) * Math.pow(depth, c.goldDepthPow ?? 0));
+  const base = fromStages + fromWin + fromPops;
+  return { fromStages, fromWin, fromPops, base, fromGold, total: base + fromGold };
 }
 
 /** 런이 끝나고 받는 코인 (남은 골드 몫 포함) */
-export function coinsForRun(stagesCleared: number, poppedEnemies: number, goldLeft = 0): number {
-  return runCoins(stagesCleared, poppedEnemies, goldLeft).total;
+export function coinsForRun(stagesCleared: number, poppedEnemies: number, goldLeft = 0, totalStages = CAMPAIGN.length): number {
+  return runCoins(stagesCleared, poppedEnemies, goldLeft, totalStages).total;
 }
 
 /**
