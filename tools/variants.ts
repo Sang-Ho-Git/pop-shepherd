@@ -174,6 +174,30 @@ export const VARIANTS: Record<string, () => void> = {
   hardC: () => harder(1.55, 1.1),
   /** 지금 쓰는 임시 난이도 (= hardB) */
   hard20: () => harder(1.4, 1.08),
+  /** 11/25 페인트 총·자석 토템 고레벨(Lv5 이상·진화) 하향 시험 (NERF="m=1,p=1"로 한쪽만) */
+  nerfPM: () => {
+    const o = Object.fromEntries((process.env.NERF ?? "m=1,p=1").split(",").map((kv) => kv.split("=")));
+    const hi = (lv: number | string) => lv === "evo" || Number(lv) >= 5;
+    const r2 = (x: number) => Math.round(x * 100) / 100;
+    if (o.m === "1")
+      for (const l of WEAPONS.magnet_totem!.levels) {
+        if (!hi(l.lv)) continue;
+        l.cooldown = r2(l.cooldown * Number(o.mcd ?? 1.2));
+        const pr = l.params as Record<string, number>;
+        pr.duration = Number(o.mdur ?? 3.5);
+        pr.pullSpeed = Number(o.mpull ?? 90);
+      }
+    if (o.p === "1")
+      for (const l of WEAPONS.paint_gun!.levels) {
+        if (!hi(l.lv)) continue;
+        l.cooldown = r2(l.cooldown * Number(o.pcd ?? 1.25));
+        const pr = l.params as Record<string, number>;
+        if (pr.projectiles && pr.projectiles > 3) pr.projectiles = 3;
+        if (pr.puddleRadius) pr.puddleRadius = 30;
+        if (pr.splashRadius) pr.splashRadius = 55;
+        if (pr.pierce && pr.pierce > 2) pr.pierce = 2;
+      }
+  },
   /** 11/25 응집 시험안 (a): 같은 색 응집 없앰 */
   cohNone: () => {
     (RULES.cohesion as { speed: number }).speed = 0;
