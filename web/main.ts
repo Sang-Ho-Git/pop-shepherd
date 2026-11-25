@@ -1371,6 +1371,8 @@ interface PopDebug {
   phase: string;
   /** 점검용: 지금 판에 무기를 준다 (스크린샷용, 예: give("whirlwind", 6, "A")) */
   give: (id: string, lv: number | "evo", branch?: string | null) => void;
+  /** 점검용: 플레이어 무기 범위(area) 배율을 바꾼다 (범위 상한 확인용) */
+  setArea: (a: number) => void;
 }
 const dbg: PopDebug = {
   screen: "", stage: 0, time: 0, hp: 0, maxHp: 0, level: 0, enemies: 0, balls: 0, fps: 0, result: null, runs: 0, log: [], hazards: 0, boss: "", player: null, renderScale: 0, wallT: -1, phase: "",
@@ -1379,6 +1381,9 @@ const dbg: PopDebug = {
     if (!g || !def) return;
     g.weapons = g.weapons.filter((w) => w.def.id !== id);
     g.weapons.push(makeWeapon(def, lv, branch));
+  },
+  setArea: (a) => {
+    if (g) g.player.stats.area = a;
   },
 };
 (globalThis as { __pop?: PopDebug }).__pop = dbg;
