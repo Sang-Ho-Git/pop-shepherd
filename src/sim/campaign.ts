@@ -248,7 +248,7 @@ export function runCampaign(seed: number, characterId: string, stages: string[] 
   const poppedEnemies = out.reduce((a, r) => a + r.popped, 0);
   // 런이 끝날 때(완주·실패 모두) 남은 골드: 마지막으로 돌린 스테이지가 끝난 순간의 골드
   const goldLeft = out[out.length - 1]?.gold ?? 0;
-  const c = runCoins(reached, poppedEnemies, goldLeft);
+  const c = runCoins(reached, poppedEnemies, goldLeft, stages.length);
   return {
     seed,
     character: characterId,

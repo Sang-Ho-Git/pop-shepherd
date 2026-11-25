@@ -120,14 +120,26 @@ describe("2.3 영구 강화 트리", () => {
     }
   });
 
-  it("코인 = 클리어 스테이지 + 터뜨린 적 + 남은 골드 몫", () => {
-    expect(coinsForRun(10, 0)).toBe(10 * META.coins.perStage);
+  it("코인 = 스테이지 보상(뒤 스테이지일수록 큼) + 완주 보너스 + 남은 골드 몫(깊이 간 만큼)", () => {
+    const c = META.coins;
+    let st = 0;
+    for (let i = 1; i <= 10; i++) st += c.perStage + (c.stageSquare ?? 0) * i * i;
+    expect(runCoins(10, 0, 0).fromStages).toBe(Math.round(st));
     expect(runCoins(10, 0, 0).fromGold).toBe(0);
-    const r = runCoins(5, 1000, 1999);
-    expect(r.fromGold).toBe(Math.floor(1999 * META.coins.perGold!));
-    expect(r.fromGold).toBeGreaterThan(0);
-    expect(r.total).toBe(r.base + r.fromGold);
-    expect(r.base).toBe(Math.round(5 * META.coins.perStage + 1000 * META.coins.perPoppedEnemy));
+    expect(runCoins(10, 0, 0).fromWin).toBe(0);
+    // 뒤 스테이지 하나가 앞 스테이지 하나보다 많이 준다
+    expect(runCoins(15, 0).fromStages - runCoins(14, 0).fromStages).toBeGreaterThan(runCoins(2, 0).fromStages - runCoins(1, 0).fromStages);
+    // 완주 보너스
+    expect(runCoins(15, 0, 0, 15).fromWin).toBe(c.winBonus ?? 0);
+    // 남은 골드: 같은 골드라도 멀리 간 런이 더 받는다
+    const near = runCoins(5, 1000, 2000, 15);
+    const far = runCoins(15, 1000, 2000, 15);
+    expect(far.fromGold).toBe(Math.floor(2000 * c.perGold!));
+    expect(near.fromGold).toBe(Math.floor(2000 * c.perGold! * Math.pow(5 / 15, c.goldDepthPow ?? 0)));
+    expect(near.fromGold).toBeLessThan(far.fromGold);
+    expect(near.total).toBe(near.base + near.fromGold);
+    expect(near.base).toBe(near.fromStages + near.fromWin + near.fromPops);
+    expect(coinsForRun(5, 1000, 2000, 15)).toBe(near.total);
     expect(runCoins(0, 0, -50).fromGold).toBe(0);
   });
 
@@ -150,18 +162,19 @@ describe("2.3 영구 강화 트리", () => {
     expect(g.player.revives).toBe(revives - 1);
   });
 
-  it("런이 끝나면 코인을 받고, 남은 골드도 코인이 된다 (실패한 런도)", { timeout: 120_000 }, () => {
+  it("런이 끝나면 코인을 받고, 남은 골드도 코인이 된다 (실패한 런은 간 깊이만큼)", { timeout: 120_000 }, () => {
     const r = runCampaign(3, "shepherd", ["stage01"]);
     expect(r.won).toBe(true);
     expect(r.goldLeft).toBe(r.stages[0]!.gold);
-    expect(r.coinsFromGold).toBe(runCoins(r.reached, r.stages[0]!.popped, r.goldLeft).fromGold);
-    expect(r.coins).toBe(runCoins(r.reached, r.stages[0]!.popped, r.goldLeft).total);
+    expect(r.coinsFromGold).toBe(runCoins(r.reached, r.stages[0]!.popped, r.goldLeft, 1).fromGold);
+    expect(r.coins).toBe(runCoins(r.reached, r.stages[0]!.popped, r.goldLeft, 1).total);
     expect(r.coinsFromGold).toBeGreaterThan(0);
     // 실패한 런 (Lv1로 마지막 스테이지): 쓰러진 순간의 골드가 코인이 된다
     const f = runCampaign(3, "shepherd", ["stage15"], { meta: { purse: 3, thrift: 1 } });
     expect(f.won).toBe(false);
     expect(f.goldLeft).toBe(f.stages[0]!.gold);
     expect(f.goldLeft).toBeGreaterThanOrEqual(150);
-    expect(f.coinsFromGold).toBe(Math.floor(f.goldLeft * META.coins.perGold!));
+    // 깊이 배율: 한 스테이지도 못 깨고 끝난 런은 남은 골드 몫이 (클리어 0 ÷ 1)^지수
+    expect(f.coinsFromGold).toBe(Math.floor(f.goldLeft * META.coins.perGold! * Math.pow(0, META.coins.goldDepthPow ?? 0)));
   });
 });
