@@ -205,7 +205,8 @@ export const RULES = {
    * 카드 3장 중 1장. 가중치는 기획서 v2 (보유 무기 강화 35, 보유 패시브 강화 25, 새 무기 20, 새 패시브 20).
    * 고를 것이 없으면 채움 카드 (체력 회복).
    */
-  xp: { base: 80, growth: 4 },
+  /** lateFrom 레벨부터 레벨마다 lateGrowth씩 더 (11/25: 스테이지 6~14 레벨업이 너무 잦음). tools/growth.ts로 잰다 */
+  xp: { base: 80, growth: 4, lateFrom: 20, lateGrowth: 20 },
   cards: {
     count: 3,
     weaponSlots: 6,

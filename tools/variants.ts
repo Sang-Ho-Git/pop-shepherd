@@ -134,6 +134,18 @@ export const VARIANTS: Record<string, () => void> = {
     if (o.noCham) st.elites = (st.elites ?? []).filter((e) => e.kind !== "chameleon");
     if (process.env.RAMP) ramp();
   },
+  /** 경험치 곡선: 환경 변수 XPL="from=20,g=20" (lateFrom, lateGrowth) */
+  xpLate: () => {
+    const o = Object.fromEntries((process.env.XPL ?? "").split(",").filter(Boolean).map((kv) => kv.split("=")));
+    const x = RULES.xp as { lateFrom: number; lateGrowth: number };
+    if (o.from) x.lateFrom = Number(o.from);
+    if (o.g) x.lateGrowth = Number(o.g);
+    if (process.env.RAMP) ramp();
+  },
+  /** 예전 경험치 곡선 (늦은 가파름 없음) */
+  xpOld: () => {
+    (RULES.xp as { lateGrowth: number }).lateGrowth = 0;
+  },
   /** 공 색: 근처에 없는 색도 예전처럼 가중치 1 */
   absentBall1: () => {
     (RULES.ball as { absentWeight: number }).absentWeight = 1;

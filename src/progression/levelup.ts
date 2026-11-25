@@ -6,7 +6,8 @@ import { addPassive } from "./passives.ts";
 
 /** 레벨 L에서 L+1로 가는 데 필요한 경험치 */
 export function xpToNext(level: number): number {
-  return RULES.xp.base + RULES.xp.growth * (level - 1);
+  // 11/25: 레벨 lateFrom 이후는 더 가파르게 (스테이지 6~14에서 레벨업이 스테이지당 7~11번으로 너무 잦았다)
+  return RULES.xp.base + RULES.xp.growth * (level - 1) + RULES.xp.lateGrowth * Math.max(0, level - RULES.xp.lateFrom);
 }
 
 /** 레벨 L에 도달하는 데 필요한 누적 경험치 */
