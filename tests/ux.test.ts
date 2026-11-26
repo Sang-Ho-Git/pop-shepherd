@@ -61,3 +61,40 @@ describe("클리어 때 수거 범위 (줍는 거리 ×1.1)", () => {
     expect(g.golds.length).toBe(0);
   });
 });
+
+describe("테스트용 세이브 조작 (11/26)", () => {
+  it("초기화 → 모두 열기 → 코인 → 트리 채우기 → 비우기, 그리고 일부 잠그기", async () => {
+    const t = await import("../src/progression/testsave.ts");
+    const { CHARACTERS } = await import("../src/data/index.ts");
+    const { isCharacterUnlocked } = await import("../src/progression/unlocks.ts");
+    const { treeProgress, parseSave, serializeSave } = await import("../src/progression/save.ts");
+    let s = t.resetSave();
+    expect(s.unlocked).toEqual(["olly"]);
+    s = t.unlockAll(s);
+    expect(Object.keys(CHARACTERS).every((id) => isCharacterUnlocked(s, id))).toBe(true);
+    s = t.setCharacterUnlocked(s, "cue", false);
+    expect(isCharacterUnlocked(s, "cue")).toBe(false);
+    expect(isCharacterUnlocked(t.setCharacterUnlocked(s, "olly", false), "olly")).toBe(true);
+    s = t.setCoins(t.addCoins(s, 500), 12345.9);
+    expect(s.coins).toBe(12345);
+    s = t.fillTree(s, "olly");
+    expect(treeProgress(s, "olly")).toBe(1);
+    // 저장했다 읽어도 그대로
+    const back = parseSave(serializeSave(s));
+    expect(back.ok && back.dropped.length === 0 && treeProgress(back.save, "olly") === 1).toBe(true);
+    s = t.clearTree(s, "olly");
+    expect(treeProgress(s, "olly")).toBe(0);
+  });
+
+  it("노드 레벨은 최대로 막히고, 선행 조건이 모자란 노드는 버려진다", async () => {
+    const t = await import("../src/progression/testsave.ts");
+    const { META } = await import("../src/data/index.ts");
+    const { profileOf } = await import("../src/progression/save.ts");
+    const base = META.nodes.find((n) => !n.chars && !n.requires)!;
+    const dep = META.nodes.find((n) => !n.chars && n.requires)!;
+    let s = t.setNodeLevel(t.resetSave(), "olly", base.id, 99);
+    expect(profileOf(s, "olly")[base.id]).toBe(base.maxLevel);
+    s = t.setNodeLevel(t.resetSave(), "olly", dep.id, 1);
+    expect(profileOf(s, "olly")[dep.id] ?? 0).toBe(0);
+  });
+});

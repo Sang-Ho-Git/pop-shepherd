@@ -7,7 +7,8 @@ import { botCardScore, botChooseBranch, botChooseCard, needsBranch, resolveChoic
 import { botInput } from "../src/sim/bot.ts";
 import { applyMeta, costFor, isUnlocked, nodesFor, runCoins } from "../src/progression/meta.ts";
 import type { MetaSpecials } from "../src/progression/meta.ts";
-import { acknowledgeRefund, browserStore, loadSave, profileOf, recordRun, spendOnMeta, treeProgress, writeSave } from "../src/progression/save.ts";
+import * as TS from "../src/progression/testsave.ts";
+import { acknowledgeRefund, browserStore, loadSave, parseSave, profileOf, recordRun, serializeSave, spendOnMeta, treeProgress, writeSave } from "../src/progression/save.ts";
 import type { SaveData } from "../src/progression/save.ts";
 import { conditionProgress, isCharacterUnlocked, newlyUnlocked, statValue, UNLOCKS } from "../src/progression/unlocks.ts";
 import type { UnlockCondition } from "../src/progression/unlocks.ts";
@@ -183,7 +184,7 @@ function cardInfo(g: Game, c: Card): { title: string; body: string; tag: string 
 
 /* ───────────────────────── 런 상태 ───────────────────────── */
 
-type Screen = "title" | "select" | "play" | "shop" | "result" | "meta";
+type Screen = "title" | "select" | "play" | "shop" | "result" | "meta" | "testsave";
 let screen: Screen = "title";
 
 interface Run {
@@ -378,7 +379,7 @@ function renderTitle(): void {
       el("p", "eyebrow", "색깔 몰이 서바이벌"),
       el("h1", "logo", "팝 셰퍼드"),
       el("p", "lede", "같은 색 양을 셋 이상 부딪히면 터진다. 날리고, 몰고, 연쇄로 목장을 지켜라."),
-      row([button("시작", () => renderSelect()), button("영구 강화", () => renderMeta(), "btn ghost"), button("스테이지 시험", () => renderDevPick(), "btn ghost")]),
+      row([button("시작", () => renderSelect()), button("영구 강화", () => renderMeta(), "btn ghost"), button("스테이지 시험", () => renderDevPick(), "btn ghost"), button("테스트 설정", () => renderTestSave(), "btn ghost")]),
       row([
         button(`색 공 던지기 규칙: ${ballMode ? "켜짐" : "꺼짐"}`, () => {
           setBallMode(!ballMode);
@@ -1577,6 +1578,109 @@ function renderDevPick(): void {
     el("p", "small", b ? `스테이지 ${CAMPAIGN.length} 빌드: Lv${b.level} · ${b.weapons.map((w) => `${weaponName(w.id)} ${lvText(w.lv)}`).join(", ")}` : ""),
     el("p", "small", "주소 끝에 #stage15 나 #stage15-cue 를 붙여도 바로 시작한다."),
     row([button("돌아가기", () => renderTitle(), "btn ghost")]),
+  ]);
+}
+
+/** 테스트 설정 화면의 보던 캐릭터 */
+let testChar = "olly";
+/** 테스트 설정 화면의 안내 글 (바로 전 동작의 결과) */
+let testNote = "";
+
+function setSave(next: SaveData, note = ""): void {
+  save = next;
+  writeSave(store, save);
+  testNote = note;
+  renderTestSave();
+}
+
+/**
+ * 테스트 설정 (11/26): 세이브를 초기화하거나 해금·코인·영구 강화를 직접 정한다. 바꾸면 바로 저장된다.
+ * 규칙: 노드 레벨은 최대까지, 선행 조건이 모자란 노드는 읽을 때처럼 버려진다.
+ * 잠근 캐릭터도 기록이 해금 조건을 채우면 다시 열린다.
+ */
+function renderTestSave(): void {
+  screen = "testsave";
+  const ch = testChar;
+  const profile = profileOf(save, ch);
+  const chars = row(CHAR_ORDER.filter((id) => CHARACTERS[id]).map((id) => {
+    const open = isCharacterUnlocked(save, id);
+    return button(`${open ? "🔓" : "🔒"} ${CHAR_NAME[id] ?? id}`, () => setSave(TS.setCharacterUnlocked(save, id, !open)), open ? "btn" : "btn ghost");
+  }));
+  const coinInput = document.createElement("input");
+  coinInput.type = "number";
+  coinInput.inputMode = "numeric";
+  coinInput.min = "0";
+  coinInput.value = String(save.coins);
+  coinInput.className = "field";
+  const apply = (): void => setSave(TS.setCoins(save, Number(coinInput.value)), `코인 ${Math.floor(Number(coinInput.value)) || 0}`);
+  coinInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") apply();
+    e.stopPropagation();
+  });
+  const picks = row(CHAR_ORDER.filter((id) => CHARACTERS[id]).map((id) => button(`${ch === id ? "● " : ""}${CHAR_NAME[id] ?? id}`, () => {
+    testChar = id;
+    renderTestSave();
+  }, ch === id ? "btn" : "btn ghost")));
+  const nodes = el("div", "testnodes");
+  for (const n of nodesFor(ch)) {
+    const lv = profile[n.id] ?? 0;
+    const locked = lv === 0 && !isUnlocked(profile, n.id);
+    const line = el("div", "testnode");
+    const label = el("span", "", `${n.name}  ${lv}/${n.maxLevel}${locked ? " · 선행 필요" : ""}`);
+    const minus = button("−", () => setSave(TS.setNodeLevel(save, ch, n.id, lv - 1)), "btn ghost mini");
+    minus.disabled = lv <= 0;
+    const plus = button("+", () => setSave(TS.setNodeLevel(save, ch, n.id, lv + 1)), "btn ghost mini");
+    plus.disabled = lv >= n.maxLevel || locked;
+    line.append(label, minus, plus);
+    nodes.append(line);
+  }
+  const area = document.createElement("textarea");
+  area.className = "field";
+  area.rows = 3;
+  area.placeholder = "세이브 JSON (가져오기: 붙여넣고 가져오기)";
+  area.value = serializeSave(save);
+  area.addEventListener("keydown", (e) => e.stopPropagation());
+  show([
+    el("p", "eyebrow", "테스트 설정 · 바꾸면 바로 저장된다"),
+    el("h2", "", "테스트 설정"),
+    ...(testNote ? [el("p", "lede", testNote)] : []),
+    el("p", "small", `코인 ${save.coins} · 열린 캐릭터 ${save.unlocked.length}/${Object.keys(CHARACTERS).length} · 기록 ${save.runs}런`),
+    row([
+      button("세이브 초기화", () => {
+        if (confirm("세이브를 처음 상태로 되돌릴까? (올리만 열림, 코인 0, 트리·기록 비움)")) {
+          testChar = "olly";
+          setSave(TS.resetSave(), "초기화했다");
+        }
+      }, "btn ghost"),
+      button("캐릭터 모두 열기", () => setSave(TS.unlockAll(save), "모두 열었다")),
+    ]),
+    el("p", "small", "캐릭터 해금 (누르면 열기/잠그기, 올리는 늘 열림. 잠가도 기록이 조건을 채우면 다시 열린다)"),
+    chars,
+    el("p", "small", "코인"),
+    row([coinInput, button("지정", apply, "btn ghost"), button("+500", () => setSave(TS.addCoins(save, 500)), "btn ghost"), button("+5000", () => setSave(TS.addCoins(save, 5000)), "btn ghost")]),
+    el("p", "small", `영구 강화 · ${CHAR_NAME[ch] ?? ch} 트리 ${Math.round(treeProgress(save, ch) * 100)}% (선행 조건이 모자란 노드는 읽을 때 버려진다)`),
+    picks,
+    row([button("모두 채우기", () => setSave(TS.fillTree(save, ch), `${CHAR_NAME[ch] ?? ch} 트리를 채웠다`)), button("비우기", () => setSave(TS.clearTree(save, ch), `${CHAR_NAME[ch] ?? ch} 트리를 비웠다`), "btn ghost")]),
+    nodes,
+    el("p", "small", "세이브 내보내기 / 가져오기"),
+    area,
+    row([
+      button("가져오기", () => {
+        const r = parseSave(area.value);
+        if (!r.ok) {
+          testNote = `가져오기 실패: ${r.error}`;
+          renderTestSave();
+          return;
+        }
+        setSave(r.save, `가져왔다${r.dropped.length > 0 ? ` (버려진 노드 ${r.dropped.length}개)` : ""}`);
+      }, "btn ghost"),
+      button("복사", () => {
+        area.select();
+        void navigator.clipboard?.writeText(area.value).catch(() => {});
+        testNote = "복사했다 (안 되면 글 상자를 길게 눌러 복사)";
+      }, "btn ghost"),
+    ]),
+    row([button("영구 강화 보기", () => renderMeta(ch), "btn ghost"), button("캐릭터 고르기", () => renderSelect(), "btn ghost"), button("돌아가기", () => renderTitle(), "btn ghost")]),
   ]);
 }
 
