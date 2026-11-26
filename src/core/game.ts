@@ -7,6 +7,7 @@ import { resolveImpacts } from "../combat/impacts.ts";
 import { detonateBomb, shockwave } from "../combat/pops.ts";
 import { hurtPlayer } from "../combat/hurt.ts";
 import { tickSpawner } from "../combat/spawner.ts";
+import { milkHealMul } from "./stageNo.ts";
 import { fireWeapons, tickEffects, tickTotems, tickWalls } from "../weapons/weapons.ts";
 import { spawnScheduled, tickBosses, tickHazards } from "../combat/bosses.ts";
 import { openChest } from "../progression/chest.ts";
@@ -385,7 +386,7 @@ function pickupMilks(g: Game): void {
   for (const m of g.milks) {
     m.t -= DT;
     if (Math.hypot(m.x - p.x, m.y - p.y) <= range) {
-      const heal = Math.min(p.maxHp - p.hp, p.maxHp * RULES.heal.healFrac);
+      const heal = Math.min(p.maxHp - p.hp, p.maxHp * RULES.heal.healFrac * milkHealMul(g));
       p.hp += heal;
       g.stats.milkPicked++;
       g.stats.healed += heal;
@@ -497,7 +498,7 @@ function advancePhase(g: Game): void {
     // 가까이 남은 우유병은 마신다
     for (const m of g.milks) {
       if (!near(m, RULES.heal.pickupRange)) continue;
-      const heal = Math.min(g.player.maxHp - g.player.hp, g.player.maxHp * RULES.heal.healFrac);
+      const heal = Math.min(g.player.maxHp - g.player.hp, g.player.maxHp * RULES.heal.healFrac * milkHealMul(g));
       g.player.hp += heal;
       g.stats.milkPicked++;
       g.stats.healed += heal;

@@ -110,7 +110,8 @@ export const RULES = {
    * 스테이지 안 회복: 연쇄 2번째 팝부터(단계 1 이상) 우유병이 떨어진다. 잘 플레이한 보상으로만 회복된다.
    * 확률 × (1 + heal_find). 주우면 최대 체력의 healFrac 회복, lifetime초 뒤 사라짐.
    */
-  heal: { minChainDepth: 1, dropChance: 0.15, healFrac: 0.08, lifetime: 20, pickupRange: 40 },
+  /** lateFrom 스테이지부터 드롭 확률 ×lateDropMul, 회복량 ×lateHealMul (11/26: 후반이 너무 쉬워짐) */
+  heal: { minChainDepth: 1, dropChance: 0.15, healFrac: 0.08, lifetime: 20, pickupRange: 40, lateFrom: 8, lateDropMul: 0.6, lateHealMul: 0.7 },
 
   /**
    * 스테이지 클리어 (생존형): duration이 끝나면 wrapUpSeconds 동안 소환이 멈춘 "마무리 시간".
@@ -201,7 +202,7 @@ export const RULES = {
     stickStun: 1.5,
   },
   /** 드롭 (보물 상자, 골드 주머니) */
-  drops: { pickupRange: 70, goldLifetime: 20, chestPicksElite: 1, chestPicksBoss: 3, chestHealFrac: 0.3 },
+  drops: { pickupRange: 70, goldLifetime: 20, chestPicksElite: 1, chestPicksBoss: 3, chestHealFrac: 0.15 },
   /**
    * 스테이지 클리어: 목표(시간·보스·엘리트)를 이루면 바로 클리어하고 남은 적은 사라진다.
    * wrapUpSeconds: 예전 "마무리 시간" (소환이 멈추고 팝 경험치 +wrapUpXpBonus). 11/24에 0으로 없앰 —
@@ -225,7 +226,8 @@ export const RULES = {
     /** 봇: 이 스테이지부터 이동 속도 패시브(가벼운 발굽)를 진화 짝만큼 높게 친다 */
     botSpeedFrom: 8,
     weights: { weaponUp: 35, passiveUp: 25, newWeapon: 20, newPassive: 20 },
-    fillerHealFrac: 0.3,
+    /** 채움 카드(뽑을 카드가 없을 때)의 회복 비율. 11/26: 0.3 → 0.1 (빌드가 꽉 찬 뒤 레벨업마다 30%씩 회복해 후반이 너무 쉬웠다) */
+    fillerHealFrac: 0.1,
     /** Lv5 이상 무기의 진화 짝 패시브 카드 가중치 배율 */
     partnerMul: 2,
   },

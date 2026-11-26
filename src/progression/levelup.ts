@@ -1,3 +1,4 @@
+import { stageNo } from "../core/stageNo.ts";
 import { RULES } from "../core/rules.ts";
 import type { Card, Game, WeaponInstance } from "../core/types.ts";
 import { lp, PASSIVES, SHOP, WEAPONS } from "../data/index.ts";
@@ -175,11 +176,6 @@ export function botCardScore(c: Card, g: Game): number {
       case "gold":
         return 1;
     }
-}
-
-/** 지금 스테이지 번호 (stage08 → 8, 모르면 0) */
-function stageNo(g: Game): number {
-  return Number(/(\d+)$/.exec(g.stage?.id ?? "")?.[1] ?? 0);
 }
 
 export function cardLabel(c: Card): string {

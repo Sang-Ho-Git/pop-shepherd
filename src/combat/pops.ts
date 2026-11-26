@@ -3,6 +3,7 @@ import type { Color, Enemy, Game, MatchColor } from "../core/types.ts";
 import { launch, MAX_ENEMY_RADIUS } from "../world/physics.ts";
 import { SHOP } from "../data/index.ts";
 import { specialDamageMul } from "./bosses.ts";
+import { milkDropMul } from "../core/stageNo.ts";
 
 /** 연쇄 단계 depth의 경험치 배율 */
 export function chainMultiplier(depth: number): number {
@@ -95,7 +96,7 @@ export function popCluster(g: Game, indices: number[], trigger: Enemy, color: Ma
   if (n >= RULES.match.shockwaveMin && opts.shock !== false) {
     shockwave(g, cx, cy, radius, RULES.match.shockKnock, { chainDepth: depth + 1, chainT: RULES.chain.window, by });
   }
-  if (depth >= RULES.heal.minChainDepth && g.rng.chance(RULES.heal.dropChance * (1 + g.player.stats.heal_find))) {
+  if (depth >= RULES.heal.minChainDepth && g.rng.chance(RULES.heal.dropChance * milkDropMul(g) * (1 + g.player.stats.heal_find))) {
     g.milks.push({ x: cx, y: cy, t: RULES.heal.lifetime });
     g.stats.milkDrops++;
     g.events.push({ type: "milk-drop", x: cx, y: cy });
