@@ -421,6 +421,10 @@ export type GameEvent =
   | { type: "kill"; id: number; xp: number }
   | { type: "bounce"; a: number; b: number }
   | { type: "stick"; a: number; b: number }
+  /** 화면 표시용 (11/26 연쇄 가시화, 시뮬 상태는 바꾸지 않음): 같은 색에 부딪혔지만 무리가 모자라 붙기만 함. chain: 팝 충격파로 날아간 연쇄 가능 적이었는지 */
+  | { type: "chain-miss"; id: number; x: number; y: number; size: number; need: number; color: MatchColor; chain: boolean }
+  /** 화면 표시용: 연쇄 가능 적이 다른 색·회색에 맞아 튕김 (연쇄가 이어지지 않은 이유) */
+  | { type: "chain-bounce"; id: number; x: number; y: number }
   | { type: "bomb-drop"; color: MatchColor; x: number; y: number }
   | { type: "bomb-pickup"; color: MatchColor; count: number }
   | { type: "milk-drop"; x: number; y: number }
