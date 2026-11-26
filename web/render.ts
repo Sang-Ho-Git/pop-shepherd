@@ -560,7 +560,7 @@ export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: F
     if (w.def.behavior !== "orbit") continue;
     const radius = (w.level.params.radius ?? 80) * p.stats.area;
     const blades = w.level.params.blades ?? 1;
-    const dull = g.ballMode && (w.bite ?? 0) >= (w.level.params.cap ?? 3);
+    const dull = (w.bite ?? 0) >= (w.level.params.cap ?? 3);
     const [cx, cy] = toScreen(v, p.x, p.y);
     for (let k = 0; k < blades; k++) {
       const a = (w.angle ?? 0) + (k / blades) * Math.PI * 2;

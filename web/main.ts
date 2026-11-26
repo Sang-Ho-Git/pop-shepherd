@@ -17,7 +17,7 @@ import { buy, openShop, reroll } from "../src/progression/shop.ts";
 import type { ShopState } from "../src/progression/shop.ts";
 import { carryOf, startStage } from "../src/sim/campaign.ts";
 import type { Carry } from "../src/sim/campaign.ts";
-import { makeWeapon, weaponLevel, MAX_LEVEL } from "../src/weapons/weapons.ts";
+import { makeWeapon, weaponLevel, MAX_LEVEL, BRANCH_LEVEL } from "../src/weapons/weapons.ts";
 import type { CharacterDef } from "../src/core/types.ts";
 import { computeView, drawWorld, PALETTE } from "./render.ts";
 import type { Aim, Fx, View } from "./render.ts";
@@ -148,6 +148,17 @@ function weaponName(id: string): string {
   return WEAPONS[id]?.name ?? id;
 }
 
+/** 갈래 이름 (Lv4 효과 설명의 앞부분: "양떼: 끌어온 적끼리 …" → "양떼") */
+function branchName(id: string, branch: string): string {
+  const def = WEAPONS[id];
+  return def ? (weaponLevel(def, BRANCH_LEVEL, branch).note.split(":")[0] ?? branch) : branch;
+}
+
+/** 가진 무기의 이름: 갈래를 골랐으면 갈래 이름을 붙인다 ("올가미 채찍 · 양떼") */
+function ownedName(w: { def: { id: string }; level: { branch: string | null } }): string {
+  return w.level.branch ? `${weaponName(w.def.id)} · ${branchName(w.def.id, w.level.branch)}` : weaponName(w.def.id);
+}
+
 function lvText(lv: number | "evo"): string {
   return lv === "evo" ? "진화" : `Lv${lv}`;
 }
@@ -157,9 +168,13 @@ function cardInfo(g: Game, c: Card): { title: string; body: string; tag: string 
     case "weaponUp": {
       const w = g.weapons.find((x) => x.def.id === c.id)!;
       const lv = w.level.lv as number;
-      const next = lv + 1 >= 4 ? (c.branch ? weaponLevel(w.def, lv + 1, c.branch) : null) : weaponLevel(w.def, lv + 1);
-      const body = next ? next.note : "갈래를 고른다: A 또는 B";
-      return { title: `${weaponName(c.id)} ${lvText(lv)} → ${lvText(lv + 1)}`, body, tag: "무기 강화" };
+      // Lv4부터는 갈래마다 효과가 다르다: 이미 고른 갈래가 있으면 그 갈래의 다음 효과, Lv3→4는 두 갈래를 모두 보여 준다
+      const branch = w.level.branch ?? c.branch ?? null;
+      const next = lv + 1 >= BRANCH_LEVEL ? (branch ? weaponLevel(w.def, lv + 1, branch) : null) : weaponLevel(w.def, lv + 1);
+      const body = next
+        ? next.note
+        : (["A", "B"] as const).map((b) => `갈래 ${b} · ${weaponLevel(w.def, BRANCH_LEVEL, b).note}`).join("\n");
+      return { title: `${ownedName(w)} ${lvText(lv)} → ${lvText(lv + 1)}`, body, tag: next ? "무기 강화" : "무기 강화 · 갈래 선택" };
     }
     case "newWeapon": {
       const def = WEAPONS[c.id]!;
@@ -178,7 +193,7 @@ function cardInfo(g: Game, c: Card): { title: string; body: string; tag: string 
     case "gold":
       return { title: "골드 주머니", body: `골드 +${SHOP.fillerGold}`, tag: "채움" };
     case "evolve":
-      return { title: `${weaponName(c.id)} 진화`, body: WEAPONS[c.id]!.levels.find((l) => l.lv === "evo")!.note, tag: "진화" };
+      return { title: `${ownedName(g.weapons.find((x) => x.def.id === c.id)!)} 진화`, body: WEAPONS[c.id]!.levels.find((l) => l.lv === "evo")!.note, tag: "진화" };
   }
 }
 
@@ -583,6 +598,39 @@ function renderMeta(characterId?: string): void {
     cols,
     row([button(`${chName}로 시작`, () => startRun(ch)), button("캐릭터 고르기", () => renderSelect(), "btn ghost"), button("처음으로", () => renderTitle(), "btn ghost")]),
   ]);
+}
+
+/** 생존형 스테이지 끝 카운트다운 (남은 5초부터 큰 숫자 5·4·3·2·1, 보스·엘리트형은 해당 없음) */
+const COUNTDOWN_FROM = 5;
+let lastCount = 0;
+function drawCountdown(game: Game, scale: number): void {
+  const st = game.stage;
+  const left = st ? st.duration - game.time : Infinity;
+  if (!st || (st.clear ?? "survive") !== "survive" || game.phase !== "play" || screen !== "play" || left <= 0 || left > COUNTDOWN_FROM) {
+    lastCount = 0;
+    return;
+  }
+  const n = Math.ceil(left);
+  // 그 숫자가 나온 지 얼마나 됐나 (0 → 1): 처음에 크게 떠서 작아진다
+  const p = 1 - (left - (n - 1));
+  if (n !== lastCount) {
+    lastCount = n;
+    sfx.tick(n === 1);
+  }
+  const k = 1 + 0.55 * (1 - p) * (1 - p);
+  // 가운데가 아니라 위쪽에: 플레이어와 첫 공격 예고를 가리지 않게
+  const cy = canvas.height * (canvas.height > canvas.width ? 0.2 : 0.24);
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.globalAlpha = 0.55 + 0.4 * (1 - p);
+  ctx.font = `${Math.round(120 * scale * k)}px Jua, "Gowun Dodum", sans-serif`;
+  ctx.lineWidth = 8 * scale;
+  ctx.strokeStyle = "rgba(8,17,14,0.75)";
+  ctx.strokeText(String(n), canvas.width / 2, cy);
+  ctx.fillStyle = n <= 2 ? "#ffcf5a" : "#fff3c4";
+  ctx.fillText(String(n), canvas.width / 2, cy);
+  ctx.restore();
 }
 
 function renderChoice(): void {
@@ -1074,7 +1122,7 @@ function renderHud(game: Game): void {
   } else if (st.clear === "elites") goal = `엘리트 ${game.stats.elitesKilled}/${st.elites?.length ?? 0}`;
   else goal = `${Math.floor(Math.max(0, st.duration - game.time) / 60)}:${String(Math.floor(Math.max(0, st.duration - game.time) % 60)).padStart(2, "0")}`;
   const boss = game.enemies.find((e) => e.rank === "boss");
-  const weaponTexts = game.weapons.map((w) => `${w.def.name} ${w.level.lv === "evo" ? "진화" : `Lv${w.level.lv}${w.level.branch ?? ""}`}`);
+  const weaponTexts = game.weapons.map((w) => `${ownedName(w)} ${w.level.lv === "evo" ? "진화" : `Lv${w.level.lv}`}`);
   const sig = `${boss ? "B" : ""}|${game.ball ? "ball" : ""}|${weaponTexts.join(",")}`;
   const hpText = `${Math.ceil(Math.max(0, p.hp))}/${p.maxHp}`;
   const lvFrac = (game.stats.xp - lvFrom) / Math.max(1, lvTo - lvFrom);
@@ -1321,6 +1369,7 @@ function frame(now: number): void {
       lines.forEach((l, i) => ctx.fillText(l, canvas.width / 2, cy + 38 * v.scale + i * lh));
       ctx.globalAlpha = 1;
     }
+    drawCountdown(g, v.scale);
     const h0 = performance.now();
     if (screen === "play") renderHud(g);
     tHud = performance.now() - h0;
@@ -1406,6 +1455,8 @@ interface PopDebug {
   xp: (n: number) => void;
   /** 점검용: 지금 자리에서 보스 상자를 연다 */
   chest: () => void;
+  /** 점검용: 스테이지 시계를 t초로 옮긴다 (카운트다운 확인용) */
+  seek: (t: number) => void;
   /** 점검용: 정비 상점을 연다 */
   shop: () => void;
   /** 점검용: 캐릭터로 새 판을 시작한다 */
@@ -1427,6 +1478,13 @@ const dbg: PopDebug = {
   },
   chest: () => {
     if (g) openChest(g, { x: g.player.x, y: g.player.y, kind: "boss" } as never);
+  },
+  seek: (t) => {
+    if (g) {
+      if (t < 0 && g.stage) t = g.stage.duration + t; // 음수면 끝에서부터 (seek(-5) = 남은 5초)
+      g.tick = Math.floor(t * RULES.tickHz);
+      g.time = g.tick / RULES.tickHz;
+    }
   },
   shop: () => {
     if (!g || !run) return;

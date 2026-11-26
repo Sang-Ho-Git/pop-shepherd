@@ -83,11 +83,13 @@ describe("회오리 (색 공 규칙, 11/24): 튕기지 않고 둔화, 여러 번
     expect(e.bladeHits ?? 0).toBe(0);
   });
 
-  it("기존 규칙에서는 예전처럼 튕긴다", () => {
+  it("기존 규칙(색 공 끔)에서도 튕기지 않고 둔화한다 (11/26: 두 규칙 공통)", () => {
     const w = makeWeapon(weapon("whirlwind"), 1);
     const g = createGame({ seed: 1, character: character("shepherd"), enemyDefs: ENEMIES, stage: null, weapons: [w] });
     const e = put(g, "red", g.player.x + 80, g.player.y + 10);
     run(g, 3);
-    expect(e.state).toBe("launched");
+    expect(e.state).toBe("walk");
+    expect(e.slowT).toBeGreaterThan(1);
+    expect(e.bladeHits).toBe(1);
   });
 });

@@ -114,6 +114,10 @@ export const sfx = {
   levelUp(): void {
     [0, 2, 4].forEach((s, i) => tone(comboPitch(s + 5), 0.18, "triangle", 0.25, undefined, i * 0.07));
   },
+  /** 스테이지 끝 카운트다운: 짧은 틱 (마지막 1초는 한 음 높게) */
+  tick(last = false): void {
+    tone(last ? 880 : 660, 0.08, "sine", 0.22);
+  },
   /** 보스 공격 예고: 낮게 두 번 */
   warn(): void {
     tone(220, 0.12, "square", 0.12, 200);

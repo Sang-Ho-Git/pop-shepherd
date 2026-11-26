@@ -461,11 +461,12 @@ export const BLADE_REHIT = 0.5;
  * orbit (회오리): 칼날 blades개가 플레이어 둘레 radius를 돈다. 쿨다운 = 한 바퀴 시간.
  * 기존 규칙: 칼날에 닿은 적을 진행 방향(접선)으로 튕긴다. 갈래 B 강풍은 바깥 방향.
  *   진화 사이클론: 반경 2배, 둘레 바깥의 적을 칼날 쪽으로 빨아들인다.
+ * 11/26: 색 공 규칙 여부와 상관없이 튕기지 않는다 (예전 규칙에서도 회오리가 둔화·삭제 대신 몸을 날려 버린다는 피드백). 이 함수의 튕기기는 RULES.ball.orbit.legacy 비교용.
  * 색 공 규칙: 튕기지 않는다 (11/24 피드백: 튕긴 적이 같은 색 무리를 흩뜨려 공을 쏘기 어려웠다). tickOrbitBall 참고.
  * 한 바퀴를 발사 1회로 센다 (타격 수 = 한 바퀴에 친 적 수).
  */
 function tickOrbit(g: Game, w: WeaponInstance, buf: number[]): void {
-  if (g.ballMode && !RULES.ball.orbit.legacy) return tickOrbitBall(g, w, buf);
+  if (!RULES.ball.orbit.legacy) return tickOrbitBall(g, w, buf);
   const p = g.player;
   const lv = w.level;
   const period = Math.max(0.3, cooldownOf(g, lv));

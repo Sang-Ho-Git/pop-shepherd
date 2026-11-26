@@ -184,27 +184,28 @@ describe("무기 동작 모듈 (M1 3종)", () => {
     expect(w.fires).toBe(0);
   });
 
-  it("회오리(orbit): 칼날이 둘레를 돌며 닿은 적을 접선 방향으로 튕기고, 한 바퀴를 발사 1회로 센다", () => {
+  it("회오리(orbit): 칼날이 둘레를 돌며 닿은 적을 둔화시키고, 한 바퀴를 발사 1회로 센다 (11/26: 튕기지 않음)", () => {
     const w = makeWeapon(weapon("whirlwind"), 1);
     const g = emptyGame({ weapons: [w] });
     const { x, y } = g.player;
     // 칼날은 각도 0(오른쪽)에서 출발해 아래쪽(+y)으로 돈다
     const e = put(g, "red", x + 80, y + 10);
     run(g, 3);
-    expect(e.state).toBe("launched");
-    expect(e.vy).toBeGreaterThan(0);
+    expect(e.state).toBe("walk");
+    expect(e.slowT).toBeGreaterThan(0);
     // 한 바퀴 = 쿨다운
     run(g, Math.ceil(w.level.cooldown * 60) - 3);
     expect(w.fires).toBe(1);
-    expect(w.hits).toBe(1);
+    expect(w.hits).toBeGreaterThanOrEqual(1); // 둔화는 같은 적을 0.8초 뒤 다시 칠 수 있다
   });
 
-  it("회오리 4B 강풍: 바깥 방향으로 튕긴다", () => {
+  it("회오리 4B 강풍: 바깥으로 살짝 민다 (튕기지 않음)", () => {
     const w = makeWeapon(weapon("whirlwind"), 4, "B");
     const g = emptyGame({ weapons: [w] });
     const e = put(g, "red", g.player.x + 95, g.player.y + 5);
     run(g, 3);
-    expect(e.vx).toBeGreaterThan(Math.abs(e.vy));
+    expect(e.state).toBe("walk");
+    expect(e.x).toBeGreaterThan(g.player.x + 95);
   });
 
   it("반사벽(wall): 앞에 적 무리가 있으면 무리 뒤에 벽을 세우고, 날아온 적을 되튕겨 쿠션으로 센다", () => {

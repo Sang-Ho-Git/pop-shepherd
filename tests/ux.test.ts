@@ -98,3 +98,31 @@ describe("테스트용 세이브 조작 (11/26)", () => {
     expect(profileOf(s, "olly")[dep.id] ?? 0).toBe(0);
   });
 });
+
+describe("갈래 선택이 건너뛰어지지 않는다 (11/26 재현)", () => {
+  it("보스 상자(3픽)가 Lv3 무기만 있어도 갈래는 사람이 고른다 (자동 선택이 불리면 실패)", () => {
+    const g = createGame({ seed: 3, character: character("shepherd"), enemyDefs: ENEMIES, stage: null, manualChoices: true, weapons: [makeWeapon(weapon("kick"), 3)] });
+    g.player.passives = {};
+    g.chooseBranch = () => {
+      throw new Error("갈래가 자동으로 정해짐");
+    };
+    openChest(g, { kind: "boss", x: 0, y: 0, t: 0 } as never);
+    let asked = 0;
+    for (let guard = 0; guard < 10 && g.choices.length > 0; guard++) {
+      const c = g.choices[0]!.cards[0]!;
+      if (needsBranch(g, c)) {
+        asked++;
+        resolveChoice(g, 0, "A");
+      } else resolveChoice(g, 0);
+    }
+    expect(asked).toBe(1);
+    expect(g.weapons[0]!.level.branch).toBe("A");
+    expect(g.weapons[0]!.level.lv).toBeGreaterThanOrEqual(5);
+  });
+
+  it("두 번째 무기도 Lv3 → Lv4에서 갈래를 묻는다 (첫 무기는 이미 갈래를 골랐어도)", () => {
+    const g = createGame({ seed: 1, character: character("shepherd"), enemyDefs: ENEMIES, stage: null, manualChoices: true, weapons: [makeWeapon(weapon("kick"), 4, "B"), makeWeapon(weapon("lasso"), 3)] });
+    expect(needsBranch(g, { kind: "weaponUp", id: "lasso" })).toBe(true);
+    expect(needsBranch(g, { kind: "weaponUp", id: "kick" })).toBe(false);
+  });
+});
