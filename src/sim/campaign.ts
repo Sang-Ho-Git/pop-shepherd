@@ -71,6 +71,8 @@ export interface StageResult {
   /** 엘리트·보스가 팝으로 입은 피해, 그런 팝 수 */
   specialDamage: number;
   specialHits: number;
+  /** 보스가 입은 피해의 출처 (약점 직격·곁의 팝·그로기 중) */
+  bossDmg: { weak: number; pop: number; groggy: number };
   /** 떨어진 골드 중 주운 비율 */
   goldPickRate: number;
   /** 처치형 스테이지가 시간 제한에 걸렸는지 */
@@ -229,6 +231,7 @@ export function runCampaign(seed: number, characterId: string, stages: string[] 
       })(),
       specialDamage: s.specialDamage,
       specialHits: s.specialHits,
+      bossDmg: { weak: s.bossDmgWeak, pop: s.bossDmgPop, groggy: s.bossDmgGroggy },
       goldPickRate: s.goldDropped > 0 ? s.goldPicked / s.goldDropped : 1,
       timedOut: !g.player.dead && g.phase !== "cleared",
     });

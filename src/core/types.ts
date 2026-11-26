@@ -517,6 +517,10 @@ export interface Stats {
   /** 엘리트·보스가 팝으로 입은 피해 합계, 그런 팝의 수 */
   specialDamage: number;
   specialHits: number;
+  /** 보스가 입은 피해의 출처 (11/26): 약점 색 공 직격, 곁의 팝, 그로기 중(직격·팝 모두) */
+  bossDmgWeak: number;
+  bossDmgPop: number;
+  bossDmgGroggy: number;
   goldDropped: number;
   goldPicked: number;
   milkDrops: number;

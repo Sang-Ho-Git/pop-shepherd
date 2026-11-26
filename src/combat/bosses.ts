@@ -381,6 +381,10 @@ export function weakBallHit(g: Game, e: Enemy, color: MatchColor, cushions: numb
   const dmg = e.maxHp * frac * (1 + Math.min(3, cushions) * RULES.boss.weakCushionBonus) * (groggy ? RULES.boss.groggyMul : 1);
   e.hp -= dmg;
   g.stats.specialDamage += dmg;
+  if (e.rank === "boss") {
+    if (groggy) g.stats.bossDmgGroggy += dmg;
+    else g.stats.bossDmgWeak += dmg;
+  }
   g.stats.weakHits++;
   g.events.push({ type: "weak-hit", id: e.id, damage: dmg, cushions, x, y });
   if (!groggy) shiftColor(g, e);

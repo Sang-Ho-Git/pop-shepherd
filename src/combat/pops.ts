@@ -145,10 +145,15 @@ export function hitSpecials(g: Game, cx: number, cy: number, radius: number, n: 
       const cos = pl > 1e-9 ? (dx * px + dy * py) / (d * pl) : -1;
       if (cos >= Math.cos((prm.frontHalfDeg * Math.PI) / 180)) dmg *= prm.frontMul ?? 1;
     }
+    const groggyNow = (e.boss?.groggy ?? 0) > 0;
     dmg *= specialDamageMul(e);
     if (dmg <= 0) continue;
     e.hp -= dmg;
     g.stats.specialDamage += dmg;
+    if (e.rank === "boss") {
+      if (groggyNow) g.stats.bossDmgGroggy += dmg;
+      else g.stats.bossDmgPop += dmg;
+    }
     g.stats.specialHits++;
     g.events.push({ type: "special-hit", id: e.id, damage: dmg, hp: e.hp });
     if (e.hp <= 0) killSpecial(g, e);

@@ -16,7 +16,15 @@ if (process.argv[2] === "--sum") {
   const boss: Record<number, number[]> = {};
   const bossDmg: Record<number, number[]> = {};
   const elite: number[] = [];
+  const src: Record<number, { weak: number; pop: number; groggy: number; n: number }> = {};
   for (const r of rows) {
+    for (const [k, d] of Object.entries((r.bossDmg ?? {}) as Record<string, { weak: number; pop: number; groggy: number }>)) {
+      const a = (src[Number(k)] ??= { weak: 0, pop: 0, groggy: 0, n: 0 });
+      a.weak += d.weak;
+      a.pop += d.pop;
+      a.groggy += d.groggy;
+      a.n++;
+    }
     if (r.won) won++;
     else dead[r.dead] = (dead[r.dead] ?? 0) + 1;
     for (const [k, t] of Object.entries(r.boss as Record<string, number>)) (boss[Number(k)] ??= []).push(t);
@@ -31,6 +39,11 @@ if (process.argv[2] === "--sum") {
     console.log(`스테이지 ${k}: 사망 ${d} (전체 사망의 ${((100 * d) / Math.max(1, nDead)).toFixed(0)}%)`);
     const t = boss[k] ?? [];
     if (t.length) console.log(`  보스전 시간 ${t.length}회: 중앙 ${q(t, 0.5).toFixed(0)}초, 25% ${q(t, 0.25).toFixed(0)}, 75% ${q(t, 0.75).toFixed(0)}, 최대 ${q(t, 1).toFixed(0)}`);
+    const sc = src[k];
+    if (sc) {
+      const tot = sc.weak + sc.pop + sc.groggy || 1;
+      console.log(`  보스 피해 출처 (${sc.n}회): 약점 직격 ${((100 * sc.weak) / tot).toFixed(0)}% · 곁의 팝 ${((100 * sc.pop) / tot).toFixed(0)}% · 그로기 중 ${((100 * sc.groggy) / tot).toFixed(0)}%`);
+    }
     const h = bossDmg[k] ?? [];
     if (h.length) console.log(`  보스전 받은 피해 중 보스 몫 평균 ${((100 * h.reduce((a, b) => a + b, 0)) / h.length).toFixed(0)}%`);
   }
@@ -52,7 +65,11 @@ for (const ch of chars) {
       if (x.bossTime !== null) boss[i + 1] = Math.round(x.bossTime * 10) / 10;
       if (x.bossTime !== null || x.bossHpLeft !== null) bossHit[i + 1] = x.damageTaken > 0 ? Math.round((100 * x.damageFromSpecial) / x.damageTaken) / 100 : 0;
     });
+    const bossDmg: Record<number, { weak: number; pop: number; groggy: number }> = {};
+    r.stages.forEach((x, i) => {
+      if (x.bossTime !== null || x.bossHpLeft !== null) bossDmg[i + 1] = { weak: Math.round(x.bossDmg.weak), pop: Math.round(x.bossDmg.pop), groggy: Math.round(x.bossDmg.groggy) };
+    });
     const elite = r.stages.flatMap((x) => (x as { eliteTimes?: number[] }).eliteTimes ?? []);
-    console.log(JSON.stringify({ ch, seed: s, won: r.won, dead: r.won ? 0 : r.stages.length, boss, bossHit, elite }));
+    console.log(JSON.stringify({ ch, seed: s, won: r.won, dead: r.won ? 0 : r.stages.length, boss, bossHit, bossDmg, elite }));
   }
 }
