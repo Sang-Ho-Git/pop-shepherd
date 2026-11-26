@@ -10,8 +10,8 @@
   ],
   "grayRatio": 0.09,
   "maxAlive": 180,
-  "enemyHpMul": 1.52,
-  "contactMul": 2.42,
+  "enemyHpMul": 1.34,
+  "contactMul": 2.18,
   "spawn": [
     {
       "from": 0.0,
