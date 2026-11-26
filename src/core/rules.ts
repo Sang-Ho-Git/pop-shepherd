@@ -111,7 +111,7 @@ export const RULES = {
    * 확률 × (1 + heal_find). 주우면 최대 체력의 healFrac 회복, lifetime초 뒤 사라짐.
    */
   /** lateFrom 스테이지부터 드롭 확률 ×lateDropMul, 회복량 ×lateHealMul (11/26: 후반이 너무 쉬워짐) */
-  heal: { minChainDepth: 1, dropChance: 0.15, healFrac: 0.08, lifetime: 20, pickupRange: 40, lateFrom: 8, lateDropMul: 0.6, lateHealMul: 0.7 },
+  heal: { minChainDepth: 1, dropChance: 0.15, healFrac: 0.08, lifetime: 20, pickupRange: 40, lateFrom: 10, lateDropMul: 0.6, lateHealMul: 0.7 },
 
   /**
    * 스테이지 클리어 (생존형): duration이 끝나면 wrapUpSeconds 동안 소환이 멈춘 "마무리 시간".
