@@ -44,7 +44,7 @@ export function candidates(g: Game): Record<"weaponUp" | "newWeapon" | "passiveU
       // Lv3 → Lv4 카드는 한 장이고, 고르는 순간 갈래 선택 창이 뜬다 (기획: 두 장이면 3칸 중 2칸을 차지한다)
       ups.push({ kind: "weaponUp", id: w.def.id });
     }
-    // 진화는 레벨업 카드가 아니라 정비 상점의 진화 상자로 받는다 (기획서)
+    // 진화는 레벨업 카드가 아니라 엘리트·보스의 보물 상자로 받는다 (기획서의 '정비 상점 진화 상자'에서 바뀜, progression/chest.ts)
   }
   return {
     weaponUp: ups,

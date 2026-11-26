@@ -22,7 +22,7 @@ export interface ShopState {
   items: ShopItem[];
   /** 이 상점에서 남은 무료 새로고침 */
   freeRerolls: number;
-  /** 열 때 받은 진화 상자 */
+  /** 예전 진화 상자 자리 (지금은 늘 빈 목록) */
   evolved: string[];
 }
 
@@ -65,7 +65,7 @@ export function rollItems(g: Game, slots: number): ShopItem[] {
   return cards.map((card) => ({ card, kind: kindOf(card), price: priceOf(g, kindOf(card)), sold: false }));
 }
 
-/** 상점을 연다: 진화 상자를 먼저 열고 품목을 뽑는다 */
+/** 상점을 연다: 품목을 뽑는다 (진화는 상자에서 받으므로 evolved는 늘 비어 있다) */
 export function openShop(g: Game, opts: ShopOptions = {}): ShopState {
   return { items: rollItems(g, SHOP.slots + (opts.extraSlots ?? 0)), freeRerolls: opts.freeRerolls ?? 0, evolved: [] };
 }
