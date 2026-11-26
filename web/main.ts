@@ -11,6 +11,7 @@ import { acknowledgeRefund, browserStore, loadSave, profileOf, recordRun, spendO
 import type { SaveData } from "../src/progression/save.ts";
 import { conditionProgress, isCharacterUnlocked, newlyUnlocked, statValue, UNLOCKS } from "../src/progression/unlocks.ts";
 import type { UnlockCondition } from "../src/progression/unlocks.ts";
+import { openChest } from "../src/progression/chest.ts";
 import { buy, openShop, reroll } from "../src/progression/shop.ts";
 import type { ShopState } from "../src/progression/shop.ts";
 import { carryOf, startStage } from "../src/sim/campaign.ts";
@@ -464,6 +465,8 @@ function renderShop(): void {
     st.items.map((it, i) => {
       const info = it.card.kind === "heal" ? { title: "체력 회복", body: `최대 체력의 ${Math.round(SHOP.healFrac * 100)}%`, tag: "회복" } : cardInfo(g!, it.card);
       const b = button("", () => {
+        // Lv3 → Lv4 무기 강화는 갈래 선택 창을 거쳐 산다 (자동으로 정하지 않는다)
+        if (needsBranch(g!, it.card)) return renderShopBranch(st, i);
         buy(g!, st, i);
         renderShop();
       }, "card");
@@ -611,24 +614,39 @@ function renderChoice(): void {
   show([el("p", "eyebrow", ch.kind === "chest" ? "보물 상자" : `레벨 ${ch.level}${more > 0 ? ` · 레벨업 ${more}번 더` : ""}`), el("h2", "", ch.kind === "chest" ? "상자에서 하나" : "하나를 고른다"), cards]);
 }
 
+/** 상점에서 Lv4가 되는 무기를 살 때의 갈래 선택 */
+function renderShopBranch(st: ShopState, i: number): void {
+  const c = st.items[i]!.card;
+  branchScreen(c, (b) => {
+    st.items[i]!.card = { ...c, branch: b } as Card;
+    buy(g!, st, i);
+    renderShop();
+  }, () => renderShop());
+}
+
 function renderBranch(i: number): void {
   if (!g) return;
   const c = g.choices[0]!.cards[i]!;
+  branchScreen(c, (b) => {
+    resolveChoice(g!, i, b);
+    choiceShown = false;
+    hideOverlay();
+  });
+}
+
+function branchScreen(c: Card, onPick: (b: "A" | "B") => void, onBack?: () => void): void {
+  if (!g) return;
   if (c.kind !== "weaponUp") return;
   const w = g.weapons.find((x) => x.def.id === c.id)!;
   const opts = (["A", "B"] as const).map((b, k) => {
     const lv4 = weaponLevel(w.def, 4, b);
     const lv7 = weaponLevel(w.def, MAX_LEVEL, b);
-    const btn = button("", () => {
-      resolveChoice(g!, i, b);
-      choiceShown = false;
-      hideOverlay();
-    }, "card");
+    const btn = button("", () => onPick(b), "card");
     btn.dataset.key = String(k + 1);
     btn.append(el("span", "tag", `${k + 1} · 갈래 ${b}`), el("strong", "", lv4.note.split(":")[0] ?? b), el("span", "", lv4.note), el("span", "small", `Lv7 ${lv7.note}`));
     return btn;
   });
-  show([el("p", "eyebrow", `${weaponName(w.def.id)} Lv4`), el("h2", "", "갈래를 고른다"), row(opts, "cards"), el("p", "small", "진화해도 고른 갈래의 Lv7 효과는 남는다.")]);
+  show([el("p", "eyebrow", `${weaponName(w.def.id)} Lv4`), el("h2", "", "갈래를 고른다"), row(opts, "cards"), el("p", "small", "진화해도 고른 갈래의 Lv7 효과는 남는다."), ...(onBack ? [row([button("취소", onBack, "btn ghost")])] : [])]);
 }
 
 function renderPause(): void {
@@ -797,6 +815,11 @@ function handleEvents(game: Game): void {
           const sp = 120 + Math.random() * 260;
           fx.push({ kind: "spark", x: e.x, y: e.y, t: 0, life: 0.5 + Math.random() * 0.3, color, radius: 3 + Math.random() * 3, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp });
         }
+        // 무기가 날려서 터진 팝은 어떤 무기인지 알린다 (공·폭탄·원인 없음 제외)
+        if (e.by && e.by !== "ball" && e.by !== "bomb" && e.by !== "none") {
+          fx.push({ kind: "ring", x: e.x, y: e.y, t: 0, life: 0.6, color: "#ffffff", radius: 40 + e.size * 8 });
+          fx.push({ kind: "text", x: e.x, y: e.y + 26, t: 0, life: 1.2, color: "#fff3c4", text: `${weaponName(e.by)}으로 터짐` });
+        }
         shake = Math.min(14, shake + 3 + e.size * 1.5 + e.chainDepth * 2);
         sfx.pop(e.size, e.chainDepth);
         if (e.chainDepth >= 1 || e.size >= 5) hitStop = Math.max(hitStop, Math.min(0.09, 0.04 + e.chainDepth * 0.015 + Math.max(0, e.size - 4) * 0.01));
@@ -824,11 +847,16 @@ function handleEvents(game: Game): void {
           kick: { color: "#f4efe1", w: 6 },
           paint_gun: { color: "#ff8fd8", w: 3 },
         };
+        if (e.hits > 0 && e.weapon !== "shockwave") fx.push({ kind: "text", x: p.x, y: p.y + 48, t: 0, life: 0.5, color: "#d9e4ea", text: weaponName(e.weapon) });
         const st = look[e.weapon];
         if (st) {
           for (const id of e.ids) {
             const t = game.enemies.find((x) => x.id === id);
-            if (t) fx.push({ kind: "line", x: p.x, y: p.y, x2: t.x, y2: t.y, t: 0, life: e.weapon === "lasso" ? 0.35 : 0.18, color: st.color, radius: st.w });
+            if (t) {
+              fx.push({ kind: "line", x: p.x, y: p.y, x2: t.x, y2: t.y, t: 0, life: e.weapon === "lasso" ? 0.35 : 0.18, color: st.color, radius: st.w });
+              // 맞은 자리에 임팩트 고리 (무기가 적을 날렸다는 표시)
+              fx.push({ kind: "ring", x: t.x, y: t.y, t: 0, life: 0.3, color: st.color, radius: t.radius + 16 });
+            }
           }
         }
         if (e.weapon === "shockwave") {
@@ -1373,6 +1401,14 @@ interface PopDebug {
   give: (id: string, lv: number | "evo", branch?: string | null) => void;
   /** 점검용: 플레이어 무기 범위(area) 배율을 바꾼다 (범위 상한 확인용) */
   setArea: (a: number) => void;
+  /** 점검용: 경험치를 더해 레벨업 창을 띄운다 */
+  xp: (n: number) => void;
+  /** 점검용: 지금 자리에서 보스 상자를 연다 */
+  chest: () => void;
+  /** 점검용: 정비 상점을 연다 */
+  shop: () => void;
+  /** 점검용: 캐릭터로 새 판을 시작한다 */
+  start: (character: string) => void;
 }
 const dbg: PopDebug = {
   screen: "", stage: 0, time: 0, hp: 0, maxHp: 0, level: 0, enemies: 0, balls: 0, fps: 0, result: null, runs: 0, log: [], hazards: 0, boss: "", player: null, renderScale: 0, wallT: -1, phase: "",
@@ -1385,6 +1421,20 @@ const dbg: PopDebug = {
   setArea: (a) => {
     if (g) g.player.stats.area = a;
   },
+  xp: (n) => {
+    if (g) g.stats.xp += n;
+  },
+  chest: () => {
+    if (g) openChest(g, { x: g.player.x, y: g.player.y, kind: "boss" } as never);
+  },
+  shop: () => {
+    if (!g || !run) return;
+    g.player.gold = 99999;
+    shop = openShop(g, { extraSlots: run.meta.specials.shopSlots, freeRerolls: run.meta.specials.freeRerolls });
+    screen = "shop";
+    renderShop();
+  },
+  start: (character) => startRun(character),
 };
 (globalThis as { __pop?: PopDebug }).__pop = dbg;
 Object.assign(dbg, { perf, perfReset });

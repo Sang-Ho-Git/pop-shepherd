@@ -93,6 +93,8 @@ export function resolveImpacts(g: Game): void {
     } else if (speedOf(b) >= end) {
       b.state = "launched";
       b.stunT = 0;
+      // 이전 발사의 원인이 남아 있으면 무기가 날린 적이 공 팝으로 오인되어 저절로 터진다. 무기 원인만 물려받는다 (공 원인은 예전처럼 비운다).
+      b.cause = a.cause === "ball" ? null : a.cause;
       b.chainDepth = a.chainDepth;
       b.chainT = a.chainT;
       b.wallBounces = 0;

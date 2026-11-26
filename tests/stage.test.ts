@@ -43,7 +43,7 @@ describe("스테이지 클리어 (생존형, 11/24부터 마무리 시간 없음
   it("클리어할 때 바닥에 남은 우유병도 마신다", () => {
     const g = gameOn(shortStage(1));
     g.player.hp = g.player.maxHp * 0.5;
-    g.milks.push({ x: 50, y: 50, t: 99 });
+    g.milks.push({ x: g.player.x + 10, y: g.player.y, t: 99 }); // 11/26: 줍는 거리 안의 것만 마신다
     run(g, RULES.tickHz + 2);
     expect(g.phase).toBe("cleared");
     expect(g.milks).toHaveLength(0);

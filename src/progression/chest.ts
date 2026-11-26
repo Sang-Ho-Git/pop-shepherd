@@ -1,6 +1,6 @@
 import { RULES } from "../core/rules.ts";
 import type { Card, Chest, Game } from "../core/types.ts";
-import { applyCard, botChooseCard, canEvolve, candidates, cardLabel } from "./levelup.ts";
+import { applyCard, botChooseCard, canEvolve, candidates, cardLabel, needsBranch } from "./levelup.ts";
 
 /**
  * 보물 상자 (엘리트·보스 드롭).
@@ -37,7 +37,9 @@ export function openChest(g: Game, chest: Chest): { evolved: string[]; picked: s
     // 11/25: 화면 모드에서도 상자는 창을 띄우지 않고 바로 연다 (3장 중 봇 점수가 가장 높은 것).
     // 보스 상자 3픽 + 보스 경험치 레벨업이 한꺼번에 창을 연달아 띄웠다 (실플레이 피드백). 보상은 화면에 목록으로 보여 준다.
     const card = cards[(g.chooseCard ?? botChooseCard)(cards, g)] ?? (cards[0] as Card);
-    applyCard(g, card);
+    // 화면 모드에서 Lv3→Lv4 무기 강화가 뽑혔으면 갈래를 자동으로 정하지 않고, 갈래 선택 창을 띄운다
+    if (g.manualChoices && needsBranch(g, card)) g.choices.push({ kind: "chest", cards: [card] });
+    else applyCard(g, card);
     picked.push(cardLabel(card));
   }
   g.stats.chestsOpened++;
