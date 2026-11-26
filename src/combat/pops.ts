@@ -87,7 +87,7 @@ export function popCluster(g: Game, indices: number[], trigger: Enemy, color: Ma
   dropGold(g, cx, cy, n * SHOP.goldPerPop * (1 + g.player.stats.gold_find) * bonus, n);
   recordPop(g, n, depth);
   g.stats.popsBy[by] = (g.stats.popsBy[by] ?? 0) + n;
-  g.events.push({ type: "pop", ids, size: n, color, chainDepth: depth, xp, cushion, cushions, x: cx, y: cy });
+  g.events.push({ type: "pop", ids, size: n, color, chainDepth: depth, xp, cushion, cushions, x: cx, y: cy, by });
 
   const radius = popShockRadius(n) * g.player.stats.chain_radius * (master ? 1 + RULES.threeCushion.shockBonus : 1) * popShockMul(g);
   // 엘리트·보스는 곁의 팝에 피해를 입는다 (충격파가 없는 압축 팝도 같은 반경으로 친다)
@@ -229,7 +229,7 @@ export function detonateBomb(g: Game, color: MatchColor, x = g.player.x, y = g.p
   recordPop(g, count, 0);
   g.stats.bombPops++;
   g.stats.popsBy.bomb = (g.stats.popsBy.bomb ?? 0) + count;
-  g.events.push({ type: "pop", ids, size: count, color: color as Color, chainDepth: 0, xp, cushion: false, cushions: 0, x: cx / count, y: cy / count });
+  g.events.push({ type: "pop", ids, size: count, color: color as Color, chainDepth: 0, xp, cushion: false, cushions: 0, x: cx / count, y: cy / count, by: "bomb" });
   return count;
 }
 

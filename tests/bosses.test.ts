@@ -270,10 +270,13 @@ describe("처치형 스테이지", () => {
     run(g, 12 * RULES.tickHz);
     expect(g.phase).toBe("play");
     boss.hp = 1;
+    // 11/26: 클리어 때 자동 수거는 줍는 거리 ×1.1 안만 — 보스 곁에 서 있어야 상자를 챙긴다
+    g.player.x = boss.x;
+    g.player.y = boss.y;
     popRedsAt(g, boss.x, boss.y - 80);
     run(g, 10);
     expect(g.stats.bossKilled).toBe(1);
-    // 11/24: 마무리 시간 없이 바로 클리어. 남은 상자와 골드는 자동으로 줍는다
+    // 11/24: 마무리 시간 없이 바로 클리어. 가까이 남은 상자와 골드는 자동으로 줍는다
     expect(g.phase).toBe("cleared");
     expect(g.stats.chestsOpened).toBe(1);
     expect(g.golds).toHaveLength(0);

@@ -207,8 +207,9 @@ export const RULES = {
    * wrapUpSeconds: 예전 "마무리 시간" (소환이 멈추고 팝 경험치 +wrapUpXpBonus). 11/24에 0으로 없앰 —
    *   시간제한 스테이지에서 10초 추가는 플레이 시간만 늘린다는 피드백. 마무리 경험치(스테이지 경험치의 약 8%)는
    *   clearXpRatio로 대신 준다: 클리어 때 남은 일반 적 경험치 × clearXpRatio (1 = 남은 적을 맞혀 터뜨린 기본값만큼, 마무리 경험치의 약 60%).
+   *   clearPickupMul: 클리어 때 바닥 골드·상자·우유병은 줍는 거리의 이 배수 안에 있는 것만 챙긴다 (11/26 피드백).
    */
-  stage: { wrapUpSeconds: 0, wrapUpXpBonus: 0.5, clearXpRatio: 1, betweenHeal: 0 },
+  stage: { wrapUpSeconds: 0, wrapUpXpBonus: 0.5, clearXpRatio: 1, clearPickupMul: 1.1, betweenHeal: 0 },
 
   /**
    * 2.1 런 안 성장. 레벨 L에서 L+1까지 필요한 경험치 = base + growth × (L - 1).

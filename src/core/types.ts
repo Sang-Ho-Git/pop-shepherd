@@ -417,7 +417,7 @@ export interface Bomb {
 }
 
 export type GameEvent =
-  | { type: "pop"; ids: number[]; size: number; color: Color; chainDepth: number; xp: number; cushion: boolean; cushions: number; x: number; y: number }
+  | { type: "pop"; ids: number[]; size: number; color: Color; chainDepth: number; xp: number; cushion: boolean; cushions: number; x: number; y: number; by?: string }
   | { type: "kill"; id: number; xp: number }
   | { type: "bounce"; a: number; b: number }
   | { type: "stick"; a: number; b: number }

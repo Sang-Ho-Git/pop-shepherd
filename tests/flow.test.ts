@@ -58,7 +58,8 @@ describe("보물 상자 (11/25)", () => {
     const g = game(true);
     const before = g.weapons[0]!.level.lv;
     const out = openChest(g, { x: 0, y: 0, kind: "boss" });
-    expect(g.choices).toHaveLength(0);
+    // 킥 Lv1에서 3번 올리면 마지막은 Lv3→Lv4 갈래 선택이라 창이 하나 남는다 (11/26: 갈래는 자동으로 정하지 않는다)
+    expect(g.choices.length).toBeLessThanOrEqual(1);
     expect(out.picked).toHaveLength(RULES.drops.chestPicksBoss);
     expect(g.weapons[0]!.level.lv).not.toBe(before);
     expect(g.events.some((e) => e.type === "chest-open")).toBe(true);
