@@ -54,19 +54,26 @@ export function resolveImpacts(g: Game): void {
     const res = a.rank !== "normal" || b.rank !== "normal" || a.wetT > 0 || b.wetT > 0 ? ({ kind: "bounce" } as const) : resolveMatchColor(a.color, b.color);
     // 색 공 규칙: 내 공이 일으킨 발사(공 팝의 연쇄 포함)만 터뜨린다. 무기·범퍼가 날린 적은 붙기만 한다.
     const canPop = !g.ballMode || a.cause === "ball";
-    if (res.kind === "match" && canPop) {
+    // 무리 크기: 화면 표시(연쇄 "2/3")에도 쓴다. findCluster는 읽기만 한다
+    let matchSize = 0;
+    if (res.kind === "match") {
       const cluster = findCluster(g, best, i, res.color);
-      if (cluster.length >= RULES.match.minSize) {
+      matchSize = cluster.length;
+      if (canPop && cluster.length >= RULES.match.minSize) {
         popCluster(g, cluster, a, res.color);
         continue;
       }
     }
+    const chainA = a.chainT > 0;
     if (res.kind === "match" || res.kind === "stick") {
       // 같은 색인데 무리가 모자람: A가 멈춰 B 옆에 붙는다. 다음 같은 색 발사를 기다리는 "짝" 상태.
+      const ax = a.x;
+      const ay = a.y;
       a.vx = 0;
       a.vy = 0;
       land(a);
       g.events.push({ type: "stick", a: a.id, b: b.id });
+      if (res.kind === "match" && matchSize < RULES.match.minSize) g.events.push({ type: "chain-miss", id: a.id, x: ax, y: ay, size: matchSize, need: RULES.match.minSize, color: res.color, chain: chainA });
       continue;
     }
 
@@ -110,5 +117,6 @@ export function resolveImpacts(g: Game): void {
     }
     if (speedOf(a) < end) stun(a);
     g.events.push({ type: "bounce", a: a.id, b: b.id });
+    if (chainA) g.events.push({ type: "chain-bounce", id: a.id, x: a.x, y: a.y });
   }
 }

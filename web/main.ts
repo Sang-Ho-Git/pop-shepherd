@@ -1,4 +1,6 @@
-import { step } from "../src/core/game.ts";
+import { rebuildGrid, step } from "../src/core/game.ts";
+import { spawnEnemy } from "../src/combat/spawner.ts";
+import { launch } from "../src/world/physics.ts";
 import { RULES } from "../src/core/rules.ts";
 import type { Card, Game, Input } from "../src/core/types.ts";
 import { CAMPAIGN, CHARACTERS, META, PASSIVES, SHOP, stage, WEAPONS } from "../src/data/index.ts";
@@ -204,6 +206,8 @@ interface Run {
 let run: Run | null = null;
 let g: Game | null = null;
 let paused = false;
+/** 점검용(__pop.chainScene): 시뮬을 멈추고 __pop.tick으로만 한 틱씩 진행한다 */
+let freeze = false;
 let fx: Fx[] = [];
 let banner: { text: string; sub: string; t: number } | null = null;
 /** 클리어 뒤 상점으로 넘어가기 전 잠깐 (s): 마무리 시간이 없어져 0:00에서 곧바로 상점이 덮이던 것을 클리어 배너·흩어지는 연출로 받친다 */
@@ -218,6 +222,8 @@ let choiceHold = 0;
 let bossDown = "";
 let hitFlash = 0;
 let shake = 0;
+/** 마지막 팝 자리와 시각 (연쇄 선: 앞 팝에서 새 팝으로 잇는다) */
+let lastPop: { x: number; y: number; t: number } | null = null;
 /** 히트스톱: 큰 팝·연쇄 때 아주 잠깐 시뮬을 멈춘다 (화면은 계속 그린다) */
 let hitStop = 0;
 let aimCache: Aim | null = null;
@@ -274,6 +280,7 @@ function beginStage(): void {
   const id = CAMPAIGN[run.stageIndex] as string;
   g = startStage(run.seed + run.stageIndex * 7919, run.character, id, run.carry, run.meta, true, ballMode);
   fx = [];
+  lastPop = null;
   paused = false;
   choiceShown = false;
   screen = "play";
@@ -810,6 +817,7 @@ function handleEvents(game: Game): void {
     switch (e.type) {
       case "pop": {
         const color = PALETTE[e.color === "rainbow" ? "yellow" : e.color];
+        const prevPop = lastPop;
         fx.push({ kind: "ring", x: e.x, y: e.y, t: 0, life: 0.45, color, radius: 60 + e.size * 12 });
         for (let k = 0; k < Math.min(24, e.size * 5); k++) {
           const a = Math.random() * Math.PI * 2;
@@ -822,9 +830,15 @@ function handleEvents(game: Game): void {
           fx.push({ kind: "text", x: e.x, y: e.y + 26, t: 0, life: 1.2, color: "#fff3c4", text: `${weaponName(e.by)}으로 터짐` });
         }
         shake = Math.min(14, shake + 3 + e.size * 1.5 + e.chainDepth * 2);
+        lastPop = { x: e.x, y: e.y, t: game.time };
         sfx.pop(e.size, e.chainDepth);
         if (e.chainDepth >= 1 || e.size >= 5) hitStop = Math.max(hitStop, Math.min(0.09, 0.04 + e.chainDepth * 0.015 + Math.max(0, e.size - 4) * 0.01));
-        if (e.chainDepth >= 1) fx.push({ kind: "text", x: e.x, y: e.y, t: 0, life: 0.9, color: "#fff3c4", text: `연쇄 ${e.chainDepth + 1}` });
+        if (e.chainDepth >= 1) {
+          // 연쇄: 앞 팝에서 이 팝으로 빛줄기를 잇고, 단계가 오를수록 글자가 커지고 더 흔들린다
+          if (prevPop && game.time - prevPop.t < RULES.chain.window + 0.6) fx.push({ kind: "line", x: prevPop.x, y: prevPop.y, x2: e.x, y2: e.y, t: 0, life: 0.45, color, radius: 6 + Math.min(6, e.chainDepth * 2) });
+          fx.push({ kind: "text", x: e.x, y: e.y, t: 0, life: 1.0, color: "#fff3c4", text: `연쇄 ${e.chainDepth + 1}!`, size: Math.min(1.9, 1.15 + e.chainDepth * 0.2) });
+          shake = Math.min(18, shake + 2 + e.chainDepth);
+        }
         else if (e.cushions >= 3) {
           // 쓰리쿠션: 가장 큰 보너스. 크게 알리고 화면을 더 흔든다
           fx.push({ kind: "text", x: e.x, y: e.y, t: 0, life: 1.4, color: "#ffcf5a", text: `${e.cushions}쿠션! +${Math.round((RULES.ball.cushionBonus[3] ?? 0) * 100)}%` });
@@ -833,6 +847,29 @@ function handleEvents(game: Game): void {
         } else if (e.cushions >= 1) {
           fx.push({ kind: "text", x: e.x, y: e.y, t: 0, life: 1, color: "#9fe3ff", text: `${e.cushions}쿠션 +${Math.round((RULES.ball.cushionBonus[e.cushions] ?? 0) * 100)}%` });
         } else if (e.cushion) fx.push({ kind: "text", x: e.x, y: e.y, t: 0, life: 0.9, color: "#9fe3ff", text: "쿠션!" });
+        break;
+      }
+      case "chain-miss": {
+        // 같은 색에 맞았지만 무리가 모자라 붙기만 함: 왜 안 터졌는지 "2/3"으로 보여 준다
+        const col = PALETTE[e.color];
+        fx.push({ kind: "text", x: e.x, y: e.y - 8, t: 0, life: 1.1, color: col, text: `${e.size}/${e.need}`, size: 0.85 });
+        fx.push({ kind: "ring", x: e.x, y: e.y, t: 0, life: 0.35, color: col, radius: 30 });
+        break;
+      }
+      case "chain-bounce":
+        // 연쇄가 다른 색·회색에 막혀 튕김: 작은 불꽃
+        for (let k = 0; k < 5; k++) {
+          const a = Math.random() * Math.PI * 2;
+          const sp = 90 + Math.random() * 120;
+          fx.push({ kind: "spark", x: e.x, y: e.y, t: 0, life: 0.35, color: "#ffe9a8", radius: 2 + Math.random() * 2, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp });
+        }
+        break;
+      case "whistle": {
+        // 휘슬은 밀기 전용: 퍼지는 보랏빛 고리 (팝 충격파와 구별). 날아간 적은 회색 꼬리
+        const p = game.player;
+        const rad = RULES.whistle.radius * p.stats.area;
+        fx.push({ kind: "ring", x: p.x, y: p.y, t: 0, life: 0.5, color: "#b9a4ff", radius: rad });
+        fx.push({ kind: "ring", x: p.x, y: p.y, t: 0, life: 0.35, color: "#d8ccff", radius: rad * 0.6 });
         break;
       }
       case "player-hit":
@@ -1219,7 +1256,7 @@ function frame(now: number): void {
   clock += dt;
   if (g && screen === "play") {
     if (hitStop > 0) hitStop = Math.max(0, hitStop - dt);
-    else if (!paused && g.choices.length === 0) {
+    else if (!paused && !freeze && g.choices.length === 0) {
       acc += dt * (auto?.speed ?? 1);
       let n = 0;
       const maxSteps = 5 * (auto?.speed ?? 1);
@@ -1410,6 +1447,11 @@ interface PopDebug {
   shop: () => void;
   /** 점검용: 캐릭터로 새 판을 시작한다 */
   start: (character: string) => void;
+  /** 점검용: 연쇄 표시 장면을 놓고 시뮬을 멈춘다. "chain" 빨강 팝 → 파랑 연쇄, "miss" 같은 색 하나에 맞음, "bounce" 다른 색에 맞음 */
+  chainScene: (kind: "chain" | "miss" | "bounce") => void;
+  /** 점검용: 멈춘 시뮬을 n틱 진행 (이벤트 연출 포함). 인자 없이 풀면 계속 진행 */
+  tick: (n: number) => void;
+  thaw: () => void;
 }
 const dbg: PopDebug = {
   screen: "", stage: 0, time: 0, hp: 0, maxHp: 0, level: 0, enemies: 0, balls: 0, fps: 0, result: null, runs: 0, log: [], hazards: 0, boss: "", player: null, renderScale: 0, wallT: -1, phase: "",
@@ -1436,6 +1478,55 @@ const dbg: PopDebug = {
     renderShop();
   },
   start: (character) => startRun(character),
+  chainScene: (kind) => {
+    if (!g) return;
+    const p = g.player;
+    const ox = p.x - 330;
+    const oy = p.y - 90;
+    g.enemies = [];
+    fx = [];
+    banner = null;
+    hint = null;
+    lastPop = null;
+    const at = (color: "red" | "blue" | "green" | "yellow", x: number, y: number) => {
+      const e = spawnEnemy(g!, "jelly", color, ox + x, oy + y);
+      e.speed = 0;
+      return e;
+    };
+    const fire = (e: ReturnType<typeof at>, knock: number, src: Parameters<typeof launch>[4]) => launch(e, 1, 0, knock, src);
+    if (kind === "chain") {
+      // 빨강 3마리 팝 → 파란 하나가 연쇄로 날아가 파란 둘에 부딪친다. 아래 두 줄: 휘슬·무기로 날린(연쇄 불가) 적
+      const r0 = at("red", 0, 0);
+      at("red", 45, 0);
+      at("red", 72, 0);
+      at("blue", 140, 0);
+      at("blue", 340, 0);
+      at("blue", 368, 0);
+      fire(r0, 700, { chainDepth: 0, chainT: 0, by: "ball" });
+      fire(at("blue", 120, -70), 600, { chainDepth: 0, chainT: 0, by: "whistle" });
+      fire(at("green", 120, -115), 600, { chainDepth: 0, chainT: 0, weapon: true, by: "kick" });
+    } else if (kind === "miss") {
+      at("red", 140, 0);
+      fire(at("red", 0, 0), 600, { chainDepth: 1, chainT: 1, by: "ball" });
+    } else {
+      at("blue", 140, 0);
+      at("blue", 168, 0);
+      fire(at("red", 0, 0), 600, { chainDepth: 1, chainT: 1, by: "ball" });
+    }
+    rebuildGrid(g);
+    freeze = true;
+  },
+  tick: (n) => {
+    if (!g) return;
+    for (let i = 0; i < n; i++) {
+      prevEnemies = g.enemies;
+      step(g, { moveX: 0, moveY: 0, whistle: false });
+      handleEvents(g);
+    }
+  },
+  thaw: () => {
+    freeze = false;
+  },
 };
 (globalThis as { __pop?: PopDebug }).__pop = dbg;
 Object.assign(dbg, { perf, perfReset });

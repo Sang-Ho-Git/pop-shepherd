@@ -38,6 +38,8 @@ export interface Fx {
   /** spark: 속도 */
   vx?: number;
   vy?: number;
+  /** text: 글자 크기 배율 (기본 1) */
+  size?: number;
 }
 
 /** 화면 모드의 추가 정보 (색 공 조준) */
@@ -106,18 +108,108 @@ function glyph(ctx: CanvasRenderingContext2D, color: Color, x: number, y: number
   ctx.fill();
 }
 
+/** 연쇄 예감: 연쇄 가능 적이 날아가는 방향 이 거리 안에 같은 색이 있으면 표적을 알린다 */
+const CHAIN_LOOK = 120;
+const hintBuf: number[] = [];
+
+function drawChainHints(ctx: CanvasRenderingContext2D, g: Game, v: View, time: number): void {
+  for (const e of g.enemies) {
+    if (e.dead || e.state !== "launched" || e.chainT <= 0 || e.chainDepth < 1 || e.color === "gray") continue;
+    const sp = Math.hypot(e.vx, e.vy);
+    if (sp < 120) continue;
+    const ux = e.vx / sp;
+    const uy = e.vy / sp;
+    g.grid.query(e.x, e.y, CHAIN_LOOK + e.radius + 48, hintBuf);
+    let best: Enemy | null = null;
+    let bestAlong = Infinity;
+    for (const j of hintBuf) {
+      const o = g.enemies[j];
+      if (!o || o === e || o.dead || o.state === "launched" || o.rank !== "normal" || o.color === "gray") continue;
+      if (o.color !== e.color && o.color !== "rainbow" && e.color !== "rainbow") continue;
+      const dx = o.x - e.x;
+      const dy = o.y - e.y;
+      const along = dx * ux + dy * uy;
+      if (along <= 0 || along > CHAIN_LOOK + o.radius) continue;
+      if (Math.abs(dx * uy - dy * ux) > o.radius + e.radius + 10) continue;
+      if (along < bestAlong) {
+        best = o;
+        bestAlong = along;
+      }
+    }
+    if (!best) continue;
+    const col = e.color === "rainbow" ? PALETTE[best.color] : PALETTE[e.color];
+    const pulse = 0.5 + 0.5 * Math.sin(time * 14);
+    const [tx, ty] = toScreen(v, best.x, best.y);
+    ctx.strokeStyle = col;
+    ctx.lineWidth = Math.max(2, 3 * v.scale);
+    ctx.globalAlpha = 0.55 + 0.4 * pulse;
+    ctx.setLineDash([6 * v.scale, 5 * v.scale]);
+    // 표적 고리: 맞을 같은 색 + 옆에 붙은 같은 색 몇 마리
+    ctx.beginPath();
+    ctx.arc(tx, ty, (best.radius + 9 + 3 * pulse) * v.scale, 0, Math.PI * 2);
+    ctx.stroke();
+    let n = 0;
+    for (const o of g.enemies) {
+      if (n >= 5) break;
+      if (o === best || o.dead || o.state === "launched" || o.rank !== "normal" || o.color !== best.color) continue;
+      if (Math.hypot(o.x - best.x, o.y - best.y) > best.radius + o.radius + RULES.physics.contactSlack + 2) continue;
+      const [ox, oy] = toScreen(v, o.x, o.y);
+      ctx.beginPath();
+      ctx.arc(ox, oy, (o.radius + 6) * v.scale, 0, Math.PI * 2);
+      ctx.stroke();
+      n++;
+    }
+    ctx.setLineDash([]);
+    // 화살표: 날아가는 적 앞에서 표적 쪽으로
+    const [sx, sy] = toScreen(v, e.x, e.y);
+    const ax = sx + ux * (e.radius + 14) * v.scale;
+    const ay = sy + uy * (e.radius + 14) * v.scale;
+    const hs = 9 * v.scale;
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(ax + ux * hs, ay + uy * hs);
+    ctx.lineTo(ax - ux * hs * 0.4 - uy * hs * 0.8, ay - uy * hs * 0.4 + ux * hs * 0.8);
+    ctx.lineTo(ax - ux * hs * 0.4 + uy * hs * 0.8, ay - uy * hs * 0.4 - ux * hs * 0.8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
 function drawEnemy(ctx: CanvasRenderingContext2D, v: View, e: Enemy, time: number): void {
   const [x, y] = toScreen(v, e.x, e.y);
   const r = e.radius * v.scale;
   if (e.state === "launched") {
-    // 발사 잔상
-    ctx.strokeStyle = e.color === "rainbow" ? "rgba(255,255,255,0.35)" : PALETTE[e.color] + "66";
-    ctx.lineWidth = r * 1.4;
+    // 발사 잔상. 연쇄 가능(팝 충격파로 날아가 인정 시간이 남음): 자기 색의 길고 밝은 꼬리 + 빛, 남은 시간만큼 옅어진다.
+    // 연쇄 불가(휘슬·무기로 날림): 회색/흰 꼬리. 그 밖(내 공 등)은 예전 모양 그대로.
+    const live = e.chainT > 0 && e.chainDepth >= 1;
+    const muted = !live && (e.cause === "whistle" || (e.cause !== null && e.cause !== "ball" && !e.cause.startsWith("chain")));
+    const left = live ? Math.min(1, e.chainT / RULES.chain.window) : 0;
     ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x - e.vx * 0.06 * v.scale, y - e.vy * 0.06 * v.scale);
-    ctx.stroke();
+    if (live) {
+      const base = e.color === "rainbow" ? "#ffffff" : PALETTE[e.color];
+      ctx.globalAlpha = 0.25 + 0.6 * left;
+      ctx.strokeStyle = base;
+      ctx.lineWidth = r * 1.7;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - e.vx * 0.1 * v.scale, y - e.vy * 0.1 * v.scale);
+      ctx.stroke();
+      // 빛: 몸 둘레의 밝은 고리
+      ctx.lineWidth = Math.max(2, 3 * v.scale);
+      ctx.globalAlpha = 0.2 + 0.7 * left;
+      ctx.beginPath();
+      ctx.arc(x, y, r * (1.35 + 0.15 * Math.sin(time * 18)), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    } else {
+      ctx.strokeStyle = muted ? "rgba(225,230,235,0.32)" : e.color === "rainbow" ? "rgba(255,255,255,0.35)" : PALETTE[e.color] + "66";
+      ctx.lineWidth = r * (muted ? 1.0 : 1.4);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - e.vx * 0.06 * v.scale, y - e.vy * 0.06 * v.scale);
+      ctx.stroke();
+    }
   }
   if (e.color === "rainbow") {
     const grad = ctx.createConicGradient(time * 2, x, y);
@@ -553,6 +645,7 @@ export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: F
   };
   for (const e of g.enemies) if (e.rank === "normal" && onScreen(e)) drawEnemy(ctx, v, e, time);
   for (const e of g.enemies) if (e.rank !== "normal") drawEnemy(ctx, v, e, time);
+  drawChainHints(ctx, g, v, time);
 
   // 회오리 칼날: 지나간 자리에 바람 꼬리. 색 공 규칙에서 이번 바퀴 cap을 다 쓰면 무뎌져 흐려진다
   const p = g.player;
@@ -746,7 +839,7 @@ export function drawWorld(ctx: CanvasRenderingContext2D, g: Game, v: View, fx: F
     } else if (f.text) {
       ctx.globalAlpha = 1 - k;
       ctx.fillStyle = f.color;
-      ctx.font = `${Math.round(22 * v.scale)}px Jua, "Gowun Dodum", sans-serif`;
+      ctx.font = `${Math.round(22 * (f.size ?? 1) * v.scale)}px Jua, "Gowun Dodum", sans-serif`;
       ctx.textAlign = "center";
       ctx.fillText(f.text, x, y - 30 * v.scale * k);
       ctx.globalAlpha = 1;
