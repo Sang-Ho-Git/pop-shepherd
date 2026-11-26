@@ -54,12 +54,12 @@ export function resolveImpacts(g: Game): void {
     const res = a.rank !== "normal" || b.rank !== "normal" || a.wetT > 0 || b.wetT > 0 ? ({ kind: "bounce" } as const) : resolveMatchColor(a.color, b.color);
     // 색 공 규칙: 내 공이 일으킨 발사(공 팝의 연쇄 포함)만 터뜨린다. 무기·범퍼가 날린 적은 붙기만 한다.
     const canPop = !g.ballMode || a.cause === "ball";
-    // 무리 크기: 화면 표시(연쇄 "2/3")에도 쓴다. findCluster는 읽기만 한다
+    // 무리 크기: 화면 표시(연쇄 "2/3")에도 쓴다. 팝 자격이 있는 발사만 계산한다 (예전과 같은 비용)
     let matchSize = 0;
-    if (res.kind === "match") {
+    if (res.kind === "match" && canPop) {
       const cluster = findCluster(g, best, i, res.color);
       matchSize = cluster.length;
-      if (canPop && cluster.length >= RULES.match.minSize) {
+      if (cluster.length >= RULES.match.minSize) {
         popCluster(g, cluster, a, res.color);
         continue;
       }
@@ -73,7 +73,7 @@ export function resolveImpacts(g: Game): void {
       a.vy = 0;
       land(a);
       g.events.push({ type: "stick", a: a.id, b: b.id });
-      if (res.kind === "match" && matchSize < RULES.match.minSize) g.events.push({ type: "chain-miss", id: a.id, x: ax, y: ay, size: matchSize, need: RULES.match.minSize, color: res.color, chain: chainA });
+      if (res.kind === "match" && matchSize > 0 && matchSize < RULES.match.minSize) g.events.push({ type: "chain-miss", id: a.id, x: ax, y: ay, size: matchSize, need: RULES.match.minSize, color: res.color, chain: chainA });
       continue;
     }
 
