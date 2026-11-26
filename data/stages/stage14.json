@@ -17,7 +17,7 @@
       "from": 0.0,
       "to": 26.0,
       "interval": 1.17,
-      "speedMul": 2.56,
+      "speedMul": 2.52,
       "colors": [
         "red",
         "blue",
@@ -28,7 +28,7 @@
       "from": 26.0,
       "to": 52.0,
       "interval": 1.01,
-      "speedMul": 2.68,
+      "speedMul": 2.64,
       "colors": [
         "red",
         "blue",
@@ -40,7 +40,7 @@
       "from": 52.0,
       "to": 78.0,
       "interval": 0.85,
-      "speedMul": 2.81,
+      "speedMul": 2.77,
       "colors": [
         "red",
         "blue",
@@ -52,7 +52,7 @@
       "from": 78.0,
       "to": 104.0,
       "interval": 0.69,
-      "speedMul": 2.95,
+      "speedMul": 2.91,
       "colors": [
         "red",
         "blue",
@@ -64,7 +64,7 @@
       "from": 104.0,
       "to": 130,
       "interval": 0.54,
-      "speedMul": 3.05,
+      "speedMul": 3,
       "colors": [
         "red",
         "blue",
