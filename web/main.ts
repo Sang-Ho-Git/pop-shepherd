@@ -11,6 +11,7 @@ import { acknowledgeRefund, browserStore, loadSave, profileOf, recordRun, spendO
 import type { SaveData } from "../src/progression/save.ts";
 import { conditionProgress, isCharacterUnlocked, newlyUnlocked, statValue, UNLOCKS } from "../src/progression/unlocks.ts";
 import type { UnlockCondition } from "../src/progression/unlocks.ts";
+import { openChest } from "../src/progression/chest.ts";
 import { buy, openShop, reroll } from "../src/progression/shop.ts";
 import type { ShopState } from "../src/progression/shop.ts";
 import { carryOf, startStage } from "../src/sim/campaign.ts";
@@ -1400,6 +1401,14 @@ interface PopDebug {
   give: (id: string, lv: number | "evo", branch?: string | null) => void;
   /** 점검용: 플레이어 무기 범위(area) 배율을 바꾼다 (범위 상한 확인용) */
   setArea: (a: number) => void;
+  /** 점검용: 경험치를 더해 레벨업 창을 띄운다 */
+  xp: (n: number) => void;
+  /** 점검용: 지금 자리에서 보스 상자를 연다 */
+  chest: () => void;
+  /** 점검용: 정비 상점을 연다 */
+  shop: () => void;
+  /** 점검용: 캐릭터로 새 판을 시작한다 */
+  start: (character: string) => void;
 }
 const dbg: PopDebug = {
   screen: "", stage: 0, time: 0, hp: 0, maxHp: 0, level: 0, enemies: 0, balls: 0, fps: 0, result: null, runs: 0, log: [], hazards: 0, boss: "", player: null, renderScale: 0, wallT: -1, phase: "",
@@ -1412,6 +1421,20 @@ const dbg: PopDebug = {
   setArea: (a) => {
     if (g) g.player.stats.area = a;
   },
+  xp: (n) => {
+    if (g) g.stats.xp += n;
+  },
+  chest: () => {
+    if (g) openChest(g, { x: g.player.x, y: g.player.y, kind: "boss" } as never);
+  },
+  shop: () => {
+    if (!g || !run) return;
+    g.player.gold = 99999;
+    shop = openShop(g, { extraSlots: run.meta.specials.shopSlots, freeRerolls: run.meta.specials.freeRerolls });
+    screen = "shop";
+    renderShop();
+  },
+  start: (character) => startRun(character),
 };
 (globalThis as { __pop?: PopDebug }).__pop = dbg;
 Object.assign(dbg, { perf, perfReset });
