@@ -60,6 +60,18 @@ describe("클리어 때 수거 범위 (줍는 거리 ×1.1)", () => {
     expect(p.hp).toBe(hp0);
     expect(g.golds.length).toBe(0);
   });
+
+  it("보스 상자는 멀리 있어도 챙기고, 엘리트 상자는 먼 것을 놓친다", () => {
+    const g = cleared();
+    const p = g.player;
+    g.player.passives = {};
+    g.weapons = [makeWeapon(weapon("kick"), 1)];
+    g.chests.push({ kind: "boss", x: p.x + 900, y: p.y }, { kind: "elite", x: p.x + 900, y: p.y });
+    run(g, RULES.tickHz + 2);
+    expect(g.phase).toBe("cleared");
+    expect(g.stats.chestsOpened).toBe(1);
+    expect(g.chests.length).toBe(0);
+  });
 });
 
 describe("테스트용 세이브 조작 (11/26)", () => {

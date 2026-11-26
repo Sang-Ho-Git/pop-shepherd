@@ -475,7 +475,7 @@ export function goalMet(g: Game): boolean {
  * 목표를 이루면 클리어. 11/24: 생존형도 처치형도 마무리 시간 없이 바로 끝난다
  * (피드백: 팝 목표가 없는 시간제한 스테이지에서 추가 시간은 플레이만 늘렸다). wrapUpSeconds를 0보다 크게 하면 예전 마무리 시간이 돌아온다.
  * 클리어할 때 남은 적은 사라지고, 그 적들 경험치의 clearXpRatio만큼을 받는다 (마무리 시간 팝 경험치를 대신한다).
- * 남은 골드 주머니·상자·우유병은 줍는 거리 ×clearPickupMul(1.1) 안의 것만 자동으로 줍는다.
+ * 남은 골드 주머니·상자·우유병은 줍는 거리 ×clearPickupMul(1.1) 안의 것만 자동으로 줍는다 (보스 상자는 예외로 늘 챙긴다).
  */
 function advancePhase(g: Game): void {
   const st = g.stage;
@@ -493,7 +493,8 @@ function advancePhase(g: Game): void {
     const near = (o: { x: number; y: number }, base: number): boolean => Math.hypot(o.x - pp.x, o.y - pp.y) <= base * pp.stats.pickup * RULES.stage.clearPickupMul;
     for (const gp of g.golds) if (near(gp, RULES.drops.pickupRange)) collectGold(g, gp.amount);
     g.golds = [];
-    for (const c of g.chests) if (near(c, RULES.drops.pickupRange)) openChest(g, c);
+    // 보스 상자(처치 보상)는 거리와 상관없이 챙긴다: 보스를 잡으면 바로 클리어라 멀리 떨어진 상자가 사라지지 않게
+    for (const c of g.chests) if (c.kind === "boss" || near(c, RULES.drops.pickupRange)) openChest(g, c);
     g.chests = [];
     // 가까이 남은 우유병은 마신다
     for (const m of g.milks) {
