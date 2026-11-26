@@ -112,6 +112,12 @@
   #hud .top { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 12px; align-items: center; }
   #hud .goal { font-family: var(--display); font-size: clamp(20px, 3vw, 30px); text-shadow: 0 2px 0 #000; font-variant-numeric: tabular-nums; }
   #hud .gold { justify-self: end; font-family: var(--display); color: var(--gold); font-size: 20px; text-shadow: 0 2px 0 #000; }
+  #hud .chests-hud { color: var(--cream); margin-right: 6px; display: inline-block; }
+  #hud .chests-hud.has-boss { color: #ffcf5a; }
+  #hud .chests-hud.bump { animation: chestbump .5s ease-out; }
+  @keyframes chestbump { 0% { transform: scale(1.8); } 100% { transform: scale(1); } }
+  .chest { display: inline-block; padding: 6px 12px; border-radius: 8px; border: 2px solid var(--plank-edge); background: rgba(255,243,196,0.12); }
+  .chest.boss { border-color: #ffcf5a; color: #ffcf5a; background: rgba(255,207,90,0.16); }
   #hud .bottom { display: flex; flex-direction: column; gap: 6px; }
   .bar { position: relative; height: 18px; max-width: 360px; width: 100%; background: rgba(0,0,0,0.55); border: 2px solid rgba(244,239,225,0.35); border-radius: 9px; overflow: hidden; }
   #hud .bottom .bar { max-width: none; }

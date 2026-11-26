@@ -4,6 +4,7 @@ import type { CharacterDef, Game } from "../core/types.ts";
 import { applyMeta, runCoins } from "../progression/meta.ts";
 import type { MetaProfile, MetaSpecials } from "../progression/meta.ts";
 import { botShop } from "../progression/shop.ts";
+import { settleChests } from "../progression/chest.ts";
 import { CAMPAIGN, character, ENEMIES, stage, weapon } from "../data/index.ts";
 import { recomputeStats } from "../progression/passives.ts";
 import { makeWeapon } from "../weapons/weapons.ts";
@@ -190,6 +191,8 @@ export function runCampaign(seed: number, characterId: string, stages: string[] 
       step(g, botInput(g));
       hpMin = Math.min(hpMin, g.player.hp / g.player.maxHp);
     }
+    // 모아 둔 상자는 스테이지가 끝난 뒤 정비 상점 앞에서 연다 (+ 정비 상점의 진화 상자). 죽거나 시간 초과면 미개봉 상자는 사라진다.
+    const chestEvolved = g.phase === "cleared" ? settleChests(g) : [];
     const s = g.stats;
     out.push({
       stage: id,
@@ -213,7 +216,7 @@ export function runCampaign(seed: number, characterId: string, stages: string[] 
       gold: g.player.gold,
       goldEarned: g.player.gold - goldStart,
       bought: [],
-      evolved: [],
+      evolved: chestEvolved,
       revived: g.player.revives < revivesStart,
       elitesSpawned: s.elitesSpawned,
       elitesKilled: s.elitesKilled,
@@ -242,7 +245,7 @@ export function runCampaign(seed: number, characterId: string, stages: string[] 
       const res = botShop(g, meta ? { extraSlots: meta.specials.shopSlots, freeRerolls: meta.specials.freeRerolls } : {});
       const last = out[out.length - 1] as StageResult;
       last.bought = res.bought;
-      last.evolved = res.evolved;
+      last.evolved = [...chestEvolved, ...res.evolved];
     }
     carry = carryOf(g);
     opts.onCarry?.(i + 1, carry);

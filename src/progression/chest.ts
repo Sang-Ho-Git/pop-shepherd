@@ -46,3 +46,38 @@ export function openChest(g: Game, chest: Chest): { evolved: string[]; picked: s
   g.events.push({ type: "chest-open", kind: chest.kind, evolved, picked });
   return { evolved, picked };
 }
+
+/** 상자를 주웠다: 바로 열지 않고 모아 둔다 (화면 위쪽에 개수가 보이고, 스테이지가 끝나면 정비 상점 앞에서 연다) */
+export function collectChest(g: Game, chest: Chest): void {
+  g.held.push(chest.kind);
+  g.events.push({ type: "chest-pickup", kind: chest.kind, x: chest.x, y: chest.y, count: g.held.length });
+}
+
+/** 모아 둔 상자 하나를 연다 (맨 앞). 없으면 null */
+export function openHeldChest(g: Game): { kind: "elite" | "boss"; evolved: string[]; picked: string[] } | null {
+  const kind = g.held.shift();
+  if (!kind) return null;
+  return { kind, ...openChest(g, { x: g.player.x, y: g.player.y, kind }) };
+}
+
+/**
+ * 정비 상점에서 주는 진화 상자 (기획: 조건 충족 → 다음 정비 화면에서 진화 상자). 상자와 별개로 한 개:
+ * 진화할 수 있는 무기(Lv7 + 짝 패시브)가 아직 남아 있으면 하나를 진화시킨다. 없으면 null.
+ */
+export function grantEvolutionChest(g: Game): string | null {
+  const w = g.weapons.find((x) => canEvolve(g, x.def.id));
+  if (!w) return null;
+  applyCard(g, { kind: "evolve", id: w.def.id });
+  g.stats.evolutions++;
+  g.events.push({ type: "evolve", weapon: w.def.id });
+  return w.def.id;
+}
+
+/** 시뮬(봇): 모은 상자를 전부 열고 정비 상점의 진화 상자를 받는다. 진화한 무기 목록을 돌려준다. */
+export function settleChests(g: Game): string[] {
+  const evolved: string[] = [];
+  while (g.held.length > 0) evolved.push(...(openHeldChest(g)?.evolved ?? []));
+  const extra = grantEvolutionChest(g);
+  if (extra) evolved.push(extra);
+  return evolved;
+}

@@ -9,12 +9,13 @@ import { botCardScore, botChooseBranch, botChooseCard, needsBranch, resolveChoic
 import { botInput } from "../src/sim/bot.ts";
 import { applyMeta, costFor, isUnlocked, nodesFor, runCoins } from "../src/progression/meta.ts";
 import type { MetaSpecials } from "../src/progression/meta.ts";
+import { addPassive } from "../src/progression/passives.ts";
 import * as TS from "../src/progression/testsave.ts";
 import { acknowledgeRefund, browserStore, loadSave, parseSave, profileOf, recordRun, serializeSave, spendOnMeta, treeProgress, writeSave } from "../src/progression/save.ts";
 import type { SaveData } from "../src/progression/save.ts";
 import { conditionProgress, isCharacterUnlocked, newlyUnlocked, statValue, UNLOCKS } from "../src/progression/unlocks.ts";
 import type { UnlockCondition } from "../src/progression/unlocks.ts";
-import { openChest } from "../src/progression/chest.ts";
+import { grantEvolutionChest, openChest, openHeldChest } from "../src/progression/chest.ts";
 import { buy, openShop, reroll } from "../src/progression/shop.ts";
 import type { ShopState } from "../src/progression/shop.ts";
 import { carryOf, startStage } from "../src/sim/campaign.ts";
@@ -294,6 +295,11 @@ function beginStage(): void {
   if (!run) return;
   const id = CAMPAIGN[run.stageIndex] as string;
   g = startStage(run.seed + run.stageIndex * 7919, run.character, id, run.carry, run.meta, true, ballMode);
+  stageClosed = false;
+  chestAck = false;
+  chestSettled = false;
+  chestLog = [];
+  afterChoice = null;
   fx = [];
   lastPop = null;
   paused = false;
@@ -322,14 +328,68 @@ function addRunStats(): void {
   run.threeCushions += g.stats.threeCushions;
 }
 
+/** 스테이지가 끝난 뒤 모은 상자를 여는 화면의 상태 (스테이지마다 새로) */
+let stageClosed = false;
+let chestAck = false;
+let chestSettled = false;
+let chestLog: string[] = [];
+/** 선택 창(레벨업·갈래)을 다 고른 뒤 돌아갈 곳 (상자 화면). 없으면 오버레이를 닫는다 */
+let afterChoice: (() => void) | null = null;
+
 function endStage(): void {
   if (!run || !g) return;
-  run.popped += g.stats.poppedEnemies;
-  addRunStats();
-  if (run.stageIndex >= CAMPAIGN.length - 1) return finishRun(true);
+  if (!stageClosed) {
+    stageClosed = true;
+    run.popped += g.stats.poppedEnemies;
+    addRunStats();
+  }
+  const last = run.stageIndex >= CAMPAIGN.length - 1;
+  // 모아 둔 상자를 다 열면 정비 상점의 진화 상자를 한 번 받는다 (마지막 스테이지는 상점이 없다)
+  if (g.held.length === 0 && !chestSettled) {
+    chestSettled = true;
+    if (!last) {
+      const ev = grantEvolutionChest(g);
+      if (ev) chestLog.push(`정비 상점의 진화 상자: ${ownedName(g.weapons.find((w) => w.def.id === ev)!)} 진화!`);
+    }
+  }
+  if (!chestAck && (g.held.length > 0 || chestLog.length > 0)) return renderChestScreen();
+  if (last) return finishRun(true);
   shop = openShop(g, { extraSlots: run.meta.specials.shopSlots, freeRerolls: run.meta.specials.freeRerolls });
   screen = "shop";
   renderShop();
+}
+
+/** 정비 상점 앞: 스테이지에서 주운 상자를 하나씩 연다 */
+function renderChestScreen(): void {
+  if (!run || !g) return;
+  screen = "shop";
+  const gg = g;
+  const last = run.stageIndex >= CAMPAIGN.length - 1;
+  const n = gg.held.length;
+  const icons = row(gg.held.map((k, i) => el("span", k === "boss" ? "chest boss" : "chest", `${k === "boss" ? "보스" : "엘리트"} 상자${i === 0 && n > 1 ? " ◀" : ""}`)));
+  const open = (): void => {
+    const r = openHeldChest(gg);
+    if (!r) return;
+    sfx.chest();
+    const parts = [...r.evolved.map((id) => `${ownedName(gg.weapons.find((w) => w.def.id === id)!)} 진화!`), ...r.picked.map(rewardName)];
+    chestLog.push(`${r.kind === "boss" ? "보스" : "엘리트"} 상자: ${parts.join(", ") || "체력 회복"}`);
+    // 갈래가 필요한 Lv4 강화는 상자가 창을 남긴다: 다 고른 뒤 이 화면으로 돌아온다
+    if (gg.choices.length > 0) {
+      afterChoice = renderChestScreen;
+      choiceHold = 0;
+      renderChoice();
+    } else renderChestScreen();
+  };
+  show([
+    el("p", "eyebrow", `스테이지 ${run.stageIndex + 1} 클리어`),
+    el("h2", "", n > 0 ? `모은 상자 ${n}개` : "받은 보상"),
+    ...(n > 0 ? [icons] : []),
+    ...chestLog.map((t) => el("p", "lede", t)),
+    row([n > 0 ? button(`상자 열기 (남은 ${n})`, open) : button(last ? "결과로" : "정비 상점으로", () => {
+      chestAck = true;
+      endStage();
+    })]),
+  ]);
 }
 
 function leaveShop(): void {
@@ -652,7 +712,7 @@ function renderChoice(): void {
     if (needsBranch(g!, c)) return renderBranch(i);
     resolveChoice(g!, i);
     choiceShown = false;
-    hideOverlay();
+    finishChoice();
   };
   const cards = row(
     ch.cards.map((c, i) => {
@@ -680,13 +740,24 @@ function renderShopBranch(st: ShopState, i: number): void {
   }, () => renderShop());
 }
 
+/** 선택을 하나 고른 뒤: 상자에서 남은 창이 더 있으면 이어서, 없으면 상자 화면으로 돌아가거나 오버레이를 닫는다 */
+function finishChoice(): void {
+  if (afterChoice) {
+    if (g && g.choices.length > 0) return renderChoice();
+    const back = afterChoice;
+    afterChoice = null;
+    return back();
+  }
+  hideOverlay();
+}
+
 function renderBranch(i: number): void {
   if (!g) return;
   const c = g.choices[0]!.cards[i]!;
   branchScreen(c, (b) => {
     resolveChoice(g!, i, b);
     choiceShown = false;
-    hideOverlay();
+    finishChoice();
   });
 }
 
@@ -954,6 +1025,21 @@ function handleEvents(game: Game): void {
       case "ball-throw":
         sfx.throwBall();
         break;
+      case "chest-pickup": {
+        // 상자는 모아 둔다: 머리 위 알림 + 위쪽 상자 개수가 튄다
+        sfx.chest();
+        fx.push({ kind: "text", x: e.x, y: e.y + 20, t: 0, life: 1.6, color: e.kind === "boss" ? "#ffcf5a" : "#fff3c4", text: `${e.kind === "boss" ? "보스" : "엘리트"} 상자 획득 (정비 때 연다)` });
+        for (let k = 0; k < 10; k++) {
+          const a = Math.random() * Math.PI * 2;
+          fx.push({ kind: "spark", x: e.x, y: e.y, t: 0, life: 0.5, color: e.kind === "boss" ? "#ffcf5a" : "#fff3c4", radius: 3, vx: Math.cos(a) * 120, vy: Math.sin(a) * 120 - 60 });
+        }
+        if (hudRefs) {
+          hudRefs.chests.classList.remove("bump");
+          void hudRefs.chests.offsetWidth;
+          hudRefs.chests.classList.add("bump");
+        }
+        break;
+      }
       case "chest-open": {
         // 11/25: 상자는 창 없이 바로 열린다. 받은 보상을 플레이어 머리 위에 줄줄이 띄운다
         sfx.chest();
@@ -1132,6 +1218,7 @@ interface HudRefs {
   hp: BarRefs;
   goal: HTMLElement;
   gold: HTMLElement;
+  chests: HTMLElement;
   boss: BarRefs | null;
   lv: BarRefs;
   whistle: HTMLElement;
@@ -1170,8 +1257,11 @@ function renderHud(game: Game): void {
     const top = el("div", "top");
     const hp = bar("체력", p.hp / p.maxHp, "#ff6b6b", hpText);
     const goalEl = el("div", "goal", goal);
-    const goldEl = el("div", "gold", goldText);
-    top.append(hp.root, goalEl, goldEl);
+    const goldEl = el("span", "", goldText);
+    const chestsEl = el("span", "chests-hud", "");
+    const right = el("div", "gold");
+    right.append(chestsEl, goldEl);
+    top.append(hp.root, goalEl, right);
     const bottom = el("div", "bottom");
     const bossBar = boss ? bar("보스", boss.hp / boss.maxHp, bossColor, "") : null;
     if (bossBar) bottom.append(bossBar.root);
@@ -1192,7 +1282,7 @@ function renderHud(game: Game): void {
     }
     bottom.append(ws);
     hud.replaceChildren(top, bottom);
-    hudRefs = { sig, hp, goal: goalEl, gold: goldEl, boss: bossBar, lv, whistle, cur, next };
+    hudRefs = { sig, hp, goal: goalEl, gold: goldEl, chests: chestsEl, boss: bossBar, lv, whistle, cur, next };
     // 터치 버튼(휘슬·바꾸기)은 아래 HUD 위에 놓는다 (보스 막대·무기 두 줄이면 휘슬이 보스 막대를 가리던 것)
     document.documentElement.style.setProperty("--hud-bottom", `${Math.ceil(innerHeight - bottom.getBoundingClientRect().top)}px`);
   }
@@ -1200,6 +1290,10 @@ function renderHud(game: Game): void {
   setBar(r.hp, p.hp / p.maxHp, `체력 ${hpText}`);
   setText(r.goal, goal);
   setText(r.gold, goldText);
+  const heldBoss = game.held.filter((k) => k === "boss").length;
+  const heldElite = game.held.length - heldBoss;
+  setText(r.chests, game.held.length > 0 ? `🎁×${heldElite > 0 ? heldElite : ""}${heldBoss > 0 ? `${heldElite > 0 ? " " : ""}★보스×${heldBoss}` : ""}  ` : "");
+  r.chests.classList.toggle("has-boss", heldBoss > 0);
   if (r.boss && boss) setBar(r.boss, boss.hp / boss.maxHp, "보스 ", bossColor);
   setBar(r.lv, lvFrac, `Lv${p.level} `);
   setText(r.whistle, whistleText);
@@ -1494,6 +1588,9 @@ interface PopDebug {
   chest: () => void;
   /** 점검용: 스테이지 시계를 t초로 옮긴다 (카운트다운 확인용) */
   seek: (t: number) => void;
+  /** 점검용: 모아 둔 상자를 늘린다 / 패시브를 준다 */
+  hold: (kind: "elite" | "boss") => void;
+  passive: (id: string) => void;
   /** 점검용: 정비 상점을 연다 */
   shop: () => void;
   /** 점검용: 캐릭터로 새 판을 시작한다 */
@@ -1520,6 +1617,12 @@ const dbg: PopDebug = {
   },
   chest: () => {
     if (g) openChest(g, { x: g.player.x, y: g.player.y, kind: "boss" } as never);
+  },
+  hold: (kind) => {
+    if (g) g.held.push(kind);
+  },
+  passive: (id) => {
+    if (g) addPassive(g, id);
   },
   seek: (t) => {
     if (g) {

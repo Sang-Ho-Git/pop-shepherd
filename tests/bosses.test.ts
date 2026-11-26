@@ -1,3 +1,4 @@
+import { openHeldChest } from "../src/progression/chest.ts";
 import { describe, expect, it } from "vitest";
 import { createGame } from "../src/core/game.ts";
 import { RULES } from "../src/core/rules.ts";
@@ -60,7 +61,7 @@ describe("엘리트·보스: 팝 피해", () => {
     expect(hit(1)).toBeCloseTo(hit(-1) * 0.5);
   });
 
-  it("쓰러뜨리면 보물 상자를 떨어뜨리고, 주우면 진화할 무기를 진화시킨다", () => {
+  it("쓰러뜨리면 보물 상자를 떨어뜨리고, 주우면 모아 두었다가 열 때 진화할 무기를 진화시킨다", () => {
     const g = createGame({ seed: 1, character: character("shepherd"), enemyDefs: ENEMIES, stage: null, weapons: [makeWeapon(weapon("shockwave"), 7, "A")], leveling: true });
     addPassive(g, "chain_amp");
     const e = special(g, "chief_jelly", "blue", 900, 400);
@@ -72,7 +73,11 @@ describe("엘리트·보스: 팝 피해", () => {
     g.player.x = g.chests[0]!.x;
     g.player.y = g.chests[0]!.y;
     const events = run(g, 1);
-    expect(events.find((x) => x.type === "chest-open")).toMatchObject({ kind: "elite", evolved: ["shockwave"] });
+    // 11/26: 줍는다고 바로 열리지 않는다. 모아 두고 정비 상점 앞에서 연다
+    expect(events.find((x) => x.type === "chest-pickup")).toMatchObject({ kind: "elite", count: 1 });
+    expect(g.held).toEqual(["elite"]);
+    expect(g.weapons[0]!.level.lv).toBe(7);
+    expect(openHeldChest(g)).toMatchObject({ kind: "elite", evolved: ["shockwave"] });
     expect(g.weapons[0]!.level.lv).toBe("evo");
   });
 
@@ -80,6 +85,8 @@ describe("엘리트·보스: 팝 피해", () => {
     const g = createGame({ seed: 1, character: character("shepherd"), enemyDefs: ENEMIES, stage: null, weapons: [makeWeapon(weapon("kick"), 1)], leveling: true });
     g.chests.push({ x: g.player.x, y: g.player.y, kind: "elite" });
     run(g, 1);
+    expect(g.weapons[0]!.level.lv).toBe(1);
+    openHeldChest(g);
     expect(g.weapons[0]!.level.lv).toBe(2);
   });
 });
@@ -278,7 +285,7 @@ describe("처치형 스테이지", () => {
     expect(g.stats.bossKilled).toBe(1);
     // 11/24: 마무리 시간 없이 바로 클리어. 가까이 남은 상자와 골드는 자동으로 줍는다
     expect(g.phase).toBe("cleared");
-    expect(g.stats.chestsOpened).toBe(1);
+    expect(g.held).toContain("boss");
     expect(g.golds).toHaveLength(0);
   });
 

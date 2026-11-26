@@ -442,6 +442,7 @@ export type GameEvent =
   | { type: "hazard-hit"; act: string; damage: number }
   | { type: "special-killed"; id: number; kind: string; rank: EnemyRank }
   | { type: "chest-drop"; kind: "elite" | "boss"; x: number; y: number }
+  | { type: "chest-pickup"; kind: "elite" | "boss"; x: number; y: number; count: number }
   | { type: "chest-open"; kind: "elite" | "boss"; evolved: string[]; picked: string[] }
   | { type: "gold-pickup"; amount: number }
   | { type: "ball-throw"; color: MatchColor }
@@ -578,6 +579,8 @@ export interface Game {
   balls: { x: number; y: number; vx: number; vy: number; color: MatchColor; travel: number; bounces: number; lastHit: number }[];
   /** 엘리트·보스가 떨어뜨린 보물 상자 */
   chests: Chest[];
+  /** 이번 스테이지에서 주워 모아 둔 상자 (스테이지가 끝난 뒤 정비 상점 앞에서 연다. 죽으면 사라진다) */
+  held: ("elite" | "boss")[];
   /** 팝 자리에 떨어진 골드 주머니 */
   golds: GoldPouch[];
   /** 보스·엘리트 공격 예고와 탄 */

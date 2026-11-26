@@ -10,7 +10,7 @@ import { tickSpawner } from "../combat/spawner.ts";
 import { milkHealMul } from "./stageNo.ts";
 import { fireWeapons, tickEffects, tickTotems, tickWalls } from "../weapons/weapons.ts";
 import { spawnScheduled, tickBosses, tickHazards } from "../combat/bosses.ts";
-import { openChest } from "../progression/chest.ts";
+import { collectChest } from "../progression/chest.ts";
 import { initBall, tickBallThrow, tickBalls } from "../combat/ball.ts";
 import { checkLevelUp } from "../progression/levelup.ts";
 
@@ -69,6 +69,7 @@ export function createGame(cfg: GameConfig): Game {
     milks: [],
     effects: [],
     chests: [],
+    held: [],
     walls: [],
     view: { w: RULES.view.w, h: RULES.view.h },
     wind: { dx: 0, dy: 0, t: 0, cd: cfg.stage?.wind?.every ?? 0 },
@@ -403,7 +404,7 @@ function pickupChests(g: Game): void {
   const range = RULES.drops.pickupRange * p.stats.pickup;
   const keep = [];
   for (const c of g.chests) {
-    if (Math.hypot(c.x - p.x, c.y - p.y) <= range) openChest(g, c);
+    if (Math.hypot(c.x - p.x, c.y - p.y) <= range) collectChest(g, c);
     else keep.push(c);
   }
   g.chests = keep;
@@ -494,7 +495,7 @@ function advancePhase(g: Game): void {
     for (const gp of g.golds) if (near(gp, RULES.drops.pickupRange)) collectGold(g, gp.amount);
     g.golds = [];
     // 보스 상자(처치 보상)는 거리와 상관없이 챙긴다: 보스를 잡으면 바로 클리어라 멀리 떨어진 상자가 사라지지 않게
-    for (const c of g.chests) if (c.kind === "boss" || near(c, RULES.drops.pickupRange)) openChest(g, c);
+    for (const c of g.chests) if (c.kind === "boss" || near(c, RULES.drops.pickupRange)) collectChest(g, c);
     g.chests = [];
     // 가까이 남은 우유병은 마신다
     for (const m of g.milks) {

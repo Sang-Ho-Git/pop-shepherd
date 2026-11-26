@@ -69,7 +69,7 @@ describe("클리어 때 수거 범위 (줍는 거리 ×1.1)", () => {
     g.chests.push({ kind: "boss", x: p.x + 900, y: p.y }, { kind: "elite", x: p.x + 900, y: p.y });
     run(g, RULES.tickHz + 2);
     expect(g.phase).toBe("cleared");
-    expect(g.stats.chestsOpened).toBe(1);
+    expect(g.held).toEqual(["boss"]);
     expect(g.chests.length).toBe(0);
   });
 });
@@ -136,5 +136,34 @@ describe("갈래 선택이 건너뛰어지지 않는다 (11/26 재현)", () => {
     const g = createGame({ seed: 1, character: character("shepherd"), enemyDefs: ENEMIES, stage: null, manualChoices: true, weapons: [makeWeapon(weapon("kick"), 4, "B"), makeWeapon(weapon("lasso"), 3)] });
     expect(needsBranch(g, { kind: "weaponUp", id: "lasso" })).toBe(true);
     expect(needsBranch(g, { kind: "weaponUp", id: "kick" })).toBe(false);
+  });
+});
+
+describe("모아 둔 상자와 정비 상점의 진화 상자 (11/26)", () => {
+  it("주운 상자는 바로 열리지 않고 모이며, 연 뒤에 보상을 받는다", async () => {
+    const { collectChest, openHeldChest } = await import("../src/progression/chest.ts");
+    const g = emptyGame({ weapons: [makeWeapon(weapon("kick"), 1)] });
+    collectChest(g, { kind: "elite", x: 0, y: 0 });
+    collectChest(g, { kind: "boss", x: 0, y: 0 });
+    expect(g.held).toEqual(["elite", "boss"]);
+    expect(g.stats.chestsOpened).toBe(0);
+    expect(openHeldChest(g)?.kind).toBe("elite");
+    expect(g.held).toEqual(["boss"]);
+    expect(g.stats.chestsOpened).toBe(1);
+  });
+
+  it("상자가 없어도 진화 조건(Lv7 + 짝 패시브)을 채우면 정비 상점에서 진화 상자를 한 개 받는다 (한 번에 한 무기)", async () => {
+    const { settleChests } = await import("../src/progression/chest.ts");
+    const { addPassive } = await import("../src/progression/passives.ts");
+    const g = emptyGame({ weapons: [makeWeapon(weapon("shockwave"), 7, "A"), makeWeapon(weapon("kick"), 7, "A")] });
+    addPassive(g, "chain_amp");
+    addPassive(g, "elasticity");
+    const evolved = settleChests(g);
+    expect(evolved).toHaveLength(1);
+    expect(g.weapons.filter((w) => w.level.lv === "evo")).toHaveLength(1);
+    // 분기는 유지된다
+    expect(g.weapons.find((w) => w.level.lv === "evo")!.level.branch).toBe("A");
+    // 조건을 못 채웠으면 아무것도 안 준다
+    expect(settleChests(emptyGame({ weapons: [makeWeapon(weapon("kick"), 3)] }))).toEqual([]);
   });
 });
